@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 '',
-REQUIRED_PACKAGES=['ffmpeg==1.4','audio2numpy==0.1.2','librosa==0.6.3', 'numba==0.48','scipy==1.4.1', 'tensorflow>=2.2', 'keras==2.4.3']
+REQUIRED_PACKAGES=['google-cloud-storage==1.34.0','audio2numpy==0.1.2','librosa==0.6.3', 'numba==0.48','scipy==1.4.1', 'tensorflow>=2.2', 'keras==2.4.3']
 
 setup(
     name='trainer',

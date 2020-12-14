@@ -1,14 +1,27 @@
 from audio2numpy import open_audio
 import numpy as np
 import librosa
+from google.cloud import storage
+
+#descargar de cloud storage
+def download_audio_files(path_dataset, bucket_name):
+    storage_client = storage.Client()
+    bucket = storage_client.create_bucket(bucket_name)
+    local_files_list=[]
+    for i in range(13):
+        source_blob_name = path_dataset + str(i+1) + ".wav"
+        blob = bucket.blob(source_blob_name)
+        dest_file="local_ds/"+ str(i+1) + ".wav"
+        blob.download_to_filename(dest_file)
+        local_files_list.append(dest_file)
+    return local_files_list
 
 # leer audios
 
-
-def get_audio_list(path_dataset):
+def get_audio_list(path_dataset, bucket_name):
     audio_list = []
-    for i in range(13):
-        fp = path_dataset + str(i+1) + ".wav"
+    local_files_paths=download_audio_files(path_dataset,bucket_name)
+    for fp in local_files_paths:
         signal, sampling_rate = open_audio(fp)
         audio_list.append((signal, sampling_rate))
     return audio_list

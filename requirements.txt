@@ -1,6 +1,9 @@
   
 numpy>=1.14
-tensorflow>=1.15
+tensorflow>=2.2
+keras==2.4.3
 audio2numpy==0.1.2
 librosa==0.6.3
+numba==0.48
 scipy==1.4.1
+google-cloud-storage==1.34.0

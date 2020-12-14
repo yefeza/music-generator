@@ -2,6 +2,7 @@ from .models import *
 from scipy.io.wavfile import write
 import numpy as np
 import os
+from google.cloud import storage
 
 # update alpha for Weighted Sum
 
@@ -89,8 +90,19 @@ def get_gradient_penalty(fake_images, real_images, minibatch_size, d_model, wgan
 
 # generar datos con el modelo entrenado
 
+def upload_blob(bucket_name, source_file_name, destination_blob_name):
+    """Uploads a file to the bucket."""
+    # bucket_name = "your-bucket-name"
+    # source_file_name = "local/path/to/file"
+    # destination_blob_name = "storage-object-name"
 
-def generar_ejemplos(g_model, prefix, n_examples, job_dir):
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+
+    blob.upload_from_filename(source_file_name)
+
+def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name):
     gen_shape = g_model.output_shape
     noise = np.random.uniform(-1, 1, (n_examples, 1, 5, 2))
     gen_auds = g_model.predict(noise)
@@ -99,20 +111,21 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir):
     for i in range(n_examples):
         signal_gen = gen_auds[i]
         signal_gen /= np.max(np.abs(signal_gen), axis=0)
+        local_path = "local_gen/" + \
+            str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
+            "/" + prefix + "-" + str(i) + '.wav'
         path_save = job_dir + "/" + \
             str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
             "/" + prefix + "-" + str(i) + '.wav'
-        folder=os.path.dirname(path_save)
+        folder=os.path.dirname(local_path)
         if not os.path.exists(folder):
             os.makedirs(folder)
         write(path_save, gen_shape[-2], signal_gen)
+        upload_blob(bucket_name,local_path,path_save)
 
 # save model
 
 
 def guardar_modelo(keras_model, job_dir, name):
-    export_path = os.path.join(job_dir, 'keras_export_' + name)
-    if not os.path.exists(export_path):
-        os.makedirs(export_path)
-    tf.keras.experimental.export_saved_model(keras_model, export_path)
+    export_path = tfcompat.v1.keras.experimental.export_saved_model(keras_model, job_dir + '/keras_export_'+name)
     print('Model exported to: {}'.format(export_path))

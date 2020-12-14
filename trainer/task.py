@@ -48,6 +48,7 @@ if __name__ == '__main__':
     # direccion de el dataset
 
     path_dataset = JOB_DIR + '/dswav/'
+    bucket_name='music-gen'
 
     # lstm shared layer
 
@@ -141,7 +142,7 @@ if __name__ == '__main__':
     latent_dim = (1, 5, 2)
 
     # load image data
-    dataset = get_audio_list(path_dataset)
+    dataset = get_audio_list(path_dataset, bucket_name)
 
     # train model
     train(generators, discriminators, composite, dataset,
