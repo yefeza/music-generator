@@ -3,6 +3,7 @@ import os
 from .dataset import *
 from .models import *
 from .utils import *
+import numpy as np
 
 def get_args():
     """Argument parser.

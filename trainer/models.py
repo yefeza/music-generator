@@ -16,6 +16,7 @@ from keras.utils.vis_utils import plot_model
 from keras import backend
 import tensorflow as tf
 from keras.losses import categorical_crossentropy
+import numpy as np
 
 # WGAN + ACGAN  funcion loss del generador
 
@@ -266,7 +267,6 @@ def define_generator(n_blocks, lstm_layer):
     wls = Conv2DTranspose(2, (1, 1), padding='same')(wls)
     wls = LeakyReLU(alpha=0.2)(wls)
     model = Model(ly0, wls)
-    model.summary()
     # store model
     model_list.append([model, model])
     # create submodels

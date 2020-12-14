@@ -1,5 +1,6 @@
 from .models import *
 from scipy.io.wavfile import write
+import numpy as np
 
 # update alpha for Weighted Sum
 
