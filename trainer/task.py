@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     # direccion de el dataset
 
-    path_dataset = JOB_DIR + '/dataset/'
+    path_dataset = JOB_DIR + '/dswav/'
 
     # lstm shared layer
 

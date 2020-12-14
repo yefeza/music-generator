@@ -8,7 +8,7 @@ import librosa
 def get_audio_list(path_dataset):
     audio_list = []
     for i in range(13):
-        fp = path_dataset + str(i+1) + ".mp3"
+        fp = path_dataset + str(i+1) + ".wav"
         signal, sampling_rate = open_audio(fp)
         audio_list.append((signal, sampling_rate))
     return audio_list
