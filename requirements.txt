@@ -1,0 +1,6 @@
+  
+numpy>=1.14
+tensorflow>=1.15,<2
+audio2numpy==0.1.2
+librosa==0.6.3
+scipy==1.4.1
