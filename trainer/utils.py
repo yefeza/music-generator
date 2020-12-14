@@ -114,7 +114,7 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name):
         local_path = "local_gen/" + \
             str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
             "/" + prefix + "-" + str(i) + '.wav'
-        path_save = job_dir + "/" + \
+        path_save = "generated-data/" + \
             str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
             "/" + prefix + "-" + str(i) + '.wav'
         folder=os.path.dirname(local_path)

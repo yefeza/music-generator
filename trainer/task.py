@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     # direccion de el dataset
 
-    path_dataset = JOB_DIR + '/dswav/'
+    path_dataset = 'keras_dir/dswav/'
     bucket_name='music-gen'
 
     # lstm shared layer
