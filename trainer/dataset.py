@@ -12,6 +12,8 @@ def download_audio_files(path_dataset, bucket_name):
         source_blob_name = path_dataset + str(i+1) + ".wav"
         blob = bucket.blob(source_blob_name)
         dest_file="local_ds/"+ str(i+1) + ".wav"
+        if not os.path.exists("local_ds/"):
+            os.makedirs("local_ds/")
         blob.download_to_filename(dest_file)
         local_files_list.append(dest_file)
     return local_files_list
