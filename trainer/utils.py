@@ -1,6 +1,7 @@
 from .models import *
 from scipy.io.wavfile import write
 import numpy as np
+import os
 
 # update alpha for Weighted Sum
 
@@ -101,6 +102,9 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir):
         path_save = job_dir + "/" + \
             str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
             "/" + prefix + "-" + str(i) + '.wav'
+        folder=os.path.dirname(path_save)
+        if not os.path.exists(folder):
+            os.makedirs(folder)
         write(path_save, gen_shape[-2], signal_gen)
 
 # save model
@@ -108,5 +112,7 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir):
 
 def guardar_modelo(keras_model, job_dir, name):
     export_path = os.path.join(job_dir, 'keras_export_' + name)
+    if not os.path.exists(export_path):
+        os.makedirs(export_path)
     tf.keras.experimental.export_saved_model(keras_model, export_path)
     print('Model exported to: {}'.format(export_path))
