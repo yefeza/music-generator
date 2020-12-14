@@ -120,7 +120,7 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name):
         folder=os.path.dirname(local_path)
         if not os.path.exists(folder):
             os.makedirs(folder)
-        write(path_save, gen_shape[-2], signal_gen)
+        write(local_path, gen_shape[-2], signal_gen)
         upload_blob(bucket_name,local_path,path_save)
 
 # save model

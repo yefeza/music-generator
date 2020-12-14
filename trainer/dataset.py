@@ -6,7 +6,7 @@ from google.cloud import storage
 #descargar de cloud storage
 def download_audio_files(path_dataset, bucket_name):
     storage_client = storage.Client()
-    bucket = storage_client.create_bucket(bucket_name)
+    bucket = storage_client.bucket(bucket_name)
     local_files_list=[]
     for i in range(13):
         source_blob_name = path_dataset + str(i+1) + ".wav"
