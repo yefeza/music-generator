@@ -52,7 +52,7 @@ def generate_latent_points(latent_dim, n_batch):
 # calcuate gradients of prediction
 
 
-def get_gradients(img_input, top_pred_idx, model):
+def get_gradients(img_input, top_pred_idx, model, y_true, penalty):
     """Computes the gradients of outputs w.r.t input image.
 
     Args:
@@ -66,7 +66,7 @@ def get_gradients(img_input, top_pred_idx, model):
 
     with tf.GradientTape() as tape:
         tape.watch(images)
-        preds = model(images)
+        preds = model([images, y_true, penalty])
         top_class = preds[:, top_pred_idx]
 
     grads = tape.gradient(top_class, images)
@@ -82,11 +82,11 @@ def get_gradient_penalty(fake_images, real_images, minibatch_size, d_model, wgan
         mixed_images_out = lerp(real_images, fake_images, mixing_factors)
         g_paded = np.zeros((minibatch_size, 1))
         y=np.ones((minibatch_size,1))*-1
-        w_loss = d_model.train_on_batch([mixed_images_out, y, g_paded])
-        mixed_scores_out = d_model.predict(mixed_images_out)
+        #w_loss = d_model.train_on_batch([mixed_images_out, y, g_paded])
+        mixed_scores_out = d_model.predict([mixed_images_out, y, g_paded])
         mixed_loss = tf.reduce_sum(mixed_scores_out)
         top_pred_idx = tf.argmax(mixed_scores_out[0])
-        mixed_grads = get_gradients(mixed_images_out, top_pred_idx, d_model)[0]
+        mixed_grads = get_gradients(mixed_images_out, top_pred_idx, d_model, y, g_paded)[0]
         mixed_norms = tf.sqrt(tf.reduce_sum(tf.square(mixed_grads)))
         gradient_penalty = tf.square(mixed_norms - wgan_target)
     return gradient_penalty
