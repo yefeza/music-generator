@@ -80,6 +80,9 @@ def get_gradient_penalty(fake_images, real_images, minibatch_size, d_model, wgan
         mixing_factors = tf.compat.v1.random_uniform(
             [minibatch_size, 1, 1, 1], 0.0, 1.0)
         mixed_images_out = lerp(real_images, fake_images, mixing_factors)
+        g_paded = np.zeros((minibatch_size, 1))
+        y=np.ones((minibatch_size,1))*-1
+        w_loss = d_model.train_on_batch([mixed_images_out, y, g_paded])
         mixed_scores_out = d_model.predict(mixed_images_out)
         mixed_loss = tf.reduce_sum(mixed_scores_out)
         top_pred_idx = tf.argmax(mixed_scores_out[0])
