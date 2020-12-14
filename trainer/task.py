@@ -24,7 +24,7 @@ def get_args():
         help='number of times to go through the data, default=20')
     parser.add_argument(
         '--batch-size',
-        default=12,
+        default=24,
         type=int,
         help='number of records to read during each training step, default=128')
     parser.add_argument(
