@@ -91,6 +91,6 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir):
 # save model
 
 def guardar_modelo(keras_model, job_dir, name):
-    export_path = os.path.join(job_dir, 'keras_export_' + name)
-    tf.keras.experimental.export_saved_model(keras_model, export_path)
-    print('Model exported to: {}'.format(export_path))
+  export_path = os.path.join(job_dir, 'keras_export_' + name)
+  tf.keras.experimental.export_saved_model(keras_model, export_path)
+  print('Model exported to: {}'.format(export_path))
