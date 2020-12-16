@@ -130,5 +130,5 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name):
 
 
 def guardar_modelo(keras_model, job_dir, name):
-    export_path = tfcompat.v1.keras.experimental.export_saved_model(keras_model, job_dir + '/keras_export_'+name)
+    export_path = tf.compat.v1.keras.experimental.export_saved_model(keras_model, job_dir + '/keras_export_'+name)
     print('Model exported to: {}'.format(export_path))

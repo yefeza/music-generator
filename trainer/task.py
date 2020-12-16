@@ -20,7 +20,7 @@ def get_args():
     parser.add_argument(
         '--num-epochs',
         type=int,
-        default=20,
+        default=1000,
         help='number of times to go through the data, default=20')
     parser.add_argument(
         '--batch-size',
@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     # lstm shared layer
 
-    lstm_layer = LSTM(100)
+    lstm_layer = Dense(100)
 
     # define discriminators
 
