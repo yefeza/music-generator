@@ -193,7 +193,7 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
     # lstm layer
-    d = Reshape(target_shape=(5*750, 128))(d)
+    d = Flatten()(d)
     wls = lstm_layer(d)
     out_class = Dense(1, activation='linear')(wls)
     # define model
@@ -257,7 +257,7 @@ def define_generator(n_blocks, lstm_layer):
     g = LeakyReLU(alpha=0.2)(g)
     g = Conv2DTranspose(128, (1, 1), padding='same')(g)
     g = LeakyReLU(alpha=0.2)(g)
-    out_image = Reshape(target_shape=(3000, 128))(g)
+    out_image = Flatten()(g)
     g_lstm_layer = lstm_layer(out_image)
     g_lstm_layer.trainable=False
     wls = Reshape(target_shape=(1, 50, 2))(g_lstm_layer)
