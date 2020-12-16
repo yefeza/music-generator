@@ -28,8 +28,8 @@ def G_wgan_acgan(y_true, y_pred):
     with tf.name_scope('LabelPenalty'):
         label_penalty_fakes = tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(
             labels=y_true, logits=fake_scores_out)
-            print(y_true)
-            print(y_pred)
+        print(y_true)
+        print(y_pred)
     loss += label_penalty_fakes * cond_weight
     return loss
 
