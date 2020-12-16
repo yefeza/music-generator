@@ -57,7 +57,8 @@ if __name__ == '__main__':
     # define discriminators
 
     discriminators = define_discriminator(7, lstm_layer)
-
+    discriminators[0][1].summary()
+    
     # define generator
 
     generators = define_generator(7, lstm_layer)
