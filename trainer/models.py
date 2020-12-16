@@ -265,7 +265,7 @@ def define_generator(n_blocks, lstm_layer):
     g = LeakyReLU(alpha=0.2)(g)
     g = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid')(g)
     g = LeakyReLU(alpha=0.2)(g)
-    g = Conv2DTranspose(128, (1, 1), padding='same')(g)
+    g = Conv2DTranspose(160, (1, 1), padding='same')(g)
     g = LeakyReLU(alpha=0.2)(g)
     out_image = Flatten()(g)
     g_lstm_layer = lstm_layer(out_image)
