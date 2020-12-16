@@ -114,7 +114,7 @@ if __name__ == '__main__':
         n_batch=batch_sizes[0]
         train_epochs(g_normal, d_normal, gan_normal, scaled_data, e_norm, n_batch, bucket_name)
         # generate examples
-        generar_ejemplos(g_normal, "first-", 3, job_dir)
+        generar_ejemplos(g_normal, "first-", 3, job_dir, bucket_name)
         # process each level of growth
         for i in range(1, len(g_models)):
             # retrieve models for this level of growth
