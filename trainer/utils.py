@@ -23,7 +23,7 @@ def generate_fake_samples(g_model, latent_dim, half_batch):
     noise = np.random.uniform(-1, 1, (half_batch,
                                       latent_dim[0], latent_dim[1], latent_dim[2]))
     gen_auds = g_model.predict(noise)
-    fake = np.zeros((half_batch, 1))
+    fake = np.ones((half_batch, 1))*-1
     return gen_auds, fake
 
 # prepare real samples
@@ -81,7 +81,7 @@ def get_gradient_penalty(fake_images, real_images, minibatch_size, d_model, wgan
             [minibatch_size, 1, 1, 1], 0.0, 1.0)
         mixed_images_out = lerp(real_images, fake_images, mixing_factors)
         g_paded = np.zeros((minibatch_size, 1))
-        y=np.zeros((minibatch_size,1))
+        y=np.ones((minibatch_size,1))*-1
         #w_loss = d_model.train_on_batch([mixed_images_out, y, g_paded])
         mixed_scores_out = d_model.predict([mixed_images_out, y, g_paded])
         mixed_loss = tf.reduce_sum(mixed_scores_out)
