@@ -25,11 +25,10 @@ def G_wgan_acgan(y_true, y_pred):
     cond_weight = 1.0
     fake_scores_out = y_pred
     loss = -fake_scores_out
-    with tf.name_scope('LabelPenalty'):
-        label_penalty_fakes = tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(
+    label_penalty_fakes = tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(
             labels=y_true, logits=fake_scores_out)
-        print(y_true)
-        print(y_pred)
+    print(y_true)
+    print(y_pred)
     loss += label_penalty_fakes * cond_weight
     return loss
 
@@ -53,13 +52,11 @@ def D_wgangp_acgan(y_true, y_pred, gradient_penalty):
     loss = fake_scores_out - real_scores_out
     gradient_penalty = gradient_penalty[0][0]
     loss += gradient_penalty * (wgan_lambda / (wgan_target**2))
-    with tf.name_scope('EpsilonPenalty'):
-        epsilon_penalty = tf.square(real_scores_out)
+    epsilon_penalty = tf.square(real_scores_out)
     loss += epsilon_penalty * wgan_epsilon
-    with tf.name_scope('LabelPenalty'):
-        label_penalty_reals = tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(
+    label_penalty_reals = tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(
             labels=y_true_real_images, logits=real_scores_out)
-        label_penalty_fakes = tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(
+    label_penalty_fakes = tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(
             labels=y_true_fake_images, logits=fake_scores_out)
     loss += (label_penalty_reals + label_penalty_fakes) * cond_weight
     return loss
