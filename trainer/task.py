@@ -82,7 +82,7 @@ if __name__ == '__main__':
             if fadein:
                 update_fadein([g_model, d_model, gan_model], i, n_steps)
             # prepare real and fake samples
-            for i in range(10):
+            for j in range(10):
                 X_real, y_real = generate_real_samples(dataset, half_batch)
                 X_fake, y_fake = generate_fake_samples(g_model, latent_dim, half_batch)
                 #X_mixed, y_mixed = generate_mixed_samples(X_real, X_fake, half_batch)
