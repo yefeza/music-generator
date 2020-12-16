@@ -132,11 +132,16 @@ def add_discriminator_block(old_model, n_input_layers=3):
     d = LeakyReLU(alpha=0.2)(d)
     d = AveragePooling2D()(d)
     block_new = d
+    first_dense=True
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
         if isinstance(old_model.layers[i], Dense):
-            final_layer = old_model.layers[i](d)
-            break
+            if first_dense:
+                d = old_model.layers[i](d)
+                first_dense=False
+            else:
+                final_layer = old_model.layers[i](d)
+                break
         else:
             d = old_model.layers[i](d)
     # definestraight-throughmodel
@@ -155,10 +160,15 @@ def add_discriminator_block(old_model, n_input_layers=3):
     # fadeinoutputofoldmodelinputlayerwithnewinput
     d = WeightedSum()([block_old, block_new])
     # skiptheinput,1x1andactivationfortheoldmodel
+    first_dense=True
     for i in range(n_input_layers, len(old_model.layers)):
         if isinstance(old_model.layers[i], Dense):
-            final_layer = old_model.layers[i](d)
-            break
+            if first_dense:
+                d = old_model.layers[i](d)
+                first_dense=False
+            else:
+                final_layer = old_model.layers[i](d)
+                break
         else:
             d = old_model.layers[i](d)
     # definestraight-throughmodel
