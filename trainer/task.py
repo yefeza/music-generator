@@ -49,6 +49,8 @@ if __name__ == '__main__':
 
     path_dataset = 'keras_dir/dswav/'
     bucket_name='music-gen'
+    # size of the latent space
+    latent_dim = (1, 5, 2)
 
     # lstm shared layer
 
@@ -64,7 +66,7 @@ if __name__ == '__main__':
 
     # define composite models
 
-    composite = define_composite(discriminators, generators)
+    composite = define_composite(discriminators, generators, latent_dim)
 
     # train a generator and discriminator
 
@@ -147,8 +149,7 @@ if __name__ == '__main__':
                 gen_shape[-3])+"x"+str(gen_shape[-2]))
 
 
-    # size of the latent space
-    latent_dim = (1, 5, 2)
+    
     batch_sizes=[16,8,4,2,2,2,2]
     # load image data
     dataset = get_audio_list(path_dataset, bucket_name)
