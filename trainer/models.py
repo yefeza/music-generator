@@ -17,7 +17,6 @@ from keras import backend
 import tensorflow as tf
 from keras.losses import categorical_crossentropy
 import numpy as np
-import math
 
 # WGAN + ACGAN  funcion loss del generador
 
