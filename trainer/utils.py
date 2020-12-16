@@ -111,7 +111,7 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name):
     gen_auds = g_model(random_latent_vectors)
     for i in range(n_examples):
         signal_gen = gen_auds[i].numpy()
-        signal_gen = np.reshape(signal_gen, new_shape=(gen_shape[-3]*gen_shape[-2]), 2))
+        signal_gen = np.reshape(signal_gen, new_shape=((gen_shape[-3]*gen_shape[-2]), 2))
         signal_gen /= np.max(np.abs(signal_gen), axis=0)
         local_path = "local_gen/" + \
             str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
