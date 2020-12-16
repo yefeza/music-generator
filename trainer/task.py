@@ -20,7 +20,7 @@ def get_args():
     parser.add_argument(
         '--num-epochs',
         type=int,
-        default=100,
+        default=20,
         help='number of times to go through the data, default=20')
     parser.add_argument(
         '--batch-size',
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     # train the generator and discriminator
 
 
-    def train(g_models, d_models, gan_models, dataset, latent_dim, e_norm, e_fadein, n_batch, job_dir):
+    def train(g_models, d_models, gan_models, dataset, latent_dim, e_norm, e_fadein, batch_sizes, job_dir, bucket_name):
         # fit the baseline model
         g_normal, d_normal, gan_normal = g_models[0][0], d_models[0][0], gan_models[0][0]
         # scale dataset to appropriate size
@@ -111,7 +111,8 @@ if __name__ == '__main__':
         scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
         print('Scaled Data', scaled_data.shape)
         # train normal or straight-through models
-        train_epochs(g_normal, d_normal, gan_normal, scaled_data, e_norm, n_batch)
+        n_batch=batch_sizes[0]
+        train_epochs(g_normal, d_normal, gan_normal, scaled_data, e_norm, n_batch, bucket_name)
         # generate examples
         generar_ejemplos(g_normal, "first-", 3, job_dir)
         # process each level of growth
@@ -124,6 +125,7 @@ if __name__ == '__main__':
             gen_shape = g_normal.output_shape
             scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
             print('Scaled Data', scaled_data.shape)
+            n_batch=batch_sizes[i]
             # train fade-in models for next level of growth
             train_epochs(g_fadein, d_fadein, gan_fadein,
                         scaled_data, e_fadein, n_batch, True)
@@ -131,8 +133,8 @@ if __name__ == '__main__':
             train_epochs(g_normal, d_normal, gan_normal,
                         scaled_data, e_norm, n_batch)
             # generate examples
-            generar_ejemplos(g_fadein, "fade-3-", 1, job_dir)
-            generar_ejemplos(g_normal, "norm-3-", 3, job_dir)
+            generar_ejemplos(g_fadein, "fade-3-", 1, job_dir, bucket_name)
+            generar_ejemplos(g_normal, "norm-3-", 3, job_dir, bucket_name)
             # guardar modelos
             guardar_modelo(g_normal, job_dir, str(
                 gen_shape[-3])+"x"+str(gen_shape[-2]))
@@ -140,10 +142,10 @@ if __name__ == '__main__':
 
     # size of the latent space
     latent_dim = (1, 5, 2)
-
+    batch_sizes=[16,8,4,2,2,2,2]
     # load image data
     dataset = get_audio_list(path_dataset, bucket_name)
 
     # train model
     train(generators, discriminators, composite, dataset,
-        latent_dim, NUM_EPOCHS, NUM_EPOCHS, BATCH_SIZE, JOB_DIR)
+        latent_dim, NUM_EPOCHS, NUM_EPOCHS, batch_sizes, JOB_DIR, bucket_name)

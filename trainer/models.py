@@ -258,8 +258,9 @@ def define_generator(n_blocks, lstm_layer):
     g = Conv2DTranspose(128, (1, 1), padding='same')(g)
     g = LeakyReLU(alpha=0.2)(g)
     out_image = Reshape(target_shape=(3000, 128))(g)
-    wls = lstm_layer(out_image)
-    wls = Reshape(target_shape=(1, 50, 2))(wls)
+    g_lstm_layer = lstm_layer(out_image)
+    g_lstm_layer.trainable=False
+    wls = Reshape(target_shape=(1, 50, 2))(g_lstm_layer)
     wls = Conv2DTranspose(2, (1, 15), strides=(1, 15), padding='valid')(wls)
     wls = LeakyReLU(alpha=0.2)(wls)
     wls = Conv2DTranspose(128, (4, 1), strides=(4, 1), padding='valid')(wls)
@@ -288,14 +289,14 @@ def define_composite(discriminators, generators):
     for i in range(len(discriminators)):
         g_models, d_models = generators[i], discriminators[i]
         # straight-through model
-        d_models[0].trainable = False
+        d_models[2].trainable = False
         model1 = Sequential()
         model1.add(g_models[0])
         model1.add(d_models[2])
         model1.compile(loss=G_wgan_acgan, optimizer=Adam(
             lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8))
         # fade-in model
-        d_models[1].trainable = False
+        d_models[3].trainable = False
         model2 = Sequential()
         model2.add(g_models[1])
         model2.add(d_models[3])
