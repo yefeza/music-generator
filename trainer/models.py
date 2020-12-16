@@ -27,10 +27,8 @@ def G_wgan_acgan(y_true, y_pred):
     loss = -fake_scores_out
     label_penalty_fakes = tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(
             labels=y_true, logits=fake_scores_out)
-    print(y_true)
-    print(y_pred)
     loss += label_penalty_fakes * cond_weight
-    return loss
+    return tf.reduce_mean(loss)
 
 # WGANGP + ACGAN  funcion loss del discriminador
 
@@ -59,7 +57,7 @@ def D_wgangp_acgan(y_true, y_pred, gradient_penalty):
     label_penalty_fakes = tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(
             labels=y_true_fake_images, logits=fake_scores_out)
     loss += (label_penalty_reals + label_penalty_fakes) * cond_weight
-    return loss
+    return tf.reduce_mean(loss)
 
 # Weighted Sum Layer para el proceso de fade-in
 
