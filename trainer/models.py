@@ -20,12 +20,17 @@ import numpy as np
 
 # WGAN + ACGAN  funcion loss del generador
 
+def custom_crossentropy(logits, labels):
+    alpha = tf.reduce_max(logits, axis=-1, keepdims=True)
+    log_sum_exp = tf.log(tf.reduce_sum(tf.exp(logits - alpha), axis=-1, keepdims=True)) + alpha
+    cross_entropy = -tf.reduce_sum((logits - log_sum_exp) * labels, axis=-1)
+    return cross_entropy
 
 def G_wgan_acgan(y_true, y_pred):
     cond_weight = 1.0
     fake_scores_out = y_pred
     loss = -fake_scores_out
-    label_penalty_fakes = tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(
+    label_penalty_fakes = custom_crossentropy(
             labels=y_true, logits=fake_scores_out)
     loss += label_penalty_fakes * cond_weight
     return tf.reduce_mean(loss)
@@ -52,9 +57,9 @@ def D_wgangp_acgan(y_true, y_pred, gradient_penalty):
     loss += gradient_penalty * (wgan_lambda / (wgan_target**2))
     epsilon_penalty = tf.square(real_scores_out)
     loss += epsilon_penalty * wgan_epsilon
-    label_penalty_reals = tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(
+    label_penalty_reals = custom_crossentropy(
             labels=y_true_real_images, logits=real_scores_out)
-    label_penalty_fakes = tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(
+    label_penalty_fakes = custom_crossentropy(
             labels=y_true_fake_images, logits=fake_scores_out)
     loss += (label_penalty_reals + label_penalty_fakes) * cond_weight
     return tf.reduce_mean(loss)
@@ -202,7 +207,7 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     # lstm layer
     d = Flatten()(d)
     wls = lstm_layer(d)
-    out_class = Dense(1, activation='selu')(wls)
+    out_class = Dense(1, activation='linear')(wls)
     # define model
     model = Model([in_image, y_true, is_weight], out_class)
     model.add_loss(D_wgangp_acgan(y_true, out_class, is_weight))
