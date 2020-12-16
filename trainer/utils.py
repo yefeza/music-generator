@@ -107,12 +107,11 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
 
 def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name):
     gen_shape = g_model.output_shape
-    noise = np.random.uniform(-1, 1, (n_examples, 1, 5, 2))
-    gen_auds = g_model.predict(noise)
-    gen_auds = np.reshape(gen_auds, newshape=(
-        n_examples, (gen_shape[-3]*gen_shape[-2]), 2))
+    random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
+    gen_auds = g_model(random_latent_vectors)
     for i in range(n_examples):
-        signal_gen = gen_auds[i]
+        signal_gen = gen_auds[i].numpy()
+        signal_gen = np.reshape(signal_gen, new_shape=(gen_shape[-3]*gen_shape[-2]), 2))
         signal_gen /= np.max(np.abs(signal_gen), axis=0)
         local_path = "local_gen/" + \
             str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
