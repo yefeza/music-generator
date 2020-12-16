@@ -113,9 +113,11 @@ if __name__ == '__main__':
         print('Scaled Data', scaled_data.shape)
         # train normal or straight-through models
         n_batch=batch_sizes[0]
-        train_epochs(g_normal, d_normal, gan_normal, scaled_data, e_norm, n_batch, bucket_name)
+        #train_epochs(g_normal, d_normal, gan_normal, scaled_data, e_norm, n_batch, bucket_name)
+        wgan_model=gan_models[0][0]
+        wgan_model.fit(scaled_data, batch_size=n_batch, epochs=e_norm)
         # generate examples
-        generar_ejemplos(g_normal, "first-", 3, job_dir, bucket_name)
+        generar_ejemplos(wgan_model.generator, "first-", 3, job_dir, bucket_name)
         # process each level of growth
         for i in range(1, len(g_models)):
             # retrieve models for this level of growth
@@ -128,14 +130,18 @@ if __name__ == '__main__':
             print('Scaled Data', scaled_data.shape)
             n_batch=batch_sizes[i]
             # train fade-in models for next level of growth
-            train_epochs(g_fadein, d_fadein, gan_fadein,
-                        scaled_data, e_fadein, n_batch, True)
+            wgan_model_fade=gan_models[i][1]
+            wgan_model_fade.fit(scaled_data, batch_size=n_batch, epochs=e_fadein)
+            #train_epochs(g_fadein, d_fadein, gan_fadein,
+            #            scaled_data, e_fadein, n_batch, True)
             # train normal or straight-through models
-            train_epochs(g_normal, d_normal, gan_normal,
-                        scaled_data, e_norm, n_batch)
+            wgan_model_norm=gan_models[i][0]
+            wgan_model_norm.fit(scaled_data, batch_size=n_batch, epochs=e_norm)
+            #train_epochs(g_normal, d_normal, gan_normal,
+            #            scaled_data, e_norm, n_batch)
             # generate examples
-            generar_ejemplos(g_fadein, "fade-3-", 1, job_dir, bucket_name)
-            generar_ejemplos(g_normal, "norm-3-", 3, job_dir, bucket_name)
+            generar_ejemplos(wgan_model_fade.generator, "fade-3-", 1, job_dir, bucket_name)
+            generar_ejemplos(wgan_model_norm.generator, "norm-3-", 3, job_dir, bucket_name)
             # guardar modelos
             guardar_modelo(g_normal, job_dir, str(
                 gen_shape[-3])+"x"+str(gen_shape[-2]))
