@@ -134,7 +134,7 @@ class WGAN(keras.Model):
         for i in range(self.d_steps):
             # Get the latent vector
             random_latent_vectors = tf.random.normal(
-                shape=(batch_size, self.latent_dim)
+                shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2])
             )
             with tf.GradientTape() as tape:
                 # Generate fake images from the latent vector
@@ -160,7 +160,7 @@ class WGAN(keras.Model):
 
         # Train the generator
         # Get the latent vector
-        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim))
+        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
         with tf.GradientTape() as tape:
             # Generate fake images using the generator
             generated_images = self.generator(random_latent_vectors, training=True)
