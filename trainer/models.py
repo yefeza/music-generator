@@ -22,7 +22,7 @@ import numpy as np
 
 def custom_crossentropy(logits, labels):
     alpha = tf.reduce_max(logits, axis=-1, keepdims=True)
-    log_sum_exp = tf.log(tf.reduce_sum(tf.exp(logits - alpha), axis=-1, keepdims=True)) + alpha
+    log_sum_exp = tf.math.log(tf.reduce_sum(tf.exp(logits - alpha), axis=-1, keepdims=True)) + alpha
     cross_entropy = -tf.reduce_sum((logits - log_sum_exp) * labels, axis=-1)
     return cross_entropy
 
