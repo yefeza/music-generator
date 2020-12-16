@@ -6,7 +6,7 @@ import os
 
 #descargar de cloud storage
 def download_audio_files(path_dataset, bucket_name):
-    storage_client = storage.Client()
+    storage_client = storage.Client(project='ia-devs')
     bucket = storage_client.bucket(bucket_name)
     local_files_list=[]
     for i in range(13):
