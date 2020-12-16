@@ -82,17 +82,18 @@ if __name__ == '__main__':
             if fadein:
                 update_fadein([g_model, d_model, gan_model], i, n_steps)
             # prepare real and fake samples
-            X_real, y_real = generate_real_samples(dataset, half_batch)
-            X_fake, y_fake = generate_fake_samples(g_model, latent_dim, half_batch)
-            #X_mixed, y_mixed = generate_mixed_samples(X_real, X_fake, half_batch)
-            X = np.concatenate((X_fake, X_real))
-            y = np.concatenate((y_fake, y_real))
-            # update discriminator model
-            gradient_penalty = get_gradient_penalty(
-                X_fake, X_real, half_batch, d_model)
-            g_paded = np.zeros((half_batch*2, 1))
-            g_paded[0][0] = np.array([gradient_penalty, ])
-            w_loss = d_model.train_on_batch([X, y, g_paded])
+            for i in range(10):
+                X_real, y_real = generate_real_samples(dataset, half_batch)
+                X_fake, y_fake = generate_fake_samples(g_model, latent_dim, half_batch)
+                #X_mixed, y_mixed = generate_mixed_samples(X_real, X_fake, half_batch)
+                X = np.concatenate((X_fake, X_real))
+                y = np.concatenate((y_fake, y_real))
+                # update discriminator model
+                gradient_penalty = get_gradient_penalty(
+                    X_fake, X_real, half_batch, d_model)
+                g_paded = np.zeros((half_batch*2, 1))
+                g_paded[0][0] = np.array([gradient_penalty, ])
+                w_loss = d_model.train_on_batch([X, y, g_paded])
             # update the generator via the discriminator's error
             z_input = generate_latent_points(latent_dim, n_batch)
             y_real2 = np.ones((n_batch, 1))
