@@ -328,7 +328,7 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
         lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8))
     model_comp = Model(in_image, out_class)
     # store model
-    model_list.append([model, model, model_comp, model_comp])
+    model_list.append([model_comp, model_comp])
     # create submodels
     for i in range(1, n_blocks):
         # get prior model without the fade-on
