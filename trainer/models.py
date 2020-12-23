@@ -355,6 +355,7 @@ def add_generator_block(old_model):
     out_image = Conv2DTranspose(2, (1, 1), padding='same')(g)
     # define model
     model1 = Model(old_model.input, out_image)
+    model1.get_layer(name="shared_layer").trainable=False
     # get the output layer from old model
     out_old = old_model.layers[-1]
     # connect the upsampling to the old output layer
@@ -363,6 +364,7 @@ def add_generator_block(old_model):
     merged = WeightedSum()([out_image2, out_image])
     # define model
     model2 = Model(old_model.input, merged)
+    model2.get_layer(name="shared_layer").trainable=False
     return [model1, model2]
 
 # definir los generadores
@@ -383,7 +385,6 @@ def define_generator(n_blocks, lstm_layer):
     g = LeakyReLU(alpha=0.2)(g)
     out_image = Flatten()(g)
     g_lstm_layer = lstm_layer(out_image)
-    g_lstm_layer.trainable=False
     wls = Reshape(target_shape=(1, 50, 2))(g_lstm_layer)
     wls = Conv2DTranspose(2, (1, 15), strides=(1, 15), padding='valid')(wls)
     wls = LeakyReLU(alpha=0.2)(wls)
@@ -392,6 +393,7 @@ def define_generator(n_blocks, lstm_layer):
     wls = Conv2DTranspose(2, (1, 1), padding='same')(wls)
     wls = LeakyReLU(alpha=0.2)(wls)
     model = Model(ly0, wls)
+    model.get_layer(name="shared_layer").trainable=False
     # store model
     model_list.append([model, model])
     # create submodels
@@ -431,7 +433,7 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator=d_models[0],
             generator=g_models[0],
             latent_dim=latent_dim,
-            discriminator_extra_steps=3,
+            discriminator_extra_steps=5,
         )
         wgan1.compile(
             d_optimizer=Adam(
@@ -447,7 +449,7 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator=d_models[1],
             generator=g_models[1],
             latent_dim=latent_dim,
-            discriminator_extra_steps=3,
+            discriminator_extra_steps=5,
         )
         wgan2.compile(
             d_optimizer=Adam(

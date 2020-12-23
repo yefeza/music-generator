@@ -54,15 +54,15 @@ if __name__ == '__main__':
 
     # lstm shared layer
 
-    lstm_layer = Dense(100)
+    shared_layer = Dense(100, name="shared_layer")
 
     # define discriminators
 
-    discriminators = define_discriminator(7, lstm_layer)
+    discriminators = define_discriminator(7, shared_layer)
 
     # define generator
 
-    generators = define_generator(7, lstm_layer)
+    generators = define_generator(7, shared_layer)
 
     # define composite models
 
@@ -123,9 +123,9 @@ if __name__ == '__main__':
         # process each level of growth
         for i in range(1, len(g_models)):
             # retrieve models for this level of growth
-            #[g_normal, g_fadein] = g_models[i]
-            #[d_normal, d_fadein, dcomp_normal, dcomp_fadein] = d_models[i]
-            #[gan_normal, gan_fadein] = gan_models[i]
+            [g_normal, g_fadein] = g_models[i]
+            [d_normal, d_fadein] = d_models[i]
+            [gan_normal, gan_fadein] = gan_models[i]
             # scale dataset to appropriate size
             gen_shape = g_normal.output_shape
             scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
