@@ -125,8 +125,6 @@ if __name__ == '__main__':
         gan_models[0][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm)
         # generate examples
         generar_ejemplos(gan_models[0][0].generator, "first-", 3, job_dir, bucket_name, latent_dim)
-        # guardar modelos
-        guardar_modelo(gan_models[0][0].generator, job_dir, str(gen_shape[-3])+"x"+str(gen_shape[-2]))
         # process each level of growth
         for i in range(1, len(g_models)):
             # retrieve models for this level of growth
@@ -159,9 +157,8 @@ if __name__ == '__main__':
             # generate examples
             generar_ejemplos(gan_models[i][1].generator, "fade-3-", 1, job_dir, bucket_name, latent_dim)
             generar_ejemplos(gan_models[i][0].generator, "norm-3-", 3, job_dir, bucket_name, latent_dim)
-            # guardar modelos
-            guardar_modelo(gan_models[i][0].generator, job_dir, str(
-                gen_shape[-3])+"x"+str(gen_shape[-2]))
+        print("guardando modelo")
+        guardar_modelo(gan_models[6][0].generator,job_dir,"final_100_epoch")
 
 
     
