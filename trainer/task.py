@@ -20,7 +20,7 @@ def get_args():
     parser.add_argument(
         '--num-epochs',
         type=int,
-        default=10,
+        default=100,
         help='number of times to go through the data, default=20')
     parser.add_argument(
         '--batch-size',
@@ -126,7 +126,7 @@ if __name__ == '__main__':
         # generate examples
         generar_ejemplos(gan_models[0][0].generator, "first-", 3, job_dir, bucket_name, latent_dim)
         # guardar modelos
-        guardar_modelo(gan_models[i][0].generator, job_dir, str(gen_shape[-3])+"x"+str(gen_shape[-2]))
+        guardar_modelo(gan_models[0][0].generator, job_dir, str(gen_shape[-3])+"x"+str(gen_shape[-2]))
         # process each level of growth
         for i in range(1, len(g_models)):
             # retrieve models for this level of growth
