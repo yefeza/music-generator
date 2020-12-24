@@ -64,6 +64,21 @@ def D_wgangp_acgan(y_true, y_pred, gradient_penalty):
     loss += (label_penalty_reals + label_penalty_fakes) * cond_weight
     return tf.reduce_mean(loss)
 
+# Weighted Sum Layer para el proceso de fade-in
+
+class WeightedSum(Add):
+    # init with default value
+    def __init__(self, alpha=0.0, **kwargs):
+        super(WeightedSum, self).__init__(**kwargs)
+        self.alpha = backend.variable(alpha, name='ws_alpha')
+
+    # output a weighted sum of inputs
+    def _merge_function(self, inputs):
+        # only supports a weighted sum of two inputs
+        assert (len(inputs) == 2)
+        # ((1-a) * input1) + (a * input2)
+        output = ((1.0 - self.alpha) * inputs[0]) + (self.alpha * inputs[1])
+        return output
 
 class WGAN(keras.Model):
     def __init__(
@@ -71,6 +86,7 @@ class WGAN(keras.Model):
         discriminator,
         generator,
         latent_dim,
+        fade_in=False,
         discriminator_extra_steps=3,
         gp_weight=10.0,
     ):
@@ -80,6 +96,9 @@ class WGAN(keras.Model):
         self.latent_dim = latent_dim
         self.d_steps = discriminator_extra_steps
         self.gp_weight = gp_weight
+        self.actual_step = 0
+        self.total_steps = 0
+        self.fade_in=fade_in
 
     def compile(self, d_optimizer, g_optimizer, d_loss_fn, g_loss_fn):
         super(WGAN, self).compile()
@@ -111,7 +130,22 @@ class WGAN(keras.Model):
         gp = tf.reduce_mean((norm - 1.0) ** 2)
         return gp
 
+    def set_train_steps(self, size):
+        self.train_steps=size
+
     def train_step(self, real_images):
+        #control actual step
+        self.actual_step+=1
+        if self.fade_in:
+            models=[self.discriminator, self.generator]
+            # calculate current alpha (linear from 0 to 1)
+            alpha = self.actual_step / float(self.total_steps - 1)
+            # update the alpha for each model
+            for model in models:
+                for layer in model.layers:
+                    if isinstance(layer, WeightedSum):
+                        backend.set_value(layer.alpha, alpha)
+
         if isinstance(real_images, tuple):
             real_images = real_images[0]
 
@@ -177,26 +211,16 @@ class WGAN(keras.Model):
         )
         return {"d_loss": d_loss, "g_loss": g_loss}
 
-# Weighted Sum Layer para el proceso de fade-in
 
-class WeightedSum(Add):
-    # init with default value
-    def __init__(self, alpha=0.0, **kwargs):
-        super(WeightedSum, self).__init__(**kwargs)
-        self.alpha = backend.variable(alpha, name='ws_alpha')
-
-    # output a weighted sum of inputs
-    def _merge_function(self, inputs):
-        # only supports a weighted sum of two inputs
-        assert (len(inputs) == 2)
-        # ((1-a) * input1) + (a * input2)
-        output = ((1.0 - self.alpha) * inputs[0]) + (self.alpha * inputs[1])
-        return output
 
 # Minibatch Standard Deviation Layer
 
 
 class MinibatchStdDev(Layer):
+    # init with default value
+    def __init__(self, **kwargs):
+        super(MinibatchStdDev, self).__init__(**kwargs)
+
     def call(self, inputs):
         group_size = 4
         x = inputs
@@ -449,6 +473,7 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator=d_models[1],
             generator=g_models[1],
             latent_dim=latent_dim,
+            fade_in=True,
             discriminator_extra_steps=5,
         )
         wgan2.compile(
