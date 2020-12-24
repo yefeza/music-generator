@@ -112,9 +112,12 @@ if __name__ == '__main__':
         # scale dataset to appropriate size
         gen_shape = g_normal.output_shape
         scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
-        print('Scaled Data', scaled_data.shape)
         # train normal or straight-through models
         n_batch=batch_sizes[0]
+        #limit to round sizes data
+        limit=int((scaled_data.shape[0]/n_batch))*n_batch
+        scaled_data=scaled_data[:limit]
+        print('Scaled Data', scaled_data.shape)
         #train_epochs(g_normal, d_normal, gan_normal, scaled_data, e_norm, n_batch, bucket_name)
         wgan_model=gan_models[0][0]
         wgan_model.fit(scaled_data, batch_size=n_batch, epochs=e_norm)
@@ -129,8 +132,12 @@ if __name__ == '__main__':
             # scale dataset to appropriate size
             gen_shape = g_normal.output_shape
             scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
-            print('Scaled Data', scaled_data.shape)
+            #get batch size for model
             n_batch=batch_sizes[i]
+            #limit to round sizes data
+            limit=int((scaled_data.shape[0]/n_batch))*n_batch
+            scaled_data=scaled_data[:limit]
+            print('Scaled Data', scaled_data.shape)
             # train fade-in models for next level of growth
             wgan_model_fade=gan_models[i][1]
             wgan_model_fade.fit(scaled_data, batch_size=n_batch, epochs=e_fadein)
