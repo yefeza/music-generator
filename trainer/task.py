@@ -121,11 +121,12 @@ if __name__ == '__main__':
         scaled_data=scaled_data[:limit]
         print('Scaled Data', scaled_data.shape)
         #train_epochs(g_normal, d_normal, gan_normal, scaled_data, e_norm, n_batch, bucket_name)
-        wgan_model=gan_models[0][0]
-        wgan_model.set_train_steps(n_steps)
-        wgan_model.fit(scaled_data, batch_size=n_batch, epochs=e_norm)
+        gan_models[0][0].set_train_steps(n_steps)
+        gan_models[0][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm)
         # generate examples
-        generar_ejemplos(wgan_model.generator, "first-", 3, job_dir, bucket_name, latent_dim)
+        generar_ejemplos(gan_models[0][0].generator, "first-", 3, job_dir, bucket_name, latent_dim)
+        # guardar modelos
+        guardar_modelo(gan_models[i][0].generator, job_dir, str(gen_shape[-3])+"x"+str(gen_shape[-2]))
         # process each level of growth
         for i in range(1, len(g_models)):
             # retrieve models for this level of growth
@@ -144,24 +145,22 @@ if __name__ == '__main__':
             scaled_data=scaled_data[:limit]
             print('Scaled Data', scaled_data.shape)
             # train fade-in models for next level of growth
-            wgan_model_fade=gan_models[i][1]
-            wgan_model_fade.set_train_steps(n_steps)
-            wgan_model_fade.fit(scaled_data, batch_size=n_batch, epochs=e_fadein)
+            gan_models[i][1].set_train_steps(n_steps)
+            gan_models[i][1].fit(scaled_data, batch_size=n_batch, epochs=e_fadein)
             #train_epochs(g_fadein, d_fadein, gan_fadein,
             #            scaled_data, e_fadein, n_batch, True)
             # train normal or straight-through models
             #total_steps
             n_steps=int((scaled_data.shape[0]/n_batch))*e_norm
-            wgan_model_norm=gan_models[i][0]
-            wgan_model_norm.set_train_steps(n_steps)
-            wgan_model_norm.fit(scaled_data, batch_size=n_batch, epochs=e_norm)
+            gan_models[i][0].set_train_steps(n_steps)
+            gan_models[i][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm)
             #train_epochs(g_normal, d_normal, gan_normal,
             #            scaled_data, e_norm, n_batch)
             # generate examples
-            generar_ejemplos(wgan_model_fade.generator, "fade-3-", 1, job_dir, bucket_name, latent_dim)
-            generar_ejemplos(wgan_model_norm.generator, "norm-3-", 3, job_dir, bucket_name, latent_dim)
+            generar_ejemplos(gan_models[i][1].generator, "fade-3-", 1, job_dir, bucket_name, latent_dim)
+            generar_ejemplos(gan_models[i][0].generator, "norm-3-", 3, job_dir, bucket_name, latent_dim)
             # guardar modelos
-            guardar_modelo(g_normal, job_dir, str(
+            guardar_modelo(gan_models[i][0].generator, job_dir, str(
                 gen_shape[-3])+"x"+str(gen_shape[-2]))
 
 
