@@ -295,7 +295,7 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     out_class = Dense(1, activation='linear')(wls)
     # define model
     model = Model([in_image, y_true, is_weight], out_class)
-    model.add_loss(D_wgangp_acgan(y_true, out_class, is_weight))
+    # model.add_loss(D_wgangp_acgan(y_true, out_class, is_weight))
     # compile model
     model.compile(loss=None, optimizer=Adam(
         lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8))
