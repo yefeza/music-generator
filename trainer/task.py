@@ -68,43 +68,7 @@ if __name__ == '__main__':
 
     composite = define_composite(discriminators, generators, latent_dim)
 
-    # train a generator and discriminator
-
-
-    def train_epochs(g_model, d_model, gan_model, dataset, n_epochs, n_batch, fadein=False):
-        # calculate the number of batches per training epoch
-        bat_per_epo = int(dataset.shape[0] / n_batch)
-        # calculate the number of training iterations
-        n_steps = bat_per_epo * n_epochs
-        # calculate the size of half a batch of samples
-        half_batch = int(n_batch / 2)
-        # manually enumerate epochs
-        for i in range(n_steps):
-            # update alpha for all WeightedSum layers when fading in new blocks
-            if fadein:
-                update_fadein([g_model, d_model, gan_model], i, n_steps)
-            # prepare real and fake samples
-            for j in range(10):
-                X_real, y_real = generate_real_samples(dataset, half_batch)
-                X_fake, y_fake = generate_fake_samples(g_model, latent_dim, half_batch)
-                #X_mixed, y_mixed = generate_mixed_samples(X_real, X_fake, half_batch)
-                X = np.concatenate((X_fake, X_real))
-                y = np.concatenate((y_fake, y_real))
-                # update discriminator model
-                gradient_penalty = get_gradient_penalty(
-                    X_fake, X_real, half_batch, d_model)
-                g_paded = np.zeros((half_batch*2, 1))
-                g_paded[0][0] = np.array([gradient_penalty, ])
-                w_loss = d_model.train_on_batch([X, y, g_paded])
-            # update the generator via the discriminator's error
-            z_input = generate_latent_points(latent_dim, n_batch)
-            y_real2 = np.ones((n_batch, 1))
-            g_loss = gan_model.train_on_batch(z_input, y_real2)
-            # summarize loss on this batch
-            print('>%d, d=%.3f, g=%.3f' % (i+1, w_loss, g_loss))
-
     # train the generator and discriminator
-
 
     def train(g_models, d_models, gan_models, dataset, latent_dim, e_norm, e_fadein, batch_sizes, job_dir, bucket_name):
         # fit the baseline model
@@ -160,8 +124,6 @@ if __name__ == '__main__':
         print("guardando modelo")
         guardar_modelo(gan_models[6][0].generator,job_dir,"final_100_epoch")
 
-
-    
     batch_sizes=[16,8,4,2,2,2,2]
     # load image data
     dataset = get_audio_list(path_dataset, bucket_name)

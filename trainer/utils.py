@@ -6,7 +6,6 @@ from google.cloud import storage
 
 # update alpha for Weighted Sum
 
-
 def update_fadein(models, step, n_steps):
     # calculate current alpha (linear from 0 to 1)
     alpha = step / float(n_steps - 1)
@@ -18,7 +17,6 @@ def update_fadein(models, step, n_steps):
 
 # generate fake samples
 
-
 def generate_fake_samples(g_model, latent_dim, half_batch):
     noise = np.random.uniform(-1, 1, (half_batch,
                                       latent_dim[0], latent_dim[1], latent_dim[2]))
@@ -28,7 +26,6 @@ def generate_fake_samples(g_model, latent_dim, half_batch):
 
 # prepare real samples
 
-
 def generate_real_samples(dataset, half_batch):
     gen_auds = dataset[np.random.randint(0, dataset.shape[0], half_batch)]
     valid = np.ones((half_batch, 1))
@@ -36,60 +33,16 @@ def generate_real_samples(dataset, half_batch):
 
 # helper for Gradient Penalty
 
-
 def lerp(a, b, t):
     with tf.name_scope('Lerp'):
         return a + (b - a) * t
 
 # generate random noises
 
-
 def generate_latent_points(latent_dim, n_batch):
     noise = np.random.uniform(-1, 1, (n_batch,
                                       latent_dim[0], latent_dim[1], latent_dim[2]))
     return noise
-
-# calcuate gradients of prediction
-
-
-def get_gradients(img_input, top_pred_idx, model, y_true, penalty):
-    """Computes the gradients of outputs w.r.t input image.
-
-    Args:
-        img_input: 4D image tensor
-        top_pred_idx: Predicted label for the input image
-
-    Returns:
-        Gradients of the predictions w.r.t img_input
-    """
-    images = tf.cast(img_input, tf.float32)
-
-    with tf.GradientTape() as tape:
-        tape.watch(images)
-        preds = model([images, y_true, penalty])
-        top_class = preds[:, top_pred_idx]
-
-    grads = tape.gradient(top_class, images)
-    return grads
-
-# gets Gradient Penalty value for loss
-
-
-def get_gradient_penalty(fake_images, real_images, minibatch_size, d_model, wgan_target=1.0):
-    with tf.name_scope('GradientPenalty'):
-        mixing_factors = tf.compat.v1.random_uniform(
-            [minibatch_size, 1, 1, 1], 0.0, 1.0)
-        mixed_images_out = lerp(real_images, fake_images, mixing_factors)
-        g_paded = np.zeros((minibatch_size, 1))
-        y=np.ones((minibatch_size,1))
-        #w_loss = d_model.train_on_batch([mixed_images_out, y, g_paded])
-        mixed_scores_out = d_model.predict([mixed_images_out, y, g_paded])
-        mixed_loss = tf.reduce_sum(mixed_scores_out)
-        top_pred_idx = tf.argmax(mixed_scores_out[0])
-        mixed_grads = get_gradients(mixed_images_out, top_pred_idx, d_model, y, g_paded)[0]
-        mixed_norms = tf.sqrt(tf.reduce_sum(tf.square(mixed_grads)))
-        gradient_penalty = tf.square(mixed_norms - wgan_target)
-    return gradient_penalty
 
 # generar datos con el modelo entrenado
 
@@ -126,7 +79,6 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name, latent_d
         upload_blob(bucket_name,local_path,path_save)
 
 # save model
-
 
 def guardar_modelo(keras_model, job_dir, name):
     export_path = tf.compat.v1.keras.experimental.export_saved_model(keras_model, job_dir + '/keras_export_'+name)

@@ -31,7 +31,6 @@ def get_audio_list(path_dataset, bucket_name):
 
 # resamplear y recortar audios
 
-
 def get_resampled_data(seconds, resample_rate, audio_list):
     # resample
     resampled_data = []

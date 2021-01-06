@@ -18,52 +18,6 @@ import tensorflow as tf
 from keras.losses import categorical_crossentropy
 import numpy as np
 
-# WGAN + ACGAN  funcion loss del generador
-
-def custom_crossentropy(logits, labels):
-    alpha = tf.reduce_max(logits, axis=-1, keepdims=True)
-    log_sum_exp = tf.math.log(tf.reduce_sum(tf.exp(logits - alpha), axis=-1, keepdims=True)) + alpha
-    cross_entropy = -tf.reduce_sum((logits - log_sum_exp) * labels, axis=-1)
-    return cross_entropy
-
-def G_wgan_acgan(y_true, y_pred):
-    cond_weight = 1.0
-    fake_scores_out = y_pred
-    loss = -fake_scores_out
-    label_penalty_fakes = custom_crossentropy(
-            labels=y_true, logits=fake_scores_out)
-    loss += label_penalty_fakes * cond_weight
-    return tf.reduce_mean(loss)
-
-# WGANGP + ACGAN  funcion loss del discriminador
-
-
-def D_wgangp_acgan(y_true, y_pred, gradient_penalty):
-    wgan_lambda = 10.0      # Weight for the gradient penalty term.
-    wgan_epsilon = 0.001     # Weight for the epsilon term, \epsilon_{drift}.
-    wgan_target = 1.0       # Target value for gradient magnitudes.
-    cond_weight = 1.0       # Weight of the conditioning terms.
-    half_batch = y_true.get_shape()[0]
-    if half_batch == None:
-        half_batch = 1
-    else:
-        half_batch = half_batch/2
-    y_true_real_images = y_true[:half_batch]
-    y_true_fake_images = y_true[half_batch:]
-    real_scores_out = y_pred[:half_batch]
-    fake_scores_out = y_pred[half_batch:]
-    loss = fake_scores_out - real_scores_out
-    gradient_penalty = gradient_penalty[0][0]
-    loss += gradient_penalty * (wgan_lambda / (wgan_target**2))
-    epsilon_penalty = tf.square(real_scores_out)
-    loss += epsilon_penalty * wgan_epsilon
-    label_penalty_reals = custom_crossentropy(
-            labels=y_true_real_images, logits=real_scores_out)
-    label_penalty_fakes = custom_crossentropy(
-            labels=y_true_fake_images, logits=fake_scores_out)
-    loss += (label_penalty_reals + label_penalty_fakes) * cond_weight
-    return tf.reduce_mean(loss)
-
 # Weighted Sum Layer para el proceso de fade-in
 
 class WeightedSum(Add):
@@ -211,10 +165,7 @@ class WGAN(keras.Model):
         )
         return {"d_loss": d_loss, "g_loss": g_loss}
 
-
-
 # Minibatch Standard Deviation Layer
-
 
 class MinibatchStdDev(Layer):
     # init with default value
@@ -247,7 +198,6 @@ class MinibatchStdDev(Layer):
             y = tf.tile(y, [group_size, 1, s[2], s[3]])
             # [NCHW]  Append as new fmap.
             return tf.concat([x, y], axis=1)
-
 
 # agregar bloque a discriminador para escalar las dimensiones
 
@@ -321,7 +271,6 @@ def add_discriminator_block(old_model, n_input_layers=3):
 
 # definir los discriminadores
 
-
 def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     model_list = list()
     # base model input
@@ -365,7 +314,6 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
 
 # agregar bloque a generador para escalar las dimensiones
 
-
 def add_generator_block(old_model):
     # get the end of the last block
     block_end = old_model.layers[-2].output
@@ -392,7 +340,6 @@ def add_generator_block(old_model):
     return [model1, model2]
 
 # definir los generadores
-
 
 def define_generator(n_blocks, lstm_layer):
     model_list = list()
@@ -429,20 +376,6 @@ def define_generator(n_blocks, lstm_layer):
         # store model
         model_list.append(models)
     return model_list
-
-
-# Define the loss functions for the discriminator,
-# which should be (fake_loss - real_loss).
-# We will add the gradient penalty later to this loss function.
-def discriminator_loss(real_img, fake_img):
-    real_loss = tf.reduce_mean(real_img)
-    fake_loss = tf.reduce_mean(fake_img)
-    return fake_loss - real_loss
-
-
-# Define the loss functions for the generator.
-def generator_loss(fake_img):
-    return -tf.reduce_mean(fake_img)
 
 # define composite models for training generators via discriminators
 
