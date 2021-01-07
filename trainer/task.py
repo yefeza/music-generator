@@ -24,11 +24,6 @@ def get_args():
         default=10,
         help='number of times to go through the data, default=20')
     parser.add_argument(
-        '--prepare-data',
-        type=str,
-        default='n',
-        help='True cuando se desea resamplear y preparar el dataset')
-    parser.add_argument(
         '--batch-size',
         default=24,
         type=int,
@@ -50,7 +45,7 @@ if __name__ == '__main__':
     JOB_DIR = args.job_dir
     NUM_EPOCHS = args.num_epochs
     BATCH_SIZE = args.batch_size
-    prepare_data = args.prepare_data
+    prepare_data = True
 
     # direccion de el dataset
 
@@ -60,7 +55,7 @@ if __name__ == '__main__':
 
     #preparar o descargar el dataset
 
-    if prepare_data=='y':
+    if prepare_data:
         preprocess_dataset(path_dataset,bucket_name,files_format)
     else:
         download_full_dataset(path_dataset,bucket_name,files_format)
