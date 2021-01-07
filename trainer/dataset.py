@@ -3,7 +3,7 @@ import numpy as np
 import librosa
 from google.cloud import storage
 import os
-from utils import *
+from .utils import *
 from scipy.io.wavfile import write
 
 #descargar de cloud storage
