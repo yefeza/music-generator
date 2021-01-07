@@ -4,6 +4,7 @@ from .dataset import *
 from .models import *
 from .utils import *
 import numpy as np
+import matplotlib.pyplot as plt
 
 def get_args():
     """Argument parser.
@@ -22,6 +23,11 @@ def get_args():
         type=int,
         default=10,
         help='number of times to go through the data, default=20')
+    parser.add_argument(
+        '--prepare-data',
+        type=str,
+        default='n',
+        help='True cuando se desea resamplear y preparar el dataset')
     parser.add_argument(
         '--batch-size',
         default=24,
@@ -44,11 +50,21 @@ if __name__ == '__main__':
     JOB_DIR = args.job_dir
     NUM_EPOCHS = args.num_epochs
     BATCH_SIZE = args.batch_size
+    prepare_data = args.prepare_data
 
     # direccion de el dataset
 
-    path_dataset = 'keras_dir/dswav/'
+    path_dataset = 'keras_dir/full-ds/'
     bucket_name='music-gen'
+    files_format='mp3'
+
+    #preparar o descargar el dataset
+
+    if prepare_data=='y':
+        preprocess_dataset(path_dataset,bucket_name,files_format)
+    else:
+        download_full_dataset(path_dataset,bucket_name,files_format)
+
     # size of the latent space
     latent_dim = (1, 5, 2)
 
@@ -68,14 +84,24 @@ if __name__ == '__main__':
 
     composite = define_composite(discriminators, generators, latent_dim)
 
+    def plot_losses(history):
+        plt.plot(history.history['d_loss']*-1, label='Negative D Loss')
+        plt.plot(history.history['g_loss'], label='G Loss')
+        plt.title('Losses History')
+        plt.ylabel('Loses')
+        plt.xlabel('No. epoch')
+        plt.legend(loc="upper left")
+        plt.show()
+
     # train the generator and discriminator
 
-    def train(g_models, d_models, gan_models, dataset, latent_dim, e_norm, e_fadein, batch_sizes, job_dir, bucket_name):
+    def train(g_models, d_models, gan_models, dataset, latent_dim, e_norm, e_fadein, batch_sizes, job_dir, bucket_name, files_format):
         # fit the baseline model
         g_normal, d_normal, gan_normal = g_models[0][0], d_models[0][0], gan_models[0][0]
         # scale dataset to appropriate size
         gen_shape = g_normal.output_shape
-        scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
+        scaled_data = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
+        #scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
         # train normal or straight-through models
         n_batch=batch_sizes[0]
         #limit to round sizes data
@@ -86,7 +112,8 @@ if __name__ == '__main__':
         print('Scaled Data', scaled_data.shape)
         #train_epochs(g_normal, d_normal, gan_normal, scaled_data, e_norm, n_batch, bucket_name)
         gan_models[0][0].set_train_steps(n_steps)
-        gan_models[0][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm)
+        history = gan_models[0][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm)
+        plot_losses(history)
         # generate examples
         generar_ejemplos(gan_models[0][0].generator, "first-", 3, job_dir, bucket_name, latent_dim)
         # process each level of growth
@@ -97,7 +124,8 @@ if __name__ == '__main__':
             [gan_normal, gan_fadein] = gan_models[i]
             # scale dataset to appropriate size
             gen_shape = g_normal.output_shape
-            scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
+            scaled_data = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
+            #scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
             #get batch size for model
             n_batch=batch_sizes[i]
             #limit to round sizes data
@@ -108,14 +136,16 @@ if __name__ == '__main__':
             print('Scaled Data', scaled_data.shape)
             # train fade-in models for next level of growth
             gan_models[i][1].set_train_steps(n_steps)
-            gan_models[i][1].fit(scaled_data, batch_size=n_batch, epochs=e_fadein)
+            history = gan_models[i][1].fit(scaled_data, batch_size=n_batch, epochs=e_fadein)
+            plot_losses(history)
             #train_epochs(g_fadein, d_fadein, gan_fadein,
             #            scaled_data, e_fadein, n_batch, True)
             # train normal or straight-through models
             #total_steps
             n_steps=int((scaled_data.shape[0]/n_batch))*e_norm
             gan_models[i][0].set_train_steps(n_steps)
-            gan_models[i][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm)
+            history = gan_models[i][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm)
+            plot_losses(history)
             #train_epochs(g_normal, d_normal, gan_normal,
             #            scaled_data, e_norm, n_batch)
             # generate examples
@@ -126,8 +156,9 @@ if __name__ == '__main__':
 
     batch_sizes=[16,8,4,2,2,2,2]
     # load image data
-    dataset = get_audio_list(path_dataset, bucket_name)
+    dataset = []
+    #dataset = get_audio_list(path_dataset, bucket_name)
 
     # train model
     train(generators, discriminators, composite, dataset,
-        latent_dim, NUM_EPOCHS, NUM_EPOCHS, batch_sizes, JOB_DIR, bucket_name)
+        latent_dim, NUM_EPOCHS, NUM_EPOCHS, batch_sizes, JOB_DIR, bucket_name, files_format)
