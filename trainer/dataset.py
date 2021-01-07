@@ -95,7 +95,7 @@ def resample_and_save_datasets(path_dataset, bucket_name, files_format):
             directory="local_ds/" + files_format + "/original/" + str(folder+1) + "/"
             for song_dirname in os.listdir(directory):
                 print("Preparando canción...: "+song_dirname)
-                signal, sampling_rate = open_audio(song_dirname)
+                signal, sampling_rate = open_audio(directory+song_dirname)
                 list_resampled_songs=resample_song(dimension, signal, sampling_rate)
                 for i in range(len(list_resampled_songs)):
                     signal = list_resampled_songs[i]
@@ -159,7 +159,7 @@ def read_dataset(dimension, files_format):
     data=[]
     directory="local_ds/" + files_format + "/"+str(dimension[0])+"-"+str(dimension[1])+"/" + str(folder+1) + "/"
     for song_dirname in os.listdir(directory):
-        signal, sampling_rate=open_audio(song_dirname)
+        signal, sampling_rate=open_audio(directory+song_dirname)
         song_reshaped = np.reshape(
                 signal, newshape=(dimension[0], dimension[1], 2))
         data.append(song_reshaped)
