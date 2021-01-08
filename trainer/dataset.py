@@ -78,7 +78,7 @@ def resample_song(dimensiones, audio_array, actual_sample_rate):
 
 #resamplear y cortar el dataset para todas las redes progresivas
 
-def resample_and_save_datasets(path_dataset, bucket_name, files_format):
+def resample_and_save_datasets(path_dataset, bucket_name, files_format, dimension_start, folder_start, song_start, fragment_start):
     dimensiones_progresivas=[
         (4,750),
         (8,1500),
@@ -88,11 +88,14 @@ def resample_and_save_datasets(path_dataset, bucket_name, files_format):
         (128,24000),
         (256,48000)
     ]
+    dimensiones_progresivas=dimensiones_progresivas[dimension_start:len(dimensiones_progresivas)-1]
     for dimension in dimensiones_progresivas:
-        for folder in range(9):
-            cant_fragmentos=1
+        for folder in range(folder_start,9):
+            cant_fragmentos=fragment_start
             directory="local_ds/" + files_format + "/original/" + str(folder+1) + "/"
-            for song_dirname in os.listdir(directory):
+            lista_canciones=os.listdir(directory)
+            lista_canciones=lista_canciones[song_start:len(lista_canciones)-1]
+            for song_dirname in lista_canciones:
                 print("Preparando canción...: "+ directory + song_dirname)
                 try:
                     signal, sampling_rate = open_audio(directory+song_dirname)
@@ -118,14 +121,18 @@ def resample_and_save_datasets(path_dataset, bucket_name, files_format):
                         cant_fragmentos+=1
                 except:
                     pass
-
+            #restablecer para la siguiente carpeta
+            song_start=0
+        #restablecer para la siguiente dimension
+        folder_start=0
+        fragment_start=1
 #preparar dataset y guardar datos preparados
 
-def preprocess_dataset(path_dataset, bucket_name, files_format, download_data):
+def preprocess_dataset(path_dataset, bucket_name, files_format, download_data, dimension_start, folder_start, song_start, fragment_start):
     audio_list = []
     if download_data:
         download_originals(path_dataset,bucket_name, files_format)
-    resample_and_save_datasets(path_dataset,bucket_name, files_format)
+    resample_and_save_datasets(path_dataset,bucket_name, files_format, dimension_start, folder_start, song_start, fragment_start)
 
 #descargar dataset completo de cloud storage (Cuando ya hay un dataset preparado)
 
@@ -143,7 +150,7 @@ def download_full_dataset(path_dataset, bucket_name, files_format):
     ]
     for dimension in dimensiones_progresivas:
         for folder in range(9):
-            for song in range(1000):
+            for song in range(15000):
                 try:
                     source_blob_name = path_dataset + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(song+1) + "."+ files_format
                     blob = bucket.blob(source_blob_name)
@@ -153,7 +160,7 @@ def download_full_dataset(path_dataset, bucket_name, files_format):
                         os.makedirs(dest_folder)
                     blob.download_to_filename(dest_file)
                 except:
-                    song=1000
+                    song=15000
 
 #read dataset by dimension
 
