@@ -101,16 +101,16 @@ def resample_and_save_datasets(path_dataset, bucket_name, files_format):
                     signal = list_resampled_songs[i]
                     signal /= np.max(np.abs(signal), axis=0)
                     #guardar en mp3
-                    local_path = "local_ds/mp3/"+ str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(cant_fragmentos+1) + ".mp3"
-                    path_upload = path_dataset + "mp3/"+ str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(cant_fragmentos+1) + ".mp3"
+                    local_path = "local_ds/mp3/"+ str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(cant_fragmentos) + ".mp3"
+                    path_upload = path_dataset + "mp3/"+ str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(cant_fragmentos) + ".mp3"
                     folder=os.path.dirname(local_path)
                     if not os.path.exists(folder):
                         os.makedirs(folder)
                     write(local_path, dimension[1], signal)
                     upload_blob(bucket_name, local_path, path_upload)
                     #guardar en wav
-                    local_path = "local_ds/wav/"+ str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(cant_fragmentos+1) + ".wav"
-                    path_upload = path_dataset + "wav/"+ str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(cant_fragmentos+1) + ".wav"
+                    local_path = "local_ds/wav/"+ str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(cant_fragmentos) + ".wav"
+                    path_upload = path_dataset + "wav/"+ str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(cant_fragmentos) + ".wav"
                     folder=os.path.dirname(local_path)
                     if not os.path.exists(folder):
                         os.makedirs(folder)
@@ -141,7 +141,7 @@ def download_full_dataset(path_dataset, bucket_name, files_format):
     ]
     for dimension in dimensiones_progresivas:
         for folder in range(9):
-            for song in range(200):
+            for song in range(1000):
                 try:
                     source_blob_name = path_dataset + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(song+1) + "."+ files_format
                     blob = bucket.blob(source_blob_name)
@@ -151,7 +151,7 @@ def download_full_dataset(path_dataset, bucket_name, files_format):
                         os.makedirs(dest_folder)
                     blob.download_to_filename(dest_file)
                 except:
-                    song=200
+                    song=1000
 
 #read dataset by dimension
 
