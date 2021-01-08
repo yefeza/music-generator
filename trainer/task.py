@@ -52,13 +52,15 @@ if __name__ == '__main__':
     path_dataset = 'keras_dir/full-ds/'
     bucket_name='music-gen'
     files_format='mp3'
+    download_data=False
 
     #preparar o descargar el dataset
 
     if prepare_data:
-        preprocess_dataset(path_dataset,bucket_name,files_format)
+        preprocess_dataset(path_dataset,bucket_name,files_format, donwload_data)
     else:
-        download_full_dataset(path_dataset,bucket_name,files_format)
+        if donwload_data:
+            download_full_dataset(path_dataset,bucket_name,files_format)
 
     # size of the latent space
     latent_dim = (1, 5, 2)

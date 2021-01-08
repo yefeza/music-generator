@@ -120,9 +120,10 @@ def resample_and_save_datasets(path_dataset, bucket_name, files_format):
 
 #preparar dataset y guardar datos preparados
 
-def preprocess_dataset(path_dataset, bucket_name, files_format):
+def preprocess_dataset(path_dataset, bucket_name, files_format, download_data):
     audio_list = []
-    download_originals(path_dataset,bucket_name, files_format)
+    if download_data:
+        download_originals(path_dataset,bucket_name, files_format)
     resample_and_save_datasets(path_dataset,bucket_name, files_format)
 
 #descargar dataset completo de cloud storage (Cuando ya hay un dataset preparado)
