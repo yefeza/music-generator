@@ -57,7 +57,7 @@ if __name__ == '__main__':
     #preparar o descargar el dataset
 
     if prepare_data:
-        preprocess_dataset(path_dataset,bucket_name,files_format, donwload_data)
+        preprocess_dataset(path_dataset,bucket_name,files_format, download_data)
     else:
         if donwload_data:
             download_full_dataset(path_dataset,bucket_name,files_format)
