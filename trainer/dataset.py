@@ -88,13 +88,12 @@ def resample_and_save_datasets(path_dataset, bucket_name, files_format):
         (128,24000),
         (256,48000)
     ]
-    songs_by_folder=[79, 39, 31, 72, 37, 39, 21, 186, 58]
     for dimension in dimensiones_progresivas:
         for folder in range(9):
             cant_fragmentos=1
             directory="local_ds/" + files_format + "/original/" + str(folder+1) + "/"
             for song_dirname in os.listdir(directory):
-                print("Preparando canción...: "+song_dirname)
+                print("Preparando canción...: "+ directory + song_dirname)
                 signal, sampling_rate = open_audio(directory+song_dirname)
                 list_resampled_songs=resample_song(dimension, signal, sampling_rate)
                 for i in range(len(list_resampled_songs)):
