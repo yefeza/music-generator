@@ -103,17 +103,17 @@ def resample_and_save_datasets(path_dataset, bucket_name, files_format):
                     #guardar en mp3
                     local_path = "local_ds/mp3/"+ str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(cant_fragmentos) + ".mp3"
                     path_upload = path_dataset + "mp3/"+ str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(cant_fragmentos) + ".mp3"
-                    folder=os.path.dirname(local_path)
-                    if not os.path.exists(folder):
-                        os.makedirs(folder)
+                    folder_name=os.path.dirname(local_path)
+                    if not os.path.exists(folder_name):
+                        os.makedirs(folder_name)
                     write(local_path, dimension[1], signal)
                     upload_blob(bucket_name, local_path, path_upload)
                     #guardar en wav
                     local_path = "local_ds/wav/"+ str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(cant_fragmentos) + ".wav"
                     path_upload = path_dataset + "wav/"+ str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(cant_fragmentos) + ".wav"
-                    folder=os.path.dirname(local_path)
-                    if not os.path.exists(folder):
-                        os.makedirs(folder)
+                    folder_name=os.path.dirname(local_path)
+                    if not os.path.exists(folder_name):
+                        os.makedirs(folder_name)
                     write(local_path, dimension[1], signal)
                     upload_blob(bucket_name, local_path, path_upload)
                     cant_fragmentos+=1
