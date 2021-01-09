@@ -88,13 +88,13 @@ def resample_and_save_datasets(path_dataset, bucket_name, files_format, dimensio
         (128,24000),
         (256,48000)
     ]
-    dimensiones_progresivas=dimensiones_progresivas[dimension_start:len(dimensiones_progresivas)-1]
+    dimensiones_progresivas=dimensiones_progresivas[dimension_start:len(dimensiones_progresivas)]
     for dimension in dimensiones_progresivas:
         for folder in range(folder_start,9):
             cant_fragmentos=fragment_start
             directory="local_ds/" + files_format + "/original/" + str(folder+1) + "/"
             lista_canciones=os.listdir(directory)
-            lista_canciones=lista_canciones[song_start:len(lista_canciones)-1]
+            lista_canciones=lista_canciones[song_start:len(lista_canciones)]
             for song_dirname in lista_canciones:
                 print("Preparando canción...: "+ directory + song_dirname)
                 try:
