@@ -53,10 +53,10 @@ if __name__ == '__main__':
     bucket_name='music-gen'
     files_format='mp3'
     download_data=False
-    dimension_start=1
+    dimension_start=5
     folder_start=7
-    song_start=152
-    fragment_start=4571
+    song_start=75
+    fragment_start=108
 
 
     #preparar o descargar el dataset
