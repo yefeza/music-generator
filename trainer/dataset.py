@@ -166,12 +166,13 @@ def download_full_dataset(path_dataset, bucket_name, files_format):
 
 def read_dataset(dimension, files_format):
     data=[]
-    directory="local_ds/" + files_format + "/"+str(dimension[0])+"-"+str(dimension[1])+"/" + str(folder+1) + "/"
-    for song_dirname in os.listdir(directory):
-        signal, sampling_rate=open_audio(directory+song_dirname)
-        song_reshaped = np.reshape(
-                signal, newshape=(dimension[0], dimension[1], 2))
-        data.append(song_reshaped)
+    for folder in range(9):
+        directory="local_ds/" + files_format + "/"+str(dimension[0])+"-"+str(dimension[1])+"/" + str(folder+1) + "/"
+        for song_dirname in os.listdir(directory):
+            signal, sampling_rate=open_audio(directory+song_dirname)
+            song_reshaped = np.reshape(
+                    signal, newshape=(dimension[0], dimension[1], 2))
+            data.append(song_reshaped)
     return np.array(data)
 
 
