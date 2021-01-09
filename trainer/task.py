@@ -52,11 +52,11 @@ if __name__ == '__main__':
     path_dataset = 'keras_dir/full-ds/'
     bucket_name='music-gen'
     files_format='mp3'
-    download_data=False
+    download_data=True
     dimension_start=6
-    folder_start=0
-    song_start=1
-    fragment_start=1
+    folder_start=7
+    song_start=45
+    fragment_start=10
 
 
     #preparar o descargar el dataset
