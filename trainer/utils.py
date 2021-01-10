@@ -92,4 +92,4 @@ class GANMonitor(keras.callbacks.Callback):
         self.bucket_name = "music-gen"
 
     def on_epoch_end(self, epoch, logs=None):
-        generar_ejemplos(self.generator, "epoch-"+str(epoch),self.num_examples, None, self.bucket_name, self.latent_dim)
+        generar_ejemplos(self.model.generator, "epoch-"+str(epoch),self.num_examples, None, self.bucket_name, self.latent_dim)
