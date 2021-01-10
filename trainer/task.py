@@ -68,24 +68,29 @@ if __name__ == '__main__':
             #download_full_dataset(path_dataset,bucket_name,files_format)
             pass
 
+    # Create a MirroredStrategy.
+    strategy = tf.distribute.MirroredStrategy()
+    print("Number of devices: {}".format(strategy.num_replicas_in_sync))
+
     # size of the latent space
     latent_dim = (1, 5, 2)
 
-    # lstm shared layer
+    with strategy.scope():
+        # shared layer
 
-    shared_layer = Dense(100, name="shared_layer")
+        shared_layer = Dense(100, name="shared_layer")
 
-    # define discriminators
+        # define discriminators
 
-    discriminators = define_discriminator(7, shared_layer)
+        discriminators = define_discriminator(7, shared_layer)
 
-    # define generator
+        # define generator
 
-    generators = define_generator(7, shared_layer)
+        generators = define_generator(7, shared_layer)
 
-    # define composite models
+        # define composite models
 
-    composite = define_composite(discriminators, generators, latent_dim)
+        composite = define_composite(discriminators, generators, latent_dim)
 
     def plot_losses(history):
         plt.plot(history.history['d_loss']*-1, label='Negative D Loss')
