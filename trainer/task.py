@@ -64,7 +64,7 @@ if __name__ == '__main__':
     if prepare_data:
         preprocess_dataset(path_dataset,bucket_name,files_format, download_data, dimension_start, folder_start, song_start, fragment_start)
     else:
-        if donwload_data:
+        if download_data:
             download_full_dataset(path_dataset,bucket_name,files_format)
 
     # size of the latent space
