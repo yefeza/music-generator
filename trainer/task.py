@@ -21,7 +21,7 @@ def get_args():
     parser.add_argument(
         '--num-epochs',
         type=int,
-        default=20,
+        default=10,
         help='number of times to go through the data, default=20')
     parser.add_argument(
         '--batch-size',
@@ -172,7 +172,7 @@ if __name__ == '__main__':
     dataset = []
     #dataset = get_audio_list(path_dataset, bucket_name)
     e_norm=NUM_EPOCHS
-    e_fadein=e_norm/2
+    e_fadein=int(e_norm/2)
     # train model
     train(generators, discriminators, composite, dataset,
         latent_dim, e_norm, e_fadein, batch_sizes, JOB_DIR, bucket_name, files_format, path_dataset, download_data)
