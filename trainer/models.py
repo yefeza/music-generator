@@ -403,7 +403,7 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator=d_models[0],
             generator=g_models[0],
             latent_dim=latent_dim,
-            discriminator_extra_steps=1,
+            discriminator_extra_steps=2,
         )
         wgan1.compile(
             d_optimizer=Adam(
@@ -420,7 +420,7 @@ def define_composite(discriminators, generators, latent_dim):
             generator=g_models[1],
             latent_dim=latent_dim,
             fade_in=True,
-            discriminator_extra_steps=1,
+            discriminator_extra_steps=2,
         )
         wgan2.compile(
             d_optimizer=Adam(
