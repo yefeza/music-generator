@@ -3,6 +3,7 @@ from scipy.io.wavfile import write
 import numpy as np
 import os
 from google.cloud import storage
+import keras
 
 # update alpha for Weighted Sum
 
@@ -83,3 +84,12 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name, latent_d
 def guardar_modelo(keras_model, job_dir, name):
     export_path = tf.compat.v1.keras.experimental.export_saved_model(keras_model, job_dir + '/keras_export_'+name)
     print('Model exported to: {}'.format(export_path))
+
+class GANMonitor(keras.callbacks.Callback):
+    def __init__(self, num_examples=10, latent_dim=(1, 5, 2)):
+        self.num_examples = num_examples
+        self.latent_dim = latent_dim
+        self.bucket_name = "music-gen"
+
+    def on_epoch_end(self, epoch, logs=None):
+        generar_ejemplos(self.generator, "epoch-"+str(epoch),self.num_examples, None, self.bucket_name, self.latent_dim)

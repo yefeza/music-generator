@@ -122,7 +122,8 @@ if __name__ == '__main__':
         print('Scaled Data', scaled_data.shape)
         #train_epochs(g_normal, d_normal, gan_normal, scaled_data, e_norm, n_batch, bucket_name)
         gan_models[0][0].set_train_steps(n_steps)
-        history = gan_models[0][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm)
+        cbk=GANMonitor()
+        history = gan_models[0][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
         plot_losses(history)
         # generate examples
         generar_ejemplos(gan_models[0][0].generator, "first-", 3, job_dir, bucket_name, latent_dim)
@@ -148,7 +149,7 @@ if __name__ == '__main__':
             print('Scaled Data', scaled_data.shape)
             # train fade-in models for next level of growth
             gan_models[i][1].set_train_steps(n_steps)
-            history = gan_models[i][1].fit(scaled_data, batch_size=n_batch, epochs=e_fadein)
+            history = gan_models[i][1].fit(scaled_data, batch_size=n_batch, epochs=e_fadein, callbacks=[cbk])
             plot_losses(history)
             #train_epochs(g_fadein, d_fadein, gan_fadein,
             #            scaled_data, e_fadein, n_batch, True)
@@ -156,7 +157,7 @@ if __name__ == '__main__':
             #total_steps
             n_steps=int((scaled_data.shape[0]/n_batch))*e_norm
             gan_models[i][0].set_train_steps(n_steps)
-            history = gan_models[i][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm)
+            history = gan_models[i][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
             plot_losses(history)
             #train_epochs(g_normal, d_normal, gan_normal,
             #            scaled_data, e_norm, n_batch)
@@ -170,7 +171,8 @@ if __name__ == '__main__':
     # load image data
     dataset = []
     #dataset = get_audio_list(path_dataset, bucket_name)
-
+    e_norm=NUM_EPOCHS
+    e_fadein=e_norm/2
     # train model
     train(generators, discriminators, composite, dataset,
-        latent_dim, NUM_EPOCHS, NUM_EPOCHS, batch_sizes, JOB_DIR, bucket_name, files_format, path_dataset, download_data)
+        latent_dim, e_norm, e_fadein, batch_sizes, JOB_DIR, bucket_name, files_format, path_dataset, download_data)
