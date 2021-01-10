@@ -162,6 +162,25 @@ def download_full_dataset(path_dataset, bucket_name, files_format):
                 except:
                     song=15000
 
+#descargar dataset completo de cloud storage (Cuando ya hay un dataset preparado)
+
+def download_diension_dataset(path_dataset, bucket_name, files_format, dimension):
+    storage_client = storage.Client(project='ia-devs')
+    bucket = storage_client.bucket(bucket_name)
+    limit_songs=10
+    for folder in range(9):
+        for song in range(limit_songs):
+            try:
+                source_blob_name = path_dataset + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(song+1) + "."+ files_format
+                blob = bucket.blob(source_blob_name)
+                dest_file="local_ds/" + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(song+1) + "."+ files_format
+                dest_folder="local_ds/" + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/"
+                if not os.path.exists(dest_folder):
+                    os.makedirs(dest_folder)
+                blob.download_to_filename(dest_file)
+            except:
+                song=limit_songs
+
 #read dataset by dimension
 
 def read_dataset(dimension, files_format):

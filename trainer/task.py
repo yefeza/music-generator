@@ -65,7 +65,8 @@ if __name__ == '__main__':
         preprocess_dataset(path_dataset,bucket_name,files_format, download_data, dimension_start, folder_start, song_start, fragment_start)
     else:
         if download_data:
-            download_full_dataset(path_dataset,bucket_name,files_format)
+            #download_full_dataset(path_dataset,bucket_name,files_format)
+            pass
 
     # size of the latent space
     latent_dim = (1, 5, 2)
@@ -97,11 +98,13 @@ if __name__ == '__main__':
 
     # train the generator and discriminator
 
-    def train(g_models, d_models, gan_models, dataset, latent_dim, e_norm, e_fadein, batch_sizes, job_dir, bucket_name, files_format):
+    def train(g_models, d_models, gan_models, dataset, latent_dim, e_norm, e_fadein, batch_sizes, job_dir, bucket_name, files_format, path_dataset, download_data):
         # fit the baseline model
         g_normal, d_normal, gan_normal = g_models[0][0], d_models[0][0], gan_models[0][0]
         # scale dataset to appropriate size
         gen_shape = g_normal.output_shape
+        if download_data:
+            download_diension_dataset(path_dataset, bucket_name, files_format, (gen_shape[-3], gen_shape[-2]))
         scaled_data = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
         #scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
         # train normal or straight-through models
@@ -126,6 +129,8 @@ if __name__ == '__main__':
             [gan_normal, gan_fadein] = gan_models[i]
             # scale dataset to appropriate size
             gen_shape = g_normal.output_shape
+            if download_data:
+                download_diension_dataset(path_dataset, bucket_name, files_format, (gen_shape[-3], gen_shape[-2]))
             scaled_data = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
             #scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
             #get batch size for model
@@ -163,4 +168,4 @@ if __name__ == '__main__':
 
     # train model
     train(generators, discriminators, composite, dataset,
-        latent_dim, NUM_EPOCHS, NUM_EPOCHS, batch_sizes, JOB_DIR, bucket_name, files_format)
+        latent_dim, NUM_EPOCHS, NUM_EPOCHS, batch_sizes, JOB_DIR, bucket_name, files_format, path_dataset, download_data)
