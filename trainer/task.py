@@ -45,7 +45,7 @@ if __name__ == '__main__':
     JOB_DIR = args.job_dir
     NUM_EPOCHS = args.num_epochs
     BATCH_SIZE = args.batch_size
-    prepare_data = True
+    prepare_data = False
 
     # direccion de el dataset
 
