@@ -101,10 +101,15 @@ def guardar_modelo(keras_model, job_dir, name):
     export_path = tf.compat.v1.keras.experimental.export_saved_model(keras_model, job_dir + '/keras_export_'+name)
     print('Model exported to: {}'.format(export_path))
 
-def guardar_checkpoint(keras_model, job_dir, dimension, epoch):
+def guardar_checkpoint(keras_model, bucket_name, dimension, epoch):
+    storage_client = storage.Client(project='ia-devs')
+    bucket = storage_client.bucket(bucket_name)
     path=job_dir + '/ckeckpoints/'+dimension[0]+"-"+dimension[1]+"/epoch"+str(epoch)+"/"
-    export_path = tf.compat.v1.keras.experimental.export_saved_model(keras_model, path)
-    keras_model = tf.compat.v1.keras.experimental.load_from_saved_model(path)
+    file_name=job_dir + '/ckeckpoints/'+dimension[0]+"-"+dimension[1]+"/epoch"+str(epoch)+"/model.h5"
+    if not os.path.exists(path):
+            os.makedirs(path)
+    keras_model.save(file_name)
+    upload_blob(bucket_name,file_name,file_name)
 
 class GANMonitor(keras.callbacks.Callback):
     def __init__(self, job_dir, evaluador, num_examples=1000, latent_dim=(1, 5, 2)):

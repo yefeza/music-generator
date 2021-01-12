@@ -17,6 +17,8 @@ from keras import backend
 import tensorflow as tf
 from keras.losses import categorical_crossentropy
 import numpy as np
+# import from utils
+from .utils import upload_blob
 
 # agregar bloque a evaluador para escalar las dimensiones
 
@@ -87,8 +89,11 @@ def define_evaluator(n_blocks, input_shape=(4, 750, 2)):
 
 #descargar evaluadores
 
-def load_evaluator(dimension, job_dir, download, train_dataset, epochs):
-    path = job_dir + "/evaluadores/" + str(dimension[0]) + "-" + str(dimension[1])
+def load_evaluator(dimension, bucket_name, download, train_dataset, epochs):
+    storage_client = storage.Client(project='ia-devs')
+    bucket = storage_client.bucket(bucket_name)
+    path = "evaluadores/" + str(dimension[0]) + "-" + str(dimension[1])
+    file_name = "evaluadores/" + str(dimension[0]) + "-" + str(dimension[1]) + "model.h5"
     if download:
         model=tf.compat.v1.keras.experimental.load_from_saved_model(path)
         return model
@@ -112,8 +117,12 @@ def load_evaluator(dimension, job_dir, download, train_dataset, epochs):
         y=train_dataset[1]
         model.compile(optimizer="Adam", loss='categorical_crossentropy', metrics=["accuracy"])
         model.fit(X,y,epochs=epochs, validation_split=0.2)
-        export_path = tf.compat.v1.keras.experimental.export_saved_model(model, path)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        model.save(file_name)
+        upload_blob(bucket_name,file_name,file_name)
         print('Model exported to: {}'.format(export_path))
+        model=tf.compat.v1.keras.experimental.load_from_saved_model(path)
         return model
 
 # calculate the inception score for p(y|x)
