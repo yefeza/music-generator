@@ -95,7 +95,7 @@ def load_evaluator(dimension, bucket_name, download, train_dataset, epochs):
     storage_client = storage.Client(project='ia-devs')
     bucket = storage_client.bucket(bucket_name)
     path = "evaluadores/" + str(dimension[0]) + "-" + str(dimension[1])
-    file_name = "evaluadores/" + str(dimension[0]) + "-" + str(dimension[1]) + "model.h5"
+    file_name = "evaluadores/" + str(dimension[0]) + "-" + str(dimension[1]) + "/model.h5"
     if download:
         model=tf.compat.v1.keras.experimental.load_from_saved_model(path)
         return model
