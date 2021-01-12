@@ -4,6 +4,7 @@ import os
 from google.cloud import storage
 import keras
 import tensorflow as tf
+from .evaluacion import calculate_inception_score
 
 # update alpha for Weighted Sum
 
