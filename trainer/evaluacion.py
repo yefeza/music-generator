@@ -123,8 +123,6 @@ def load_evaluator(dimension, bucket_name, download, train_dataset, epochs):
             os.makedirs(path)
         model.save(file_name)
         upload_blob(bucket_name,file_name,file_name)
-        print('Model exported to: {}'.format(export_path))
-        model=tf.compat.v1.keras.experimental.load_from_saved_model(path)
         return model
 
 # calculate the inception score for p(y|x)
