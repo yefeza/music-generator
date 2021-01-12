@@ -110,7 +110,7 @@ def load_evaluator(dimension, job_dir, download, train_dataset, epochs):
             model=evaluadores[6]
         X=train_dataset[0]
         y=train_dataset[1]
-        model.compile(optimizer="Adam", loss='sparse_categorical_crossentropy', metrics=["accuracy", "loss"])
+        model.compile(optimizer="Adam", loss='categorical_crossentropy', metrics=["accuracy"])
         model.fit(X,y,epochs=epochs, validation_split=0.2)
         export_path = tf.compat.v1.keras.experimental.export_saved_model(model, path)
         print('Model exported to: {}'.format(export_path))
