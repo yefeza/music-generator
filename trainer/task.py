@@ -52,7 +52,7 @@ if __name__ == '__main__':
     path_dataset = 'keras_dir/full-ds/'
     bucket_name='music-gen'
     files_format='mp3'
-    download_data=False
+    download_data=True
     dimension_start=6
     folder_start=7
     song_start=45
@@ -113,7 +113,7 @@ if __name__ == '__main__':
             download_diension_dataset(path_dataset, bucket_name, files_format, (gen_shape[-3], gen_shape[-2]))
         scaled_data, y_evaluator = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
         #cargar evaluador
-        evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), job_dir,download_evaluators, (scaled_data, y_evaluator), e_norm)
+        evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name,download_evaluators, (scaled_data, y_evaluator), e_norm)
         # train normal or straight-through models
         n_batch=batch_sizes[0]
         #limit to round sizes data
@@ -141,7 +141,7 @@ if __name__ == '__main__':
                 download_diension_dataset(path_dataset, bucket_name, files_format, (gen_shape[-3], gen_shape[-2]))
             scaled_data, y_evaluator = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
             #cargar evaluador
-            evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), job_dir,download_evaluators, (scaled_data, y_evaluator), e_norm)
+            evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name,download_evaluators, (scaled_data, y_evaluator), e_norm)
             #scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
             #get batch size for model
             n_batch=batch_sizes[i]
