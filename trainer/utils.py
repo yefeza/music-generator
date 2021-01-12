@@ -3,6 +3,7 @@ import numpy as np
 import os
 from google.cloud import storage
 import keras
+import tensorflow as tf
 
 # update alpha for Weighted Sum
 
