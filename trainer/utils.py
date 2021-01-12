@@ -119,8 +119,8 @@ def guardar_modelo(keras_model, job_dir, name):
 def guardar_checkpoint(keras_model, bucket_name, dimension, epoch):
     storage_client = storage.Client(project='ia-devs')
     bucket = storage_client.bucket(bucket_name)
-    path='ckeckpoints/'+dimension[0]+"-"+dimension[1]+"/epoch"+str(epoch)+"/"
-    file_name='ckeckpoints/'+dimension[0]+"-"+dimension[1]+"/epoch"+str(epoch)+"/model.h5"
+    path='ckeckpoints/'+str(dimension[0])+"-"+str(dimension[1])+"/epoch"+str(epoch)+"/"
+    file_name='ckeckpoints/'+str(dimension[0])+"-"+str(dimension[1])+"/epoch"+str(epoch)+"/model.h5"
     if not os.path.exists(path):
             os.makedirs(path)
     keras_model.save(file_name)
