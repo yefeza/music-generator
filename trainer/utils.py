@@ -104,6 +104,7 @@ def guardar_modelo(keras_model, job_dir, name):
 def guardar_checkpoint(keras_model, job_dir, dimension, epoch):
     path=job_dir + '/ckeckpoints/'+dimension[0]+"-"+dimension[1]+"/epoch"+str(epoch)+"/"
     export_path = tf.compat.v1.keras.experimental.export_saved_model(keras_model, path)
+    keras_model = tf.compat.v1.keras.experimental.load_from_saved_model(path)
 
 class GANMonitor(keras.callbacks.Callback):
     def __init__(self, job_dir, evaluador, num_examples=1000, latent_dim=(1, 5, 2)):
