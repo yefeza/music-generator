@@ -99,12 +99,11 @@ def load_evaluator(dimension, bucket_name, download, train_dataset, epochs):
     if download:
         storage_client = storage.Client(project='ia-devs')
         bucket = storage_client.bucket(bucket_name)
-        blob = bucket.blob(source_blob_name)
-        folder=os.pat
-        if not os.path.exists("local_ds/"):
-            os.makedirs("local_ds/")
-        blob.download_to_filename(dest_file)
-        model=keras.models.load_model('path_to_my_model.h5')
+        blob = bucket.blob(file_name)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        blob.download_to_filename(file_name)
+        model=keras.models.load_model(file_name)
         return model
     else:
         evaluadores=define_evaluator(7)
