@@ -19,6 +19,8 @@ from keras.losses import categorical_crossentropy
 import numpy as np
 # import from utils
 from .utils import upload_blob
+from google.cloud import storage
+import os
 
 # agregar bloque a evaluador para escalar las dimensiones
 
