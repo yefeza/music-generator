@@ -179,4 +179,4 @@ if __name__ == '__main__':
     e_fadein=int(e_norm/4)
     # train model
     train(generators, discriminators, composite, dataset,
-        latent_dim, e_norm, e_fadein, batch_sizes, JOB_DIR, bucket_name, files_format, path_dataset, download_data)
+        latent_dim, e_norm, e_fadein, batch_sizes, JOB_DIR, bucket_name, files_format, path_dataset, download_data, download_evaluators)
