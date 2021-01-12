@@ -4,7 +4,6 @@ import os
 from google.cloud import storage
 import keras
 import tensorflow as tf
-from .evaluacion import calculate_inception_score
 
 # update alpha for Weighted Sum
 
@@ -59,6 +58,21 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
     blob = bucket.blob(destination_blob_name)
 
     blob.upload_from_filename(source_file_name)
+
+
+# calculate the inception score for p(y|x)
+def calculate_inception_score(p_yx, eps=1E-16):
+    # calculate p(y)
+    p_y = np.expand_dims(p_yx.mean(axis=0), 0)
+    # kl divergence for each image
+    kl_d = p_yx * (np.log(p_yx + eps) - np.log(p_y + eps))
+    # sum over classes
+    sum_kl_d = kl_d.sum(axis=1)
+    # average over images
+    avg_kl_d = np.mean(sum_kl_d)
+    # undo the logs
+    is_score = np.exp(avg_kl_d)
+    return is_score
 
 def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name, latent_dim, evaluador):
     gen_shape = g_model.output_shape

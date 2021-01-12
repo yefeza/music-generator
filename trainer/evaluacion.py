@@ -131,17 +131,3 @@ def load_evaluator(dimension, bucket_name, download, train_dataset, epochs):
         model.save(file_name)
         upload_blob(bucket_name,file_name,file_name)
         return model
-
-# calculate the inception score for p(y|x)
-def calculate_inception_score(p_yx, eps=1E-16):
-    # calculate p(y)
-    p_y = np.expand_dims(p_yx.mean(axis=0), 0)
-    # kl divergence for each image
-    kl_d = p_yx * (np.log(p_yx + eps) - np.log(p_y + eps))
-    # sum over classes
-    sum_kl_d = kl_d.sum(axis=1)
-    # average over images
-    avg_kl_d = np.mean(sum_kl_d)
-    # undo the logs
-    is_score = np.exp(avg_kl_d)
-    return is_score
