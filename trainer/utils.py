@@ -85,7 +85,7 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name, latent_d
         local_path = "local_gen/" + \
             str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
             "/" + prefix + str(i) + '.wav'
-        path_save = "generated-data/" + \
+        path_save = "generated-data-byepoch/" + \
             str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
             "/" + prefix + str(i) + '.wav'
         folder=os.path.dirname(local_path)
@@ -98,10 +98,10 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name, latent_d
     iscore=calculate_inception_score(pred)
     local_path = "local_gen/" + \
         str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
-        "/" + prefix + 'inception_score_'+str(iscore)+'.txt'
-    path_save = "generated-data/" + \
+        "/" + prefix + 'inception_score.txt'
+    path_save = "generated-data-byepoch/" + \
         str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
-        "/" + prefix + 'inception_score_'+str(iscore)+'.txt'
+        "/" + prefix + 'inception_score.txt'
     folder=os.path.dirname(local_path)
     if not os.path.exists(folder):
         os.makedirs(folder)

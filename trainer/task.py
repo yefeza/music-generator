@@ -21,7 +21,7 @@ def get_args():
     parser.add_argument(
         '--num-epochs',
         type=int,
-        default=10,
+        default=20,
         help='number of times to go through the data, default=20')
     parser.add_argument(
         '--batch-size',
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     path_dataset = 'keras_dir/full-ds/'
     bucket_name='music-gen'
     files_format='mp3'
-    download_data=False
+    download_data=True
     dimension_start=6
     folder_start=7
     song_start=45

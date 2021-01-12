@@ -438,7 +438,7 @@ def define_composite(discriminators, generators, latent_dim):
 #checkpoint
 
 class GANMonitor(keras.callbacks.Callback):
-    def __init__(self, job_dir, evaluador, num_examples=1000, latent_dim=(1, 5, 2)):
+    def __init__(self, job_dir, evaluador, num_examples=500, latent_dim=(1, 5, 2)):
         self.num_examples = num_examples
         self.latent_dim = latent_dim
         self.bucket_name = "music-gen"
