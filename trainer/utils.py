@@ -1,10 +1,8 @@
-from .models import *
 from scipy.io.wavfile import write
 import numpy as np
 import os
 from google.cloud import storage
 import keras
-from .evaluacion import calculate_inception_score
 
 # update alpha for Weighted Sum
 
@@ -110,17 +108,3 @@ def guardar_checkpoint(keras_model, bucket_name, dimension, epoch):
             os.makedirs(path)
     keras_model.save(file_name)
     upload_blob(bucket_name,file_name,file_name)
-
-class GANMonitor(keras.callbacks.Callback):
-    def __init__(self, job_dir, evaluador, num_examples=1000, latent_dim=(1, 5, 2)):
-        self.num_examples = num_examples
-        self.latent_dim = latent_dim
-        self.bucket_name = "music-gen"
-        self.job_dir = job_dir
-        self.evaluador = evaluador
-    
-    def on_epoch_end(self, epoch, logs=None):
-        if not self.model.fade_in:
-            generar_ejemplos(self.model.generator, "epoch-"+str(epoch)+"/" , self.num_examples, None, self.bucket_name, self.latent_dim, self.evaluador)
-            gen_shape = self.model.generator.output_shape
-            guardar_checkpoint(self.model.generator, self.job_dir, (gen_shape[-3], gen_shape[-2]), epoch)

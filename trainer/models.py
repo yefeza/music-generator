@@ -17,6 +17,7 @@ from keras import backend
 import tensorflow as tf
 from keras.losses import categorical_crossentropy
 import numpy as np
+from .utils import *
 
 # Weighted Sum Layer para el proceso de fade-in
 
@@ -433,3 +434,19 @@ def define_composite(discriminators, generators, latent_dim):
         # store
         model_list.append([wgan1, wgan2])
     return model_list
+
+#checkpoint
+
+class GANMonitor(keras.callbacks.Callback):
+    def __init__(self, job_dir, evaluador, num_examples=1000, latent_dim=(1, 5, 2)):
+        self.num_examples = num_examples
+        self.latent_dim = latent_dim
+        self.bucket_name = "music-gen"
+        self.job_dir = job_dir
+        self.evaluador = evaluador
+    
+    def on_epoch_end(self, epoch, logs=None):
+        if not self.model.fade_in:
+            generar_ejemplos(self.model.generator, "epoch-"+str(epoch)+"/" , self.num_examples, None, self.bucket_name, self.latent_dim, self.evaluador)
+            gen_shape = self.model.generator.output_shape
+            guardar_checkpoint(self.model.generator, self.job_dir, (gen_shape[-3], gen_shape[-2]), epoch)
