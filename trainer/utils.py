@@ -107,6 +107,7 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name, latent_d
         os.makedirs(folder)
     file_object = open(local_path,"w+")
     file_object.write("Inception Score: "+str(iscore))
+    file_object.close()
     upload_blob(bucket_name,local_path,path_save)
 
 # save model
