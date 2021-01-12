@@ -5,7 +5,7 @@ from .models import *
 from .utils import *
 import numpy as np
 import matplotlib.pyplot as plt
-
+from .evaluacion import *
 def get_args():
     """Argument parser.
     Returns:
@@ -21,7 +21,7 @@ def get_args():
     parser.add_argument(
         '--num-epochs',
         type=int,
-        default=100,
+        default=10,
         help='number of times to go through the data, default=20')
     parser.add_argument(
         '--batch-size',
@@ -57,6 +57,7 @@ if __name__ == '__main__':
     folder_start=7
     song_start=45
     fragment_start=10
+    download_evaluators=False
 
 
     #preparar o descargar el dataset
@@ -103,15 +104,16 @@ if __name__ == '__main__':
 
     # train the generator and discriminator
 
-    def train(g_models, d_models, gan_models, dataset, latent_dim, e_norm, e_fadein, batch_sizes, job_dir, bucket_name, files_format, path_dataset, download_data):
+    def train(g_models, d_models, gan_models, dataset, latent_dim, e_norm, e_fadein, batch_sizes, job_dir, bucket_name, files_format, path_dataset, download_data, download_evaluators):
         # fit the baseline model
         g_normal, d_normal, gan_normal = g_models[0][0], d_models[0][0], gan_models[0][0]
         # scale dataset to appropriate size
         gen_shape = g_normal.output_shape
         if download_data:
             download_diension_dataset(path_dataset, bucket_name, files_format, (gen_shape[-3], gen_shape[-2]))
-        scaled_data = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
-        #scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
+        scaled_data, y_evaluator = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
+        #cargar evaluador
+        evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), job_dir,download_evaluators, (scaled_data, y_evaluator), e_norm)
         # train normal or straight-through models
         n_batch=batch_sizes[0]
         #limit to round sizes data
@@ -122,7 +124,7 @@ if __name__ == '__main__':
         print('Scaled Data', scaled_data.shape)
         #train_epochs(g_normal, d_normal, gan_normal, scaled_data, e_norm, n_batch, bucket_name)
         gan_models[0][0].set_train_steps(n_steps)
-        cbk=GANMonitor()
+        cbk=GANMonitor(job_dir=job_dir, evaluador=evaluador)
         history = gan_models[0][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
         plot_losses(history)
         # generate examples
@@ -137,7 +139,9 @@ if __name__ == '__main__':
             gen_shape = g_normal.output_shape
             if download_data:
                 download_diension_dataset(path_dataset, bucket_name, files_format, (gen_shape[-3], gen_shape[-2]))
-            scaled_data = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
+            scaled_data, y_evaluator = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
+            #cargar evaluador
+            evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), job_dir,download_evaluators, (scaled_data, y_evaluator), e_norm)
             #scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
             #get batch size for model
             n_batch=batch_sizes[i]

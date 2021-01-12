@@ -167,7 +167,7 @@ def download_full_dataset(path_dataset, bucket_name, files_format):
 def download_diension_dataset(path_dataset, bucket_name, files_format, dimension):
     storage_client = storage.Client(project='ia-devs')
     bucket = storage_client.bucket(bucket_name)
-    limit_songs=3000
+    limit_songs=20
     for folder in range(9):
         print("downloading from folder "+str(folder+1) + " and dimension " + str(dimension[0]) + "-" + str(dimension[1]))
         for song in range(limit_songs):
@@ -186,7 +186,10 @@ def download_diension_dataset(path_dataset, bucket_name, files_format, dimension
 
 def read_dataset(dimension, files_format):
     data=[]
+    y_evaluator=[]
+    continuos_error=0
     for folder in range(9):
+        print("Leyendo dataset en folder "+str(folder+1))
         directory="local_ds/" + files_format + "/"+str(dimension[0])+"-"+str(dimension[1])+"/" + str(folder+1) + "/"
         for song_dirname in os.listdir(directory):
             try:
@@ -194,9 +197,14 @@ def read_dataset(dimension, files_format):
                 song_reshaped = np.reshape(
                         signal, newshape=(dimension[0], dimension[1], 2))
                 data.append(song_reshaped)
+                y_evaluator.append(folder)
             except:
-                pass
-    return np.array(data)
+                continuos_error+=1
+                if continuos_error==5:
+                    break
+    categorical_y=tf.compat.v1.keras.utils.to_categorical(np.array(y_evaluator), num_classes=9)
+    categorical_y=tf.constant(categorical_y)
+    return np.array(data), categorical_y.numpy()
 
 
 # resamplear y recortar audios

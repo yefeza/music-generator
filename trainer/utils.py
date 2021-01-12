@@ -4,6 +4,7 @@ import numpy as np
 import os
 from google.cloud import storage
 import keras
+from .evaluacion import calculate_inception_score
 
 # update alpha for Weighted Sum
 
@@ -59,7 +60,7 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
 
     blob.upload_from_filename(source_file_name)
 
-def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name, latent_dim):
+def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name, latent_dim, evaluador):
     gen_shape = g_model.output_shape
     random_latent_vectors = tf.random.normal(shape=(n_examples, latent_dim[0], latent_dim[1], latent_dim[2]))
     gen_auds = g_model(random_latent_vectors)
@@ -69,15 +70,30 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name, latent_d
         signal_gen /= np.max(np.abs(signal_gen), axis=0)
         local_path = "local_gen/" + \
             str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
-            "/" + prefix + "-" + str(i) + '.wav'
+            "/" + prefix + str(i) + '.wav'
         path_save = "generated-data/" + \
             str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
-            "/" + prefix + "-" + str(i) + '.wav'
+            "/" + prefix + str(i) + '.wav'
         folder=os.path.dirname(local_path)
         if not os.path.exists(folder):
             os.makedirs(folder)
         write(local_path, gen_shape[-2], signal_gen)
         upload_blob(bucket_name,local_path,path_save)
+    #evaluar resultados
+    pred=evaluador.predict(gen_auds)
+    iscore=calculate_inception_score(pred)
+    local_path = "local_gen/" + \
+        str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
+        "/" + prefix + 'inception_score_'+str(iscore)+'.txt'
+    path_save = "generated-data/" + \
+        str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
+        "/" + prefix + 'inception_score_'+str(iscore)+'.txt'
+    folder=os.path.dirname(local_path)
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    file_object = open(local_path,"w+")
+    file_object.write("Inception Score: "+str(iscore))
+    upload_blob(bucket_name,local_path,path_save)
 
 # save model
 
@@ -85,12 +101,20 @@ def guardar_modelo(keras_model, job_dir, name):
     export_path = tf.compat.v1.keras.experimental.export_saved_model(keras_model, job_dir + '/keras_export_'+name)
     print('Model exported to: {}'.format(export_path))
 
+def guardar_checkpoint(keras_model, job_dir, dimension, epoch):
+    path=job_dir + '/ckeckpoints/'+dimension[0]+"-"+dimension[1]+"/epoch"+str(epoch)+"/"
+    export_path = tf.compat.v1.keras.experimental.export_saved_model(keras_model, path)
+
 class GANMonitor(keras.callbacks.Callback):
-    def __init__(self, num_examples=10, latent_dim=(1, 5, 2)):
+    def __init__(self, job_dir, evaluador, num_examples=1000, latent_dim=(1, 5, 2)):
         self.num_examples = num_examples
         self.latent_dim = latent_dim
         self.bucket_name = "music-gen"
-
+        self.job_dir = job_dir
+        self.evaluador = evaluador
+    
     def on_epoch_end(self, epoch, logs=None):
         if not self.model.fade_in:
-            generar_ejemplos(self.model.generator, "epoch-"+str(epoch),self.num_examples, None, self.bucket_name, self.latent_dim)
+            generar_ejemplos(self.model.generator, "epoch-"+str(epoch)+"/" , self.num_examples, None, self.bucket_name, self.latent_dim, self.evaluador)
+            gen_shape = self.model.generator.output_shape
+            guardar_checkpoint(self.model.generator, self.job_dir, (gen_shape[-3], gen_shape[-2]), epoch)
