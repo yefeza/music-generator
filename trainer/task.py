@@ -58,6 +58,7 @@ if __name__ == '__main__':
     song_start=45
     fragment_start=10
     download_evaluators=False
+    epochs_evaluadores=100
 
 
     #preparar o descargar el dataset
