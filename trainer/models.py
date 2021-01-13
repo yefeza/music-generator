@@ -446,11 +446,11 @@ class GANMonitor(keras.callbacks.Callback):
         self.evaluador = evaluador
     
     def on_epoch_end(self, epoch, logs=None):
-        iters_gen=int(self.num_examples/50)
+        iters_gen=int(self.num_examples/2)
         pred=[]
         if not self.model.fade_in:
             for i in range(iters_gen):
-                pred_batch=generar_ejemplos(self.model.generator, "epoch-"+str(epoch)+"/" , self.num_examples, None, self.bucket_name, self.latent_dim, self.evaluador)
+                pred_batch=generar_ejemplos(self.model.generator, "epoch-"+str(epoch)+"/" , int(self.num_examples/50), None, self.bucket_name, self.latent_dim, self.evaluador)
                 pred+=pred_batch
                 gen_shape = self.model.generator.output_shape
                 guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch)
