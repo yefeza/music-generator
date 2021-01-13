@@ -77,10 +77,6 @@ def calculate_inception_score(p_yx, eps=1E-16):
 def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name, latent_dim, evaluador):
     gen_shape = g_model.output_shape
     random_latent_vectors = tf.random.normal(shape=(n_examples, latent_dim[0], latent_dim[1], latent_dim[2]))
-    random_latent_vectors = tf.data.Dataset.from_tensor_slices(random_latent_vectors)
-    options = tf.data.Options()
-    options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
-    random_latent_vectors = random_latent_vectors.with_options(options)
     gen_auds = g_model(random_latent_vectors)
     for i in range(n_examples):
         signal_gen = gen_auds[i].numpy()
@@ -98,8 +94,6 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name, latent_d
         write(local_path, gen_shape[-2], signal_gen)
         upload_blob(bucket_name,local_path,path_save)
     #evaluar resultados
-    gen_auds=tf.data.Dataset.from_tensor_slices(gen_auds)
-    gen_auds = gen_auds.with_options(options)
     pred=evaluador.predict(gen_auds)
     return pred
 
