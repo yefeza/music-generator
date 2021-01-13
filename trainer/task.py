@@ -143,6 +143,7 @@ if __name__ == '__main__':
             scaled_data, y_evaluator = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
             #cargar evaluador
             evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name,download_evaluators, (scaled_data, y_evaluator), epochs_evaluadores)
+            cbk=GANMonitor(job_dir=job_dir, evaluador=evaluador)
             #scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
             #get batch size for model
             n_batch=batch_sizes[i]
