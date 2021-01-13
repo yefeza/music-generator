@@ -95,6 +95,11 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name, latent_d
         upload_blob(bucket_name,local_path,path_save)
     #evaluar resultados
     pred=evaluador.predict(gen_auds)
+    return pred
+
+def save_inception_score(g_model, prefix, bucket_name, pred):
+    gen_shape = g_model.output_shape
+    #evaluar resultados
     iscore=calculate_inception_score(pred)
     local_path = "local_gen/" + \
         str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
@@ -109,7 +114,7 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name, latent_d
     file_object.write("Inception Score: "+str(iscore))
     file_object.close()
     upload_blob(bucket_name,local_path,path_save)
-
+    
 # save model
 
 def guardar_modelo(keras_model, job_dir, name):
