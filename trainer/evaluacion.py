@@ -124,7 +124,7 @@ def load_evaluator(dimension, bucket_name, download, train_dataset, epochs):
         X=train_dataset[0]
         y=train_dataset[1]
         model.compile(optimizer="Adam", loss='categorical_crossentropy', metrics=["accuracy"])
-        model.fit(X,y,epochs=epochs, validation_split=0.2)
+        model.fit(X,y,epochs=epochs, validation_data=(X,y))
         if not os.path.exists(path):
             os.makedirs(path)
         model.save(file_name)
