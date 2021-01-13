@@ -74,7 +74,7 @@ def calculate_inception_score(p_yx, eps=1E-16):
     is_score = np.exp(avg_kl_d)
     return is_score
 
-def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name, latent_dim, evaluador):
+def generar_ejemplos(g_model, prefix, iter_num, n_examples, job_dir, bucket_name, latent_dim, evaluador):
     gen_shape = g_model.output_shape
     random_latent_vectors = tf.random.normal(shape=(n_examples, latent_dim[0], latent_dim[1], latent_dim[2]))
     gen_auds = g_model(random_latent_vectors)
@@ -84,10 +84,10 @@ def generar_ejemplos(g_model, prefix, n_examples, job_dir, bucket_name, latent_d
         signal_gen /= np.max(np.abs(signal_gen), axis=0)
         local_path = "local_gen/" + \
             str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
-            "/" + prefix + str(i) + '.wav'
+            "/" + prefix + str(i*iter_num) + '.wav'
         path_save = "generated-data-byepoch/" + \
             str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
-            "/" + prefix + str(i) + '.wav'
+            "/" + prefix + str(i*iter_num) + '.wav'
         folder=os.path.dirname(local_path)
         if not os.path.exists(folder):
             os.makedirs(folder)

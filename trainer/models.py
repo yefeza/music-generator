@@ -438,7 +438,7 @@ def define_composite(discriminators, generators, latent_dim):
 #checkpoint
 
 class GANMonitor(keras.callbacks.Callback):
-    def __init__(self, job_dir, evaluador, num_examples=100, latent_dim=(1, 5, 2)):
+    def __init__(self, job_dir, evaluador, num_examples=20, latent_dim=(1, 5, 2)):
         self.num_examples = num_examples
         self.latent_dim = latent_dim
         self.bucket_name = "music-gen"
@@ -450,7 +450,7 @@ class GANMonitor(keras.callbacks.Callback):
         pred=[]
         if not self.model.fade_in:
             for i in range(iters_gen):
-                pred_batch=generar_ejemplos(self.model.generator, "epoch-"+str(epoch)+"/" , int(self.num_examples/50), None, self.bucket_name, self.latent_dim, self.evaluador)
+                pred_batch=generar_ejemplos(self.model.generator, "epoch-"+str(epoch)+"/" , i, int(self.num_examples/10), None, self.bucket_name, self.latent_dim, self.evaluador)
                 for fila in pred_batch:
                     pred.append(fila)
                 gen_shape = self.model.generator.output_shape
