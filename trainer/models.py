@@ -455,4 +455,4 @@ class GANMonitor(keras.callbacks.Callback):
                     pred.append(fila)
                 gen_shape = self.model.generator.output_shape
                 guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch)
-        save_inception_score(self.model.generator, "epoch-"+str(epoch)+"/", self.bucket_name, np.array(pred))
+            save_inception_score(self.model.generator, "epoch-"+str(epoch)+"/", self.bucket_name, np.array(pred))
