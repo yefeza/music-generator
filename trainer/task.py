@@ -105,7 +105,7 @@ if __name__ == '__main__':
 
     # train the generator and discriminator
 
-    def train(g_models, d_models, gan_models, dataset, latent_dim, e_norm, e_fadein, batch_sizes, job_dir, bucket_name, files_format, path_dataset, download_data, download_evaluators):
+    def train(g_models, d_models, gan_models, dataset, latent_dim, e_norm, e_fadein, batch_sizes, job_dir, bucket_name, files_format, path_dataset, download_data, download_evaluators, epochs_evaluadores):
         # fit the baseline model
         g_normal, d_normal, gan_normal = g_models[0][0], d_models[0][0], gan_models[0][0]
         # scale dataset to appropriate size
@@ -114,7 +114,7 @@ if __name__ == '__main__':
             download_diension_dataset(path_dataset, bucket_name, files_format, (gen_shape[-3], gen_shape[-2]))
         scaled_data, y_evaluator = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
         #cargar evaluador
-        evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name,download_evaluators, (scaled_data, y_evaluator), e_norm)
+        evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name,download_evaluators, (scaled_data, y_evaluator), epochs_evaluadores)
         # train normal or straight-through models
         n_batch=batch_sizes[0]
         #limit to round sizes data
@@ -142,7 +142,7 @@ if __name__ == '__main__':
                 download_diension_dataset(path_dataset, bucket_name, files_format, (gen_shape[-3], gen_shape[-2]))
             scaled_data, y_evaluator = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
             #cargar evaluador
-            evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name,download_evaluators, (scaled_data, y_evaluator), e_norm)
+            evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name,download_evaluators, (scaled_data, y_evaluator), epochs_evaluadores)
             #scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
             #get batch size for model
             n_batch=batch_sizes[i]
@@ -180,4 +180,4 @@ if __name__ == '__main__':
     e_fadein=int(e_norm/4)
     # train model
     train(generators, discriminators, composite, dataset,
-        latent_dim, e_norm, e_fadein, batch_sizes, JOB_DIR, bucket_name, files_format, path_dataset, download_data, download_evaluators)
+        latent_dim, e_norm, e_fadein, batch_sizes, JOB_DIR, bucket_name, files_format, path_dataset, download_data, download_evaluators, epochs_evaluadores)
