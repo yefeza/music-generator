@@ -404,7 +404,7 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator=d_models[0],
             generator=g_models[0],
             latent_dim=latent_dim,
-            discriminator_extra_steps=2,
+            discriminator_extra_steps=3,
         )
         wgan1.compile(
             d_optimizer=Adam(
@@ -421,7 +421,7 @@ def define_composite(discriminators, generators, latent_dim):
             generator=g_models[1],
             latent_dim=latent_dim,
             fade_in=True,
-            discriminator_extra_steps=2,
+            discriminator_extra_steps=3,
         )
         wgan2.compile(
             d_optimizer=Adam(
@@ -450,7 +450,7 @@ class GANMonitor(keras.callbacks.Callback):
         pred=[]
         if not self.model.fade_in:
             for i in range(iters_gen):
-                pred_batch=generar_ejemplos(self.model.generator, "epoch-"+str(epoch)+"/" , i, 1, None, self.bucket_name, self.latent_dim, self.evaluador)
+                pred_batch=generar_ejemplo(self.model.generator, "epoch-"+str(epoch)+"/" , i+1, None, self.bucket_name, self.latent_dim, self.evaluador)
                 for fila in pred_batch:
                     pred.append(fila)
                 gen_shape = self.model.generator.output_shape
