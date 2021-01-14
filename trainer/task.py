@@ -21,7 +21,7 @@ def get_args():
     parser.add_argument(
         '--num-epochs',
         type=int,
-        default=50,
+        default=20,
         help='number of times to go through the data, default=20')
     parser.add_argument(
         '--batch-size',
@@ -80,7 +80,8 @@ if __name__ == '__main__':
     #with strategy.scope():
     # shared layer
 
-    shared_layer = Dense(100, name="shared_layer")
+    shared_layer = Dense(100)
+    shared_layer2 = Dense(100)
 
     # define discriminators
 
@@ -88,7 +89,7 @@ if __name__ == '__main__':
 
     # define generator
 
-    generators = define_generator(7, shared_layer)
+    generators = define_generator(7, shared_layer2)
 
     # define composite models
 
