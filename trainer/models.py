@@ -337,7 +337,7 @@ def add_generator_block(old_model):
     merged = WeightedSum()([out_image2, out_image])
     # define model
     model2 = Model(old_model.input, merged)
-    model2.get_layer(name="shared_layer").trainable=False
+    #model2.get_layer(name="shared_layer").trainable=False
     return [model1, model2]
 
 # definir los generadores
