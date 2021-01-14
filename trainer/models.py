@@ -328,7 +328,7 @@ def add_generator_block(old_model):
     out_image = Conv2DTranspose(2, (1, 1), padding='same')(g)
     # define model
     model1 = Model(old_model.input, out_image)
-    model1.get_layer(name="shared_layer").trainable=False
+    #model1.get_layer(name="shared_layer").trainable=False
     # get the output layer from old model
     out_old = old_model.layers[-1]
     # connect the upsampling to the old output layer
