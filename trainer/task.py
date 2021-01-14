@@ -71,8 +71,8 @@ if __name__ == '__main__':
             pass
 
     # Create a MirroredStrategy.
-    strategy = tf.distribute.MirroredStrategy()
-    print("Number of devices: {}".format(strategy.num_replicas_in_sync))
+    #strategy = tf.distribute.MirroredStrategy()
+    #print("Number of devices: {}".format(strategy.num_replicas_in_sync))
 
     # size of the latent space
     latent_dim = (1, 5, 2)
