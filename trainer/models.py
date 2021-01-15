@@ -438,7 +438,7 @@ def define_composite(discriminators, generators, latent_dim):
 #checkpoint
 
 class GANMonitor(keras.callbacks.Callback):
-    def __init__(self, job_dir, evaluador, num_examples=10, latent_dim=(1, 5, 2)):
+    def __init__(self, job_dir, evaluador, num_examples=20, latent_dim=(1, 5, 2)):
         self.num_examples = num_examples
         self.latent_dim = latent_dim
         self.bucket_name = "music-gen"
@@ -450,9 +450,13 @@ class GANMonitor(keras.callbacks.Callback):
         pred=[]
         if not self.model.fade_in:
             for i in range(iters_gen):
-                pred_batch=generar_ejemplo(self.model.generator, "epoch-"+str(epoch)+"/" , i+1, None, self.bucket_name, self.latent_dim, self.evaluador)
-                for fila in pred_batch:
-                    pred.append(fila)
+                if epoch%10==0:
+                    save=True
+                else:
+                    save=False
+                pred_batch=generar_ejemplo(self.model.generator, "epoch-"+str(epoch)+"/" , i+1, None, self.bucket_name, self.latent_dim, self.evaluador, save)
+                pred.append(pred_batch[0])
                 gen_shape = self.model.generator.output_shape
-                guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch)
+                if save:
+                    guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch)
             save_inception_score(self.model.generator, "epoch-"+str(epoch)+"/", self.bucket_name, np.array(pred))

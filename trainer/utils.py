@@ -97,24 +97,25 @@ def generar_ejemplos(g_model, prefix, iter_num, n_examples, job_dir, bucket_name
     pred=evaluador.predict(gen_auds)
     return pred
 
-def generar_ejemplo(g_model, prefix, iter_num, job_dir, bucket_name, latent_dim, evaluador):
+def generar_ejemplo(g_model, prefix, iter_num, job_dir, bucket_name, latent_dim, evaluador, save):
     gen_shape = g_model.output_shape
     random_latent_vectors = tf.random.normal(shape=(1, latent_dim[0], latent_dim[1], latent_dim[2]))
     gen_auds = g_model(random_latent_vectors)
-    signal_gen = gen_auds[0].numpy()
-    signal_gen = np.reshape(signal_gen, ((gen_shape[-3]*gen_shape[-2]), 2))
-    signal_gen /= np.max(np.abs(signal_gen), axis=0)
-    local_path = "local_gen/" + \
-        str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
-        "/" + prefix + str(iter_num) + '.wav'
-    path_save = "generated-data-byepoch/" + \
-        str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
-        "/" + prefix + str(iter_num) + '.wav'
-    folder=os.path.dirname(local_path)
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-    write(local_path, gen_shape[-2], signal_gen)
-    upload_blob(bucket_name,local_path,path_save)
+    if save:
+        signal_gen = gen_auds[0].numpy()
+        signal_gen = np.reshape(signal_gen, ((gen_shape[-3]*gen_shape[-2]), 2))
+        signal_gen /= np.max(np.abs(signal_gen), axis=0)
+        local_path = "local_gen/" + \
+            str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
+            "/" + prefix + str(iter_num) + '.wav'
+        path_save = "generated-data-byepoch/" + \
+            str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
+            "/" + prefix + str(iter_num) + '.wav'
+        folder=os.path.dirname(local_path)
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        write(local_path, gen_shape[-2], signal_gen)
+        upload_blob(bucket_name,local_path,path_save)
     #evaluar resultados
     pred=evaluador.predict(gen_auds)
     return pred
