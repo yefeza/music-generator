@@ -189,13 +189,14 @@ def download_diension_dataset(path_dataset, bucket_name, files_format, dimension
         print("downloading from folder "+str(folder+1) + " and dimension " + str(dimension[0]) + "-" + str(dimension[1]))
         for song in range(limit_songs):
             try:
-                source_blob_name = path_dataset + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(song+1) + "."+ files_format
-                blob = bucket.blob(source_blob_name)
                 dest_file="local_ds/" + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(song+1) + "."+ files_format
-                dest_folder="local_ds/" + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/"
-                if not os.path.exists(dest_folder):
-                    os.makedirs(dest_folder)
-                blob.download_to_filename(dest_file)
+                if not os.path.exists(dest_file):
+                    source_blob_name = path_dataset + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(song+1) + "."+ files_format
+                    blob = bucket.blob(source_blob_name)
+                    dest_folder="local_ds/" + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/"
+                    if not os.path.exists(dest_folder):
+                        os.makedirs(dest_folder)
+                    blob.download_to_filename(dest_file)
             except:
                 song=limit_songs
 
