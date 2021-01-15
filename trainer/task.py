@@ -106,7 +106,7 @@ if __name__ == '__main__':
 
     # train the generator and discriminator
 
-    def train(g_models, d_models, gan_models, dataset, latent_dim, e_norm, e_fadein, batch_sizes, job_dir, bucket_name, files_format, path_dataset, download_data, download_evaluators, epochs_evaluadores):
+    def train(g_models, d_models, gan_models, dataset, latent_dim, epochs_norm, epochs_fade, batch_sizes, job_dir, bucket_name, files_format, path_dataset, download_data, download_evaluators, epochs_evaluadores):
         # fit the baseline model
         g_normal, d_normal, gan_normal = g_models[0][0], d_models[0][0], gan_models[0][0]
         # scale dataset to appropriate size
@@ -118,6 +118,8 @@ if __name__ == '__main__':
         evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name,download_evaluators, (scaled_data, y_evaluator), epochs_evaluadores)
         # train normal or straight-through models
         n_batch=batch_sizes[0]
+        e_norm=epochs_norm[0]
+        e_fadein=epochs_fade[0]
         #limit to round sizes data
         limit=int((scaled_data.shape[0]/n_batch))*n_batch
         #total_steps
@@ -148,6 +150,8 @@ if __name__ == '__main__':
             #scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
             #get batch size for model
             n_batch=batch_sizes[i]
+            e_norm=epochs_norm[i]
+            e_fadein=epochs_fade[i]
             #limit to round sizes data
             limit=int((scaled_data.shape[0]/n_batch))*n_batch
             #total_steps
@@ -175,6 +179,8 @@ if __name__ == '__main__':
         guardar_modelo(gan_models[6][0].generator,job_dir,"final_100_epoch")
 
     batch_sizes=[16,8,4,2,2,2,2]
+    epochs_norm=[40,50,60,70,80,90,100]
+    epochs_fade=[10,15,20,25,30,35,40]
     # load image data
     dataset = []
     #dataset = get_audio_list(path_dataset, bucket_name)
@@ -182,4 +188,4 @@ if __name__ == '__main__':
     e_fadein=int(e_norm/4)
     # train model
     train(generators, discriminators, composite, dataset,
-        latent_dim, e_norm, e_fadein, batch_sizes, JOB_DIR, bucket_name, files_format, path_dataset, download_data, download_evaluators, epochs_evaluadores)
+        latent_dim, epochs_norm, epochs_fade, batch_sizes, JOB_DIR, bucket_name, files_format, path_dataset, download_data, download_evaluators, epochs_evaluadores)
