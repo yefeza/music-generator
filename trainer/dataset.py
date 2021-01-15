@@ -170,9 +170,23 @@ def download_diension_dataset(path_dataset, bucket_name, files_format, dimension
     bucket = storage_client.bucket(bucket_name)
     #limit_songs=300
     limit_songs_list=[3000,1500,1000,600,300,200,100,80,50]
+    limit_songs=50
+    if dimension[0]==4:
+        limit_songs=limit_songs_list[0]
+    if dimension[0]==8:
+        limit_songs=limit_songs_list[1]
+    if dimension[0]==16:
+        limit_songs=limit_songs_list[2]
+    if dimension[0]==32:
+        limit_songs=limit_songs_list[3]
+    if dimension[0]==64:
+        limit_songs=limit_songs_list[4]
+    if dimension[0]==128:
+        limit_songs=limit_songs_list[5]
+    if dimension[0]==256:
+        limit_songs=limit_songs_list[6]
     for folder in range(9):
         print("downloading from folder "+str(folder+1) + " and dimension " + str(dimension[0]) + "-" + str(dimension[1]))
-        limit_songs=limit_songs_list[folder]
         for song in range(limit_songs):
             try:
                 source_blob_name = path_dataset + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(song+1) + "."+ files_format
