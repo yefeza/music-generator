@@ -40,17 +40,10 @@ def add_evaluator_block(old_model, n_input_layers=3):
     d = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
     d = AveragePooling2D()(d)
-    first_dense=True
     for i in range(n_input_layers, len(old_model.layers)):
+        d = old_model.layers[i](d)
         if isinstance(old_model.layers[i], Dense):
-            if first_dense:
-                d = old_model.layers[i](d)
-                first_dense=False
-            else:
-                final_layer = old_model.layers[i](d)
-                break
-        else:
-            d = old_model.layers[i](d)
+            final_layer = old_model.layers[i](d)
     model = Model(in_image, final_layer)
     return model
 
@@ -71,10 +64,7 @@ def define_evaluator(n_blocks, input_shape=(4, 750, 2)):
     d = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d)
     d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
-    # lstm layer
-    d = Flatten()(d)
-    wls = Dense(100)(d)
-    out_class = Dense(9, activation='softmax')(wls)
+    out_class = Dense(9, activation='softmax')(d)
     # define model
     model = Model(in_image, out_class)
     # store model
