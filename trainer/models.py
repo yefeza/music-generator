@@ -213,9 +213,9 @@ def add_discriminator_block(old_model, n_input_layers=3):
                kernel_initializer='he_normal')(in_image)
     d = LeakyReLU(alpha=0.2)(d)
     # definenewblock
-    d = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(d)
-    d = LeakyReLU(alpha=0.2)(d)
     d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
+    d = LeakyReLU(alpha=0.2)(d)
+    d = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
     d = AveragePooling2D()(d)
     block_new = d
@@ -240,7 +240,6 @@ def add_discriminator_block(old_model, n_input_layers=3):
     # fadeinoutputofoldmodelinputlayerwithnewinput
     d = WeightedSum()([block_old, block_new])
     # skiptheinput,1x1andactivationfortheoldmodel
-    first_dense=True
     for i in range(n_input_layers, len(old_model.layers)):
         d = old_model.layers[i](d)
         if isinstance(old_model.layers[i], Dense):
