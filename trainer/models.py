@@ -215,7 +215,7 @@ def add_discriminator_block(old_model, n_input_layers=3):
     # definenewblock
     d = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
-    d = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(d)
+    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
     d = AveragePooling2D()(d)
     block_new = d
