@@ -209,7 +209,7 @@ def add_discriminator_block(old_model, n_input_layers=3):
     input_shape = (in_shape[-3]*2, in_shape[-2]*2, in_shape[-1])
     in_image = Input(shape=input_shape)
     # definenewinputprocessinglayer
-    d = Conv2D(64, (1, 1), padding='same',
+    d = Conv2D(128, (1, 1), padding='same',
                kernel_initializer='he_normal')(in_image)
     d = LeakyReLU(alpha=0.2)(d)
     # definenewblock
@@ -260,7 +260,7 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     # base model input
     in_image = Input(shape=input_shape)
     # conv 1x1
-    d = Conv2D(64, (1, 1), padding='same',
+    d = Conv2D(128, (1, 1), padding='same',
                kernel_initializer='he_normal')(in_image)
     d = LeakyReLU(alpha=0.2)(d)
     # conv 3x3 (output block)
