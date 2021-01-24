@@ -64,6 +64,7 @@ def define_evaluator(n_blocks, input_shape=(4, 750, 2)):
     d = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d)
     d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
+    d = Flatten()(d)
     out_class = Dense(9, activation='softmax')(d)
     # define model
     model = Model(in_image, out_class)

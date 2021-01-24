@@ -273,6 +273,7 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     d = MinibatchStdDev()(d)
     d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
+    d = Flatten()(d)
     out_class = Dense(1, activation='linear')(d)
     # define model
     model_comp = Model(in_image, out_class)
