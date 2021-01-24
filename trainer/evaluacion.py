@@ -35,9 +35,9 @@ def add_evaluator_block(old_model, n_input_layers=3):
                kernel_initializer='he_normal')(in_image)
     d = LeakyReLU(alpha=0.2)(d)
     # definenewblock
-    d = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(d)
+    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
-    d = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(d)
+    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
     d = AveragePooling2D()(d)
     for i in range(n_input_layers, len(old_model.layers)):
