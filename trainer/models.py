@@ -208,8 +208,6 @@ def add_discriminator_block(old_model, n_input_layers=3):
     # definenewinputshapeasdoublethesize
     input_shape = (in_shape[-3]*2, in_shape[-2]*2, in_shape[-1])
     in_image = Input(shape=input_shape)
-    y_true = Input(shape=(1,))
-    is_weight = Input(shape=(1,))
     # definenewinputprocessinglayer
     d = Conv2D(64, (1, 1), padding='same',
                kernel_initializer='he_normal')(in_image)
@@ -221,18 +219,11 @@ def add_discriminator_block(old_model, n_input_layers=3):
     d = LeakyReLU(alpha=0.2)(d)
     d = AveragePooling2D()(d)
     block_new = d
-    first_dense=True
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
+        d = old_model.layers[i](d)
         if isinstance(old_model.layers[i], Dense):
-            if first_dense:
-                d = old_model.layers[i](d)
-                first_dense=False
-            else:
-                final_layer = old_model.layers[i](d)
-                break
-        else:
-            d = old_model.layers[i](d)
+            final_layer = old_model.layers[i](d)
     # definestraight-throughmodel
     #model1 = Model([in_image, y_true, is_weight], final_layer)
     #model1.add_loss(D_wgangp_acgan(y_true, final_layer, is_weight))
@@ -251,15 +242,9 @@ def add_discriminator_block(old_model, n_input_layers=3):
     # skiptheinput,1x1andactivationfortheoldmodel
     first_dense=True
     for i in range(n_input_layers, len(old_model.layers)):
+        d = old_model.layers[i](d)
         if isinstance(old_model.layers[i], Dense):
-            if first_dense:
-                d = old_model.layers[i](d)
-                first_dense=False
-            else:
-                final_layer = old_model.layers[i](d)
-                break
-        else:
-            d = old_model.layers[i](d)
+            final_layer = old_model.layers[i](d)
     # definestraight-throughmodel
     #model2 = Model([in_image, y_true, is_weight], final_layer)
     #model2.add_loss(D_wgangp_acgan(y_true, final_layer, is_weight))
@@ -276,8 +261,6 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     model_list = list()
     # base model input
     in_image = Input(shape=input_shape)
-    y_true = Input(shape=(1,))
-    is_weight = Input(shape=(1,))
     # conv 1x1
     d = Conv2D(64, (1, 1), padding='same',
                kernel_initializer='he_normal')(in_image)
@@ -290,16 +273,8 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     d = MinibatchStdDev()(d)
     d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
-    # lstm layer
-    d = Flatten()(d)
-    wls = lstm_layer(d)
-    out_class = Dense(1, activation='linear')(wls)
+    out_class = Dense(1, activation='linear')(d)
     # define model
-    model = Model([in_image, y_true, is_weight], out_class)
-    # model.add_loss(D_wgangp_acgan(y_true, out_class, is_weight))
-    # compile model
-    model.compile(loss=None, optimizer=Adam(
-        lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8))
     model_comp = Model(in_image, out_class)
     # store model
     model_list.append([model_comp, model_comp])
@@ -320,12 +295,12 @@ def add_generator_block(old_model):
     block_end = old_model.layers[-2].output
     # upsample, and define new block
     upsampling = UpSampling2D()(block_end)
-    g = Conv2D(128, (3, 3), padding='same',
+    g = Conv2D(64, (3, 3), padding='same',
                kernel_initializer='he_normal')(upsampling)
     g = LeakyReLU(alpha=0.2)(g)
     g = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g)
     g = LeakyReLU(alpha=0.2)(g)
-    out_image = Conv2DTranspose(2, (1, 1), padding='same')(g)
+    out_image = Conv2D(2, (1, 1), padding='same')(g)
     # define model
     model1 = Model(old_model.input, out_image)
     #model1.get_layer(name="shared_layer").trainable=False
@@ -345,27 +320,17 @@ def add_generator_block(old_model):
 def define_generator(n_blocks, lstm_layer):
     model_list = list()
     # input
-    ly0 = Input(shape=(1, 5, 2))
+    ly0 = Input(shape=(1, 50, 2))
     # bloque 1 deconvolusion
-    g = Conv2DTranspose(32, (2, 2), strides=(2, 2), padding='valid')(ly0)
+    g = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid')(ly0)
     g = LeakyReLU(alpha=0.2)(g)
-    g = Conv2DTranspose(64, (2, 5), strides=(2, 5), padding='valid')(g)
+    g = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid')(g)
     g = LeakyReLU(alpha=0.2)(g)
     g = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid')(g)
     g = LeakyReLU(alpha=0.2)(g)
-    g = Conv2DTranspose(160, (1, 1), padding='same')(g)
-    g = LeakyReLU(alpha=0.2)(g)
-    out_image = Flatten()(g)
-    g_lstm_layer = lstm_layer(out_image)
-    wls = Reshape(target_shape=(1, 50, 2))(g_lstm_layer)
-    wls = Conv2DTranspose(2, (1, 15), strides=(1, 15), padding='valid')(wls)
-    wls = LeakyReLU(alpha=0.2)(wls)
-    wls = Conv2DTranspose(128, (4, 1), strides=(4, 1), padding='valid')(wls)
-    wls = LeakyReLU(alpha=0.2)(wls)
-    wls = Conv2DTranspose(2, (1, 1), padding='same')(wls)
+    wls = Conv2D(2, (1, 1), padding='same')(g)
     wls = LeakyReLU(alpha=0.2)(wls)
     model = Model(ly0, wls)
-    #model.get_layer(name="shared_layer").trainable=False
     # store model
     model_list.append([model, model])
     # create submodels
@@ -438,7 +403,7 @@ def define_composite(discriminators, generators, latent_dim):
 #checkpoint
 
 class GANMonitor(keras.callbacks.Callback):
-    def __init__(self, job_dir, evaluador, num_examples=20, latent_dim=(1, 5, 2)):
+    def __init__(self, job_dir, evaluador, num_examples=20, latent_dim=(1, 50, 2)):
         self.num_examples = num_examples
         self.latent_dim = latent_dim
         self.bucket_name = "music-gen"
