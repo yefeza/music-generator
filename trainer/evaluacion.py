@@ -41,9 +41,10 @@ def add_evaluator_block(old_model, n_input_layers=3):
     d = LeakyReLU(alpha=0.2)(d)
     d = AveragePooling2D()(d)
     for i in range(n_input_layers, len(old_model.layers)):
-        d = old_model.layers[i](d)
         if isinstance(old_model.layers[i], Dense):
             final_layer = old_model.layers[i](d)
+        else:
+            d = old_model.layers[i](d)
     model = Model(in_image, final_layer)
     return model
 
