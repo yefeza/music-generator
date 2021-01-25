@@ -205,8 +205,8 @@ def download_diension_dataset(path_dataset, bucket_name, files_format, dimension
 def read_dataset(dimension, files_format):
     data=[]
     y_evaluator=[]
-    continuos_error=0
     for folder in range(9):
+        continuos_error=0
         print("Leyendo dataset en folder "+str(folder+1))
         directory="local_ds/" + files_format + "/"+str(dimension[0])+"-"+str(dimension[1])+"/" + str(folder+1) + "/"
         for song_dirname in os.listdir(directory):
