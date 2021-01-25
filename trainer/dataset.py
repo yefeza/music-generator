@@ -216,6 +216,7 @@ def read_dataset(dimension, files_format):
                         signal, newshape=(dimension[0], dimension[1], 2))
                 data.append(song_reshaped)
                 y_evaluator.append(folder)
+                continuos_error=0
             except:
                 continuos_error+=1
                 if continuos_error==5:

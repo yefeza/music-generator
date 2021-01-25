@@ -414,13 +414,13 @@ class GANMonitor(keras.callbacks.Callback):
         pred=[]
         if not self.model.fade_in:
             for i in range(iters_gen):
-                if epoch%10==0:
+                if ((epoch+1)%5)==0:
                     save=True
                 else:
                     save=False
-                pred_batch=generar_ejemplo(self.model.generator, "epoch-"+str(epoch)+"/" , i+1, None, self.bucket_name, self.latent_dim, self.evaluador, save)
+                pred_batch=generar_ejemplo(self.model.generator, "epoch-"+str(epoch+1)+"/" , i+1, None, self.bucket_name, self.latent_dim, self.evaluador, save)
                 pred.append(pred_batch[0])
                 gen_shape = self.model.generator.output_shape
                 if save:
-                    guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch)
-            save_inception_score(self.model.generator, "epoch-"+str(epoch)+"/", self.bucket_name, np.array(pred))
+                    guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1)
+            save_inception_score(self.model.generator, "epoch-"+str(epoch+1)+"/", self.bucket_name, np.array(pred))

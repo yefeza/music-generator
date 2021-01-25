@@ -101,25 +101,25 @@ def load_evaluator(dimension, bucket_name, download, train_dataset, epochs):
         evaluadores=define_evaluator(7)
         if dimension[0]==4:
             model=evaluadores[0]
-            batch_size=16
+            batch_size=32
         if dimension[0]==8:
             model=evaluadores[1]
-            batch_size=8
+            batch_size=16
         if dimension[0]==16:
             model=evaluadores[2]
-            batch_size=4
+            batch_size=8
         if dimension[0]==32:
             model=evaluadores[3]
-            batch_size=2
+            batch_size=4
         if dimension[0]==64:
             model=evaluadores[4]
-            batch_size=2
+            batch_size=4
         if dimension[0]==128:
             model=evaluadores[5]
-            batch_size=2
+            batch_size=4
         if dimension[0]==256:
             model=evaluadores[6]
-            batch_size=2
+            batch_size=4
         X=train_dataset[0]
         y=train_dataset[1]
         model.compile(optimizer="Adam", loss='categorical_crossentropy', metrics=["accuracy"])
