@@ -58,7 +58,7 @@ if __name__ == '__main__':
     song_start=45
     fragment_start=10
     download_evaluators=False
-    epochs_evaluadores=5
+    epochs_evaluadores=10
 
 
     #preparar o descargar el dataset
@@ -180,10 +180,10 @@ if __name__ == '__main__':
         print("guardando modelo")
         guardar_modelo(gan_models[6][0].generator,job_dir,"final_100_epoch")
 
-    batch_sizes=[32,16,8,4,4,4,4]
-    #epochs_norm=[100,120,140,180,220,260,300]
-    epochs_norm=[10,15,20,25,30,35,40]
-    epochs_fade=[2,4,6,8,10,12,14]
+    batch_sizes=[64,32,16,4,2,2]
+    epochs_norm=[100,120,140,180,220,260,300]
+    #epochs_norm=[10,15,20,25,30,35,40]
+    epochs_fade=[10,20,30,35,40,45,50]
     # load image data
     dataset = []
     #dataset = get_audio_list(path_dataset, bucket_name)
