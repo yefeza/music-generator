@@ -129,8 +129,8 @@ if __name__ == '__main__':
         #train_epochs(g_normal, d_normal, gan_normal, scaled_data, e_norm, n_batch, bucket_name)
         gan_models[0][0].set_train_steps(n_steps)
         cbk=GANMonitor(job_dir=job_dir, evaluador=evaluador)
-        shuffled_data=np.random.shuffle(scaled_data)
-        history = gan_models[0][0].fit(shuffled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
+        np.random.shuffle(scaled_data)
+        history = gan_models[0][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
         plot_losses(history)
         # generate examples
         #generar_ejemplos(gan_models[0][0].generator, "first-", 3, job_dir, bucket_name, latent_dim)
@@ -161,8 +161,8 @@ if __name__ == '__main__':
             print('Scaled Data', scaled_data.shape)
             # train fade-in models for next level of growth
             gan_models[i][1].set_train_steps(n_steps)
-            shuffled_data=np.random.shuffle(scaled_data)
-            history = gan_models[i][1].fit(shuffled_data, batch_size=n_batch, epochs=e_fadein, callbacks=[cbk])
+            np.random.shuffle(scaled_data)
+            history = gan_models[i][1].fit(scaled_data, batch_size=n_batch, epochs=e_fadein, callbacks=[cbk])
             plot_losses(history)
             #train_epochs(g_fadein, d_fadein, gan_fadein,
             #            scaled_data, e_fadein, n_batch, True)
@@ -170,7 +170,7 @@ if __name__ == '__main__':
             #total_steps
             n_steps=int((scaled_data.shape[0]/n_batch))*e_norm
             gan_models[i][0].set_train_steps(n_steps)
-            history = gan_models[i][0].fit(shuffled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
+            history = gan_models[i][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
             plot_losses(history)
             #train_epochs(g_normal, d_normal, gan_normal,
             #            scaled_data, e_norm, n_batch)
