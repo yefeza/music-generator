@@ -129,7 +129,7 @@ if __name__ == '__main__':
         #train_epochs(g_normal, d_normal, gan_normal, scaled_data, e_norm, n_batch, bucket_name)
         gan_models[0][0].set_train_steps(n_steps)
         cbk=GANMonitor(job_dir=job_dir, evaluador=evaluador)
-        history = gan_models[0][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
+        history = gan_models[0][0].fit(np.random.shuffle(scaled_data), batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
         plot_losses(history)
         # generate examples
         #generar_ejemplos(gan_models[0][0].generator, "first-", 3, job_dir, bucket_name, latent_dim)
@@ -160,7 +160,7 @@ if __name__ == '__main__':
             print('Scaled Data', scaled_data.shape)
             # train fade-in models for next level of growth
             gan_models[i][1].set_train_steps(n_steps)
-            history = gan_models[i][1].fit(scaled_data, batch_size=n_batch, epochs=e_fadein, callbacks=[cbk])
+            history = gan_models[i][1].fit(np.random.shuffle(scaled_data), batch_size=n_batch, epochs=e_fadein, callbacks=[cbk])
             plot_losses(history)
             #train_epochs(g_fadein, d_fadein, gan_fadein,
             #            scaled_data, e_fadein, n_batch, True)
@@ -168,7 +168,7 @@ if __name__ == '__main__':
             #total_steps
             n_steps=int((scaled_data.shape[0]/n_batch))*e_norm
             gan_models[i][0].set_train_steps(n_steps)
-            history = gan_models[i][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
+            history = gan_models[i][0].fit(np.random.shuffle(scaled_data), batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
             plot_losses(history)
             #train_epochs(g_normal, d_normal, gan_normal,
             #            scaled_data, e_norm, n_batch)
@@ -178,9 +178,10 @@ if __name__ == '__main__':
         print("guardando modelo")
         guardar_modelo(gan_models[6][0].generator,job_dir,"final_100_epoch")
 
-    batch_sizes=[16,8,4,2,2,2,2]
-    epochs_norm=[100,120,140,180,220,260,300]
-    epochs_fade=[25,30,35,40,45,50,55]
+    batch_sizes=[32,16,8,4,4,4,4]
+    #epochs_norm=[100,120,140,180,220,260,300]
+    epochs_norm=[10,15,20,25,30,35,40]
+    epochs_fade=[2,4,6,8,10,12,14]
     # load image data
     dataset = []
     #dataset = get_audio_list(path_dataset, bucket_name)
