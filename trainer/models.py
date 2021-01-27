@@ -158,7 +158,7 @@ class WGAN(keras.Model):
             # Calculate the generator loss
             real_logits = self.discriminator(real_images, training=True)
             # Generator loss function used in the paper (WGAN + AC-GAN).
-            label_penalty_fakes = tf.nn.softmax_cross_entropy_with_logits_v2(labels=real_logits, logits=gen_img_logits)
+            label_penalty_fakes = tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(labels=real_logits, logits=gen_img_logits)
             gen_img_logits += label_penalty_fakes*1.0
             g_loss = self.g_loss_fn(gen_img_logits)
 
