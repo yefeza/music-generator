@@ -42,7 +42,7 @@ class WGAN(keras.Model):
         generator,
         latent_dim,
         fade_in=False,
-        discriminator_extra_steps=3,
+        discriminator_extra_steps=1,
         gp_weight=10.0,
     ):
         super(WGAN, self).__init__()
@@ -155,13 +155,7 @@ class WGAN(keras.Model):
             generated_images = self.generator(random_latent_vectors, training=True)
             # Get the discriminator logits for fake images
             gen_img_logits = self.discriminator(generated_images, training=True)
-            # Calculate the generator loss
-            real_logits = self.discriminator(real_images, training=True)
-            neg_logits=-gen_img_logits
-            # Generator loss function used in the paper (WGAN + AC-GAN).
-            label_penalty_fakes = tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(labels=real_logits, logits=gen_img_logits)
-            neg_logits += label_penalty_fakes*1.0
-            g_loss = self.g_loss_fn(neg_logits)
+            g_loss = self.g_loss_fn(gen_img_logits)
 
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
@@ -218,9 +212,9 @@ def add_discriminator_block(old_model, n_input_layers=3):
                kernel_initializer='he_normal')(in_image)
     d = LeakyReLU(alpha=0.2)(d)
     # definenewblock
-    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
+    d = Conv2D(128, (3, 3), padding='valid', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
-    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
+    d = Conv2D(128, (3, 3), padding='valid', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
     d = AveragePooling2D()(d)
     block_new = d
@@ -272,9 +266,9 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
     # conv 4x4
-    d = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d)
+    d = Conv2D(128, (4, 4), padding='valid', kernel_initializer='he_normal')(d)
     d = MinibatchStdDev()(d)
-    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
+    d = Conv2D(128, (3, 3), padding='valid', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
     d = Flatten()(d)
     out_class = Dense(1, activation='linear')(d)
@@ -299,12 +293,15 @@ def add_generator_block(old_model):
     block_end = old_model.layers[-2].output
     # upsample, and define new block
     upsampling = UpSampling2D()(block_end)
-    g = Conv2D(64, (3, 3), padding='same',
-               kernel_initializer='he_normal')(upsampling)
+    g = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
     g = LeakyReLU(alpha=0.2)(g)
     g = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g)
     g = LeakyReLU(alpha=0.2)(g)
-    out_image = Conv2D(2, (1, 1), padding='same')(g)
+    g = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g)
+    g = LeakyReLU(alpha=0.2)(g)
+    g = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g)
+    g = LeakyReLU(alpha=0.2)(g)
+    out_image = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(g)
     # define model
     model1 = Model(old_model.input, out_image)
     #model1.get_layer(name="shared_layer").trainable=False
@@ -326,13 +323,17 @@ def define_generator(n_blocks, lstm_layer):
     # input
     ly0 = Input(shape=(1, 50, 2))
     # bloque 1 deconvolusion
-    g = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid')(ly0)
+    g = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(ly0)
     g = LeakyReLU(alpha=0.2)(g)
-    g = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid')(g)
+    g = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g)
     g = LeakyReLU(alpha=0.2)(g)
-    g = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid')(g)
+    g = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g)
     g = LeakyReLU(alpha=0.2)(g)
-    wls = Conv2D(2, (1, 1), padding='same')(g)
+    g = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g)
+    g = LeakyReLU(alpha=0.2)(g)
+    g = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g)
+    g = LeakyReLU(alpha=0.2)(g)
+    wls = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(g)
     wls = LeakyReLU(alpha=0.2)(wls)
     model = Model(ly0, wls)
     # store model
@@ -358,7 +359,7 @@ def discriminator_loss(real_img, fake_img):
 
 # Define the loss functions for the generator.
 def generator_loss(fake_img):
-    return tf.reduce_mean(fake_img)
+    return -tf.reduce_mean(fake_img)
 
 # define composite models for training generators via discriminators
 
