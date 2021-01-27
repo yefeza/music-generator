@@ -212,9 +212,9 @@ def add_discriminator_block(old_model, n_input_layers=3):
                kernel_initializer='he_normal')(in_image)
     d = LeakyReLU(alpha=0.2)(d)
     # definenewblock
-    d = Conv2D(128, (3, 3), padding='valid', kernel_initializer='he_normal')(d)
+    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
-    d = Conv2D(128, (3, 3), padding='valid', kernel_initializer='he_normal')(d)
+    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
     d = AveragePooling2D()(d)
     block_new = d
@@ -266,9 +266,9 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
     # conv 4x4
-    d = Conv2D(128, (4, 4), padding='valid', kernel_initializer='he_normal')(d)
+    d = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d)
     d = MinibatchStdDev()(d)
-    d = Conv2D(128, (3, 3), padding='valid', kernel_initializer='he_normal')(d)
+    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
     d = LeakyReLU(alpha=0.2)(d)
     d = Flatten()(d)
     out_class = Dense(1, activation='linear')(d)
