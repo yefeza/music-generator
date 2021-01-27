@@ -157,10 +157,11 @@ class WGAN(keras.Model):
             gen_img_logits = self.discriminator(generated_images, training=True)
             # Calculate the generator loss
             real_logits = self.discriminator(real_images, training=True)
+            neg_logits=-gen_img_logits
             # Generator loss function used in the paper (WGAN + AC-GAN).
             label_penalty_fakes = tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(labels=real_logits, logits=gen_img_logits)
-            gen_img_logits += label_penalty_fakes*1.0
-            g_loss = self.g_loss_fn(gen_img_logits)
+            neg_logits += label_penalty_fakes*1.0
+            g_loss = self.g_loss_fn(neg_logits)
 
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
@@ -357,7 +358,7 @@ def discriminator_loss(real_img, fake_img):
 
 # Define the loss functions for the generator.
 def generator_loss(fake_img):
-    return -tf.reduce_mean(fake_img)
+    return tf.reduce_mean(fake_img)
 
 # define composite models for training generators via discriminators
 
