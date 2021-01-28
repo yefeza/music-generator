@@ -234,13 +234,15 @@ def add_discriminator_block(old_model, n_input_layers=3):
     op_3 = LeakyReLU(alpha=0.2)(d_3)
     #sumarize blocks
     sumarized_blocks=Add()([op_1, op_2, op_3])
+    d_block=Conv2D(128, (1,1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
+    d_block = LeakyReLU(alpha=0.2)(d_block)
     block_new = sumarized_blocks
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
         if isinstance(old_model.layers[i], Dense):
-            final_layer = old_model.layers[i](sumarized_blocks)
+            final_layer = old_model.layers[i](d_block)
         else:
-            sumarized_blocks = old_model.layers[i](sumarized_blocks)
+            d_block = old_model.layers[i](d_block)
     # model 1 without multiple inputs for composite
     model1_comp = Model(in_image, final_layer)
     # compilemodel
