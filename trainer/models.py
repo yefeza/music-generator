@@ -233,7 +233,7 @@ def add_discriminator_block(old_model, n_input_layers=3):
     d_3 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_3)
     d_3 = LeakyReLU(alpha=0.2)(d_3)
     #sumarize blocks
-    sumarized_blocks=Add([d_1, d_2, d_3])
+    sumarized_blocks=Add()([d_1, d_2, d_3])
     block_new = sumarized_blocks
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
@@ -300,7 +300,7 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
     d_3 = LeakyReLU(alpha=0.2)(d_3)
     #sumarize blocks
-    sumarized_block=Add([d_1, d_2, d_3])
+    sumarized_block=Add()([d_1, d_2, d_3])
     d = MinibatchStdDev()(sumarized_block)
     d = Flatten()(d)
     out_class = Dense(1, activation='linear')(d)
@@ -353,7 +353,7 @@ def add_generator_block(old_model):
     g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
     g_3 = LeakyReLU(alpha=0.2)(g_3)
     #sumarize
-    sumarized_blocks=Add([g_1,g_2,g_3])
+    sumarized_blocks=Add()([g_1,g_2,g_3])
     # to 2 channels
     out_image = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     # define model
@@ -410,7 +410,7 @@ def define_generator(n_blocks, lstm_layer):
     g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
     g_3 = LeakyReLU(alpha=0.2)(g_3)
     #to 2 channels
-    sumarized_blocks=Add([g_1, g_2, g_3])
+    sumarized_blocks=Add()([g_1, g_2, g_3])
     wls = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     wls = LeakyReLU(alpha=0.2)(wls)
     model = Model(ly0, wls)
