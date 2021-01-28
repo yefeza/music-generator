@@ -169,7 +169,8 @@ def download_diension_dataset(path_dataset, bucket_name, files_format, dimension
     storage_client = storage.Client(project='ia-devs')
     bucket = storage_client.bucket(bucket_name)
     #limit_songs=300
-    limit_songs_list=[3000,1500,1000,600,300,200,100,80,50]
+    #limit_songs_list=[3000,1500,1000,600,300,200,100,80,50]
+    limit_songs_list=[300,150,100,60,30,20,10,8,5]
     limit_songs=50
     if dimension[0]==4:
         limit_songs=limit_songs_list[0]

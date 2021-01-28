@@ -42,7 +42,7 @@ class WGAN(keras.Model):
         generator,
         latent_dim,
         fade_in=False,
-        discriminator_extra_steps=1,
+        discriminator_extra_steps=3,
         gp_weight=10.0,
     ):
         super(WGAN, self).__init__()
@@ -208,22 +208,39 @@ def add_discriminator_block(old_model, n_input_layers=3):
     input_shape = (in_shape[-3]*2, in_shape[-2]*2, in_shape[-1])
     in_image = Input(shape=input_shape)
     # definenewinputprocessinglayer
-    d = Conv2D(128, (1, 1), padding='same',
-               kernel_initializer='he_normal')(in_image)
-    d = LeakyReLU(alpha=0.2)(d)
-    # definenewblock
-    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
-    d = LeakyReLU(alpha=0.2)(d)
-    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
-    d = LeakyReLU(alpha=0.2)(d)
-    d = AveragePooling2D()(d)
-    block_new = d
+    featured_layer = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
+    featured_layer = LeakyReLU(alpha=0.2)(featured_layer)
+    #convolusion block 1
+    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_layer)
+    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    #d = AveragePooling2D()(d)
+    d_1 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_1)
+    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    #convolusion block 2
+    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_layer)
+    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    d_2 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_2)
+    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    #convolusion block 3
+    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_layer)
+    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
+    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    d_3 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_3)
+    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    #sumarize blocks
+    sumarized_blocks=Add([d_1, d_2, d_3])
+    block_new = sumarized_blocks
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
         if isinstance(old_model.layers[i], Dense):
-            final_layer = old_model.layers[i](d)
+            final_layer = old_model.layers[i](sumarized_blocks)
         else:
-            d = old_model.layers[i](d)
+            sumarized_blocks = old_model.layers[i](sumarized_blocks)
     # model 1 without multiple inputs for composite
     model1_comp = Model(in_image, final_layer)
     # compilemodel
@@ -259,17 +276,32 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     # base model input
     in_image = Input(shape=input_shape)
     # conv 1x1
-    d = Conv2D(128, (1, 1), padding='same',
-               kernel_initializer='he_normal')(in_image)
-    d = LeakyReLU(alpha=0.2)(d)
-    # conv 3x3 (output block)
-    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
-    d = LeakyReLU(alpha=0.2)(d)
-    # conv 4x4
-    d = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d)
-    d = MinibatchStdDev()(d)
-    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
-    d = LeakyReLU(alpha=0.2)(d)
+    featured_block = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
+    featured_block = LeakyReLU(alpha=0.2)(featured_block)
+    # convolusion block 1
+    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_block)
+    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    d_1 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    # convolusion block 2
+    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_block)
+    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    d_2 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    # convolusion block 3
+    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_block)
+    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    d_3 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_3)
+    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
+    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    #sumarize blocks
+    sumarized_block=Add([d_1, d_2, d_3])
+    d = MinibatchStdDev()(sumarized_block)
     d = Flatten()(d)
     out_class = Dense(1, activation='linear')(d)
     # define model
@@ -293,15 +325,37 @@ def add_generator_block(old_model):
     block_end = old_model.layers[-2].output
     # upsample, and define new block
     upsampling = UpSampling2D()(block_end)
-    g = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
-    g = LeakyReLU(alpha=0.2)(g)
-    g = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g)
-    g = LeakyReLU(alpha=0.2)(g)
-    g = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g)
-    g = LeakyReLU(alpha=0.2)(g)
-    g = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g)
-    g = LeakyReLU(alpha=0.2)(g)
-    out_image = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(g)
+    #bloque 1
+    g_1 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
+    g_1 = LeakyReLU(alpha=0.2)(g_1)
+    g_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = LeakyReLU(alpha=0.2)(g_1)
+    g_1 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = LeakyReLU(alpha=0.2)(g_1)
+    g_1 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = LeakyReLU(alpha=0.2)(g_1)
+    #bloque 2
+    g_2 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
+    g_2 = LeakyReLU(alpha=0.2)(g_2)
+    g_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_2)
+    g_2 = LeakyReLU(alpha=0.2)(g_2)
+    g_2 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_2)
+    g_2 = LeakyReLU(alpha=0.2)(g_2)
+    g_2 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_2)
+    g_2 = LeakyReLU(alpha=0.2)(g_2)
+    #bloque 3
+    g_3 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
+    g_3 = LeakyReLU(alpha=0.2)(g_3)
+    g_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_3)
+    g_3 = LeakyReLU(alpha=0.2)(g_3)
+    g_3 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_3)
+    g_3 = LeakyReLU(alpha=0.2)(g_3)
+    g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
+    g_3 = LeakyReLU(alpha=0.2)(g_3)
+    #sumarize
+    sumarized_blocks=Add([g_1,g_2,g_3])
+    # to 2 channels
+    out_image = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     # define model
     model1 = Model(old_model.input, out_image)
     #model1.get_layer(name="shared_layer").trainable=False
@@ -323,17 +377,41 @@ def define_generator(n_blocks, lstm_layer):
     # input
     ly0 = Input(shape=(1, 50, 2))
     # bloque 1 deconvolusion
-    g = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(ly0)
-    g = LeakyReLU(alpha=0.2)(g)
-    g = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g)
-    g = LeakyReLU(alpha=0.2)(g)
-    g = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g)
-    g = LeakyReLU(alpha=0.2)(g)
-    g = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g)
-    g = LeakyReLU(alpha=0.2)(g)
-    g = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g)
-    g = LeakyReLU(alpha=0.2)(g)
-    wls = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(g)
+    g_1 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(ly0)
+    g_1 = LeakyReLU(alpha=0.2)(g_1)
+    g_1 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = LeakyReLU(alpha=0.2)(g_1)
+    g_1 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = LeakyReLU(alpha=0.2)(g_1)
+    g_1 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = LeakyReLU(alpha=0.2)(g_1)
+    g_1 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = LeakyReLU(alpha=0.2)(g_1)
+    # bloque 2 deconvolusion
+    g_2 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(ly0)
+    g_2 = LeakyReLU(alpha=0.2)(g_2)
+    g_2 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_2)
+    g_2 = LeakyReLU(alpha=0.2)(g_2)
+    g_2 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_2)
+    g_2 = LeakyReLU(alpha=0.2)(g_2)
+    g_2 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_2)
+    g_2 = LeakyReLU(alpha=0.2)(g_2)
+    g_2 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_2)
+    g_2 = LeakyReLU(alpha=0.2)(g_2)
+    # bloque 3 deconvolusion
+    g_3 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(ly0)
+    g_3 = LeakyReLU(alpha=0.2)(g_3)
+    g_3 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_3)
+    g_3 = LeakyReLU(alpha=0.2)(g_3)
+    g_3 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_3)
+    g_3 = LeakyReLU(alpha=0.2)(g_3)
+    g_3 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_3)
+    g_3 = LeakyReLU(alpha=0.2)(g_3)
+    g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
+    g_3 = LeakyReLU(alpha=0.2)(g_3)
+    #to 2 channels
+    sumarized_blocks=Add([g_1, g_2, g_3])
+    wls = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     wls = LeakyReLU(alpha=0.2)(wls)
     model = Model(ly0, wls)
     # store model
