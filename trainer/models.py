@@ -217,23 +217,23 @@ def add_discriminator_block(old_model, n_input_layers=3):
     d_1 = LeakyReLU(alpha=0.2)(d_1)
     #d = AveragePooling2D()(d)
     d_1 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_1)
-    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    op_1 = LeakyReLU(alpha=0.2)(d_1)
     #convolusion block 2
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_layer)
     d_2 = LeakyReLU(alpha=0.2)(d_2)
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
     d_2 = LeakyReLU(alpha=0.2)(d_2)
     d_2 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_2)
-    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    op_2 = LeakyReLU(alpha=0.2)(d_2)
     #convolusion block 3
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_layer)
     d_3 = LeakyReLU(alpha=0.2)(d_3)
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
     d_3 = LeakyReLU(alpha=0.2)(d_3)
     d_3 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_3)
-    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    op_3 = LeakyReLU(alpha=0.2)(d_3)
     #sumarize blocks
-    sumarized_blocks=Add()([d_1, d_2, d_3])
+    sumarized_blocks=Add()([op_1, op_2, op_3])
     block_new = sumarized_blocks
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
@@ -284,23 +284,23 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     d_1 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_1)
     d_1 = LeakyReLU(alpha=0.2)(d_1)
     d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
-    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    op_1 = LeakyReLU(alpha=0.2)(d_1)
     # convolusion block 2
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_block)
     d_2 = LeakyReLU(alpha=0.2)(d_2)
     d_2 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_2)
     d_2 = LeakyReLU(alpha=0.2)(d_2)
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
-    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    op_2 = LeakyReLU(alpha=0.2)(d_2)
     # convolusion block 3
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_block)
     d_3 = LeakyReLU(alpha=0.2)(d_3)
     d_3 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_3)
     d_3 = LeakyReLU(alpha=0.2)(d_3)
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
-    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    op_3 = LeakyReLU(alpha=0.2)(d_3)
     #sumarize blocks
-    sumarized_block=Add()([d_1, d_2, d_3])
+    sumarized_block=Add()([op_1, op_2, op_3])
     d = MinibatchStdDev()(sumarized_block)
     d = Flatten()(d)
     out_class = Dense(1, activation='linear')(d)
@@ -333,7 +333,7 @@ def add_generator_block(old_model):
     g_1 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_1)
     g_1 = LeakyReLU(alpha=0.2)(g_1)
     g_1 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_1)
-    g_1 = LeakyReLU(alpha=0.2)(g_1)
+    op_1 = LeakyReLU(alpha=0.2)(g_1)
     #bloque 2
     g_2 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
     g_2 = LeakyReLU(alpha=0.2)(g_2)
@@ -342,7 +342,7 @@ def add_generator_block(old_model):
     g_2 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_2)
     g_2 = LeakyReLU(alpha=0.2)(g_2)
     g_2 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_2)
-    g_2 = LeakyReLU(alpha=0.2)(g_2)
+    op_2 = LeakyReLU(alpha=0.2)(g_2)
     #bloque 3
     g_3 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
     g_3 = LeakyReLU(alpha=0.2)(g_3)
@@ -351,9 +351,9 @@ def add_generator_block(old_model):
     g_3 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_3)
     g_3 = LeakyReLU(alpha=0.2)(g_3)
     g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
-    g_3 = LeakyReLU(alpha=0.2)(g_3)
+    op_3 = LeakyReLU(alpha=0.2)(g_3)
     #sumarize
-    sumarized_blocks=Add()([g_1,g_2,g_3])
+    sumarized_blocks=Add()([op_1,op_2,op_3])
     # to 2 channels
     out_image = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     # define model
@@ -386,7 +386,7 @@ def define_generator(n_blocks, lstm_layer):
     g_1 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_1)
     g_1 = LeakyReLU(alpha=0.2)(g_1)
     g_1 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_1)
-    g_1 = LeakyReLU(alpha=0.2)(g_1)
+    op_1 = LeakyReLU(alpha=0.2)(g_1)
     # bloque 2 deconvolusion
     g_2 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(ly0)
     g_2 = LeakyReLU(alpha=0.2)(g_2)
@@ -397,7 +397,7 @@ def define_generator(n_blocks, lstm_layer):
     g_2 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_2)
     g_2 = LeakyReLU(alpha=0.2)(g_2)
     g_2 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_2)
-    g_2 = LeakyReLU(alpha=0.2)(g_2)
+    op_2 = LeakyReLU(alpha=0.2)(g_2)
     # bloque 3 deconvolusion
     g_3 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(ly0)
     g_3 = LeakyReLU(alpha=0.2)(g_3)
@@ -408,9 +408,9 @@ def define_generator(n_blocks, lstm_layer):
     g_3 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_3)
     g_3 = LeakyReLU(alpha=0.2)(g_3)
     g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
-    g_3 = LeakyReLU(alpha=0.2)(g_3)
+    op_3 = LeakyReLU(alpha=0.2)(g_3)
     #to 2 channels
-    sumarized_blocks=Add()([g_1, g_2, g_3])
+    sumarized_blocks=Add()([op_1, op_2, op_3])
     wls = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     wls = LeakyReLU(alpha=0.2)(wls)
     model = Model(ly0, wls)
