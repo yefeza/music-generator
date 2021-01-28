@@ -238,7 +238,6 @@ def add_discriminator_block(old_model, n_input_layers=3):
     d_block = LeakyReLU(alpha=0.2)(d_block)
     block_new = sumarized_blocks
     # skiptheinput,1x1andactivationfortheoldmodel
-    inputs_sum=[]
     pointer=0
     for i in range(n_input_layers, len(old_model.layers)):
         if isinstance(old_model.layers[i], Dense):
@@ -277,11 +276,31 @@ def add_discriminator_block(old_model, n_input_layers=3):
     # fadeinoutputofoldmodelinputlayerwithnewinput
     d = WeightedSum()([block_old, block_new])
     # skiptheinput,1x1andactivationfortheoldmodel
+    pointer=0
     for i in range(n_input_layers, len(old_model.layers)):
         if isinstance(old_model.layers[i], Dense):
-            final_layer = old_model.layers[i](d)
+            final_layer = old_model.layers[i](d_block_sum)
         else:
-            d = old_model.layers[i](d)
+            if pointer==0:
+                canal1 = old_model.layers[i](d)
+            if pointer>0 and pointer<6:
+                canal1 = old_model.layers[i](canal1)
+            if pointer==6:
+                canal2 = old_model.layers[i](d)
+            if pointer>6 and pointer<12:
+                canal2 = old_model.layers[i](canal2)
+            if pointer==12:
+                canal3 = old_model.layers[i](d)
+            if pointer>12 and pointer<18:
+                canal3 = old_model.layers[i](canal3)
+            if pointer==18:
+                sumarized_blocks = old_model.layers[i]([canal1, canal2, canal3])
+            if pointer==19:
+                d_block_sum = old_model.layers[i](sumarized_blocks)
+            if pointer==20:
+                d_block_sum = old_model.layers[i](d_block_sum)
+                pointer=-1
+            pointer+=1
     # definestraight-throughmodel
     #model2 = Model([in_image, y_true, is_weight], final_layer)
     #model2.add_loss(D_wgangp_acgan(y_true, final_layer, is_weight))
