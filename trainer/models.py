@@ -216,39 +216,33 @@ def add_discriminator_block(old_model, n_input_layers=3):
     d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
     d_1 = LeakyReLU(alpha=0.2)(d_1)
     #d = AveragePooling2D()(d)
-    d_1 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_1)
+    d_1 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_1)
     op_1 = LeakyReLU(alpha=0.2)(d_1)
     #convolusion block 2
-    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_layer)
+    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
     d_2 = LeakyReLU(alpha=0.2)(d_2)
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
     d_2 = LeakyReLU(alpha=0.2)(d_2)
-    d_2 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_2)
+    d_2 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_2)
     op_2 = LeakyReLU(alpha=0.2)(d_2)
     #convolusion block 3
-    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_layer)
+    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
     d_3 = LeakyReLU(alpha=0.2)(d_3)
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
     d_3 = LeakyReLU(alpha=0.2)(d_3)
     d_3 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_3)
     op_3 = LeakyReLU(alpha=0.2)(d_3)
     #sumarize blocks
-    sumarized_blocks=Add()([op_1, op_2, op_3])
-    d_block=Conv2D(128, (1,1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
+    d_block=Conv2D(128, (1,1), padding='same', kernel_initializer='he_normal')(d_3)
     d_block = LeakyReLU(alpha=0.2)(d_block)
-    block_new = sumarized_blocks
+    block_new = d_block
     # skiptheinput,1x1andactivationfortheoldmodel
     pointer=0
     for i in range(n_input_layers, len(old_model.layers)):
         if isinstance(old_model.layers[i], Dense):
-            final_layer = old_model.layers[i](d_block_sum)
+            final_layer = old_model.layers[i](d_block)
         else:
-            if pointer==0:
-                d_block_sum = old_model.layers[i](d_block)
-            if pointer>0 and pointer<6:
-                d_block_sum = old_model.layers[i](d_block_sum)
-            if isinstance(old_model.layers[i], WeightedSum) or isinstance(old_model.layers[i], Flatten):
-                d_block_sum = old_model.layers[i](d_block_sum)
+            d_block = old_model.layers[i](d_block)
     # model 1 without multiple inputs for composite
     model1_comp = Model(in_image, final_layer)
     # compilemodel
@@ -262,17 +256,11 @@ def add_discriminator_block(old_model, n_input_layers=3):
     # fadeinoutputofoldmodelinputlayerwithnewinput
     d = WeightedSum()([block_old, block_new])
     # skiptheinput,1x1andactivationfortheoldmodel
-    pointer=0
     for i in range(n_input_layers, len(old_model.layers)):
         if isinstance(old_model.layers[i], Dense):
-            final_layer = old_model.layers[i](d_block_sum)
+            final_layer = old_model.layers[i](d)
         else:
-            if pointer==0:
-                d_block_sum = old_model.layers[i](d_block)
-            if pointer>0 and pointer<6:
-                d_block_sum = old_model.layers[i](d_block_sum)
-            if isinstance(old_model.layers[i], WeightedSum) or isinstance(old_model.layers[i], Flatten):
-                d_block_sum = old_model.layers[i](d_block_sum)
+            d = old_model.layers[i](d)
     # definestraight-throughmodel
     #model2 = Model([in_image, y_true, is_weight], final_layer)
     #model2.add_loss(D_wgangp_acgan(y_true, final_layer, is_weight))
