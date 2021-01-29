@@ -366,9 +366,29 @@ def add_generator_block(old_model):
     g_4 = LeakyReLU(alpha=0.2)(g_4)
     g_4 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_4)
     g_4 = LeakyReLU(alpha=0.2)(g_4)
-    op_4 = Dense(100)(g_3)
+    op_4 = Dense(100)(g_4)
+    #bloque 5
+    g_5 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
+    g_5 = LeakyReLU(alpha=0.2)(g_5)
+    g_5 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_5)
+    g_5 = LeakyReLU(alpha=0.2)(g_5)
+    g_5 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_5)
+    g_5 = LeakyReLU(alpha=0.2)(g_5)
+    g_5 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_5)
+    g_5 = LeakyReLU(alpha=0.2)(g_5)
+    op_5 = Dense(100)(g_5)
+    #bloque 6
+    g_6 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
+    g_6 = LeakyReLU(alpha=0.2)(g_6)
+    g_6 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_6)
+    g_6 = LeakyReLU(alpha=0.2)(g_6)
+    g_6 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_6)
+    g_6 = LeakyReLU(alpha=0.2)(g_6)
+    g_6 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_6)
+    g_6 = LeakyReLU(alpha=0.2)(g_6)
+    op_6 = Dense(100)(g_6)
     #sumarize
-    sumarized_blocks=Add()([op_1,op_2,op_3, op_4])
+    sumarized_blocks=Add()([op_1,op_2,op_3, op_4, op_5, op_6])
     sumarized_blocks=Dense(100)(sumarized_blocks)
     # to 2 channels
     out_image = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
@@ -441,8 +461,32 @@ def define_generator(n_blocks, lstm_layer):
     g_4 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_4)
     g_4 = LeakyReLU(alpha=0.2)(g_4)
     op_4 = Dense(100)(g_4)
+    # bloque 5 deconvolusion
+    g_5 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_5 = LeakyReLU(alpha=0.2)(g_5)
+    g_5 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_5)
+    g_5 = LeakyReLU(alpha=0.2)(g_5)
+    g_5 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_5)
+    g_5 = LeakyReLU(alpha=0.2)(g_5)
+    g_5 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_5)
+    g_5 = LeakyReLU(alpha=0.2)(g_5)
+    g_5 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_5)
+    g_5 = LeakyReLU(alpha=0.2)(g_5)
+    op_5 = Dense(100)(g_5)
+    # bloque 6 deconvolusion
+    g_6 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_6 = LeakyReLU(alpha=0.2)(g_6)
+    g_6 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_6)
+    g_6 = LeakyReLU(alpha=0.2)(g_6)
+    g_6 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_6)
+    g_6 = LeakyReLU(alpha=0.2)(g_6)
+    g_6 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_6)
+    g_6 = LeakyReLU(alpha=0.2)(g_6)
+    g_6 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_6)
+    g_6 = LeakyReLU(alpha=0.2)(g_6)
+    op_6 = Dense(100)(g_6)
     #to 2 channels
-    sumarized_blocks=Add()([op_1, op_2, op_3, op_4])
+    sumarized_blocks=Add()([op_1, op_2, op_3, op_4, op_5, op_6])
     sumarized_blocks=Dense(100)(sumarized_blocks)
     wls = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     wls = LeakyReLU(alpha=0.2)(wls)
@@ -485,7 +529,7 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator=d_models[0],
             generator=g_models[0],
             latent_dim=latent_dim,
-            discriminator_extra_steps=4,
+            discriminator_extra_steps=2,
         )
         wgan1.compile(
             d_optimizer=Adam(
@@ -502,7 +546,7 @@ def define_composite(discriminators, generators, latent_dim):
             generator=g_models[1],
             latent_dim=latent_dim,
             fade_in=True,
-            discriminator_extra_steps=4,
+            discriminator_extra_steps=2,
         )
         wgan2.compile(
             d_optimizer=Adam(
