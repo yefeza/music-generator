@@ -355,6 +355,7 @@ def add_generator_block(old_model):
     op_3 = LeakyReLU(alpha=0.2)(g_3)
     #sumarize
     sumarized_blocks=Add()([op_1,op_2,op_3])
+    sumarized_blocks=Dense(50)(sumarized_blocks)
     # to 2 channels
     out_image = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     # define model
