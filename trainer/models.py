@@ -244,25 +244,11 @@ def add_discriminator_block(old_model, n_input_layers=3):
             final_layer = old_model.layers[i](d_block_sum)
         else:
             if pointer==0:
-                canal1 = old_model.layers[i](d_block)
+                d_block_sum = old_model.layers[i](d_block)
             if pointer>0 and pointer<6:
-                canal1 = old_model.layers[i](canal1)
-            if pointer==6:
-                canal2 = old_model.layers[i](d_block)
-            if pointer>6 and pointer<12:
-                canal2 = old_model.layers[i](canal2)
-            if pointer==12:
-                canal3 = old_model.layers[i](d_block)
-            if pointer>12 and pointer<18:
-                canal3 = old_model.layers[i](canal3)
-            if pointer==18:
-                sumarized_blocks = old_model.layers[i]([canal1, canal2, canal3])
-            if pointer==19:
-                d_block_sum = old_model.layers[i](sumarized_blocks)
-            if pointer==20:
                 d_block_sum = old_model.layers[i](d_block_sum)
-                pointer=-1
-            pointer+=1
+            if isinstance(old_model.layers[i], WeightedSum) or isinstance(old_model.layers[i], Flatten):
+                d_block_sum = old_model.layers[i](d_block_sum)
     # model 1 without multiple inputs for composite
     model1_comp = Model(in_image, final_layer)
     # compilemodel
@@ -282,25 +268,11 @@ def add_discriminator_block(old_model, n_input_layers=3):
             final_layer = old_model.layers[i](d_block_sum)
         else:
             if pointer==0:
-                canal1 = old_model.layers[i](d)
+                d_block_sum = old_model.layers[i](d_block)
             if pointer>0 and pointer<6:
-                canal1 = old_model.layers[i](canal1)
-            if pointer==6:
-                canal2 = old_model.layers[i](d)
-            if pointer>6 and pointer<12:
-                canal2 = old_model.layers[i](canal2)
-            if pointer==12:
-                canal3 = old_model.layers[i](d)
-            if pointer>12 and pointer<18:
-                canal3 = old_model.layers[i](canal3)
-            if pointer==18:
-                sumarized_blocks = old_model.layers[i]([canal1, canal2, canal3])
-            if pointer==19:
-                d_block_sum = old_model.layers[i](sumarized_blocks)
-            if pointer==20:
                 d_block_sum = old_model.layers[i](d_block_sum)
-                pointer=-1
-            pointer+=1
+            if isinstance(old_model.layers[i], WeightedSum) or isinstance(old_model.layers[i], Flatten):
+                d_block_sum = old_model.layers[i](d_block_sum)
     # definestraight-throughmodel
     #model2 = Model([in_image, y_true, is_weight], final_layer)
     #model2.add_loss(D_wgangp_acgan(y_true, final_layer, is_weight))
