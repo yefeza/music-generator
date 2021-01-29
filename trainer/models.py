@@ -226,7 +226,7 @@ def add_discriminator_block(old_model, n_input_layers=3):
     d_2 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_2)
     d_2 = LeakyReLU(alpha=0.2)(d_2)
     #convolusion block 3
-    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
     d_3 = LeakyReLU(alpha=0.2)(d_3)
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
     d_3 = LeakyReLU(alpha=0.2)(d_3)
@@ -295,7 +295,7 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
     d_2 = LeakyReLU(alpha=0.2)(d_2)
     # convolusion block 3
-    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
     d_3 = LeakyReLU(alpha=0.2)(d_3)
     d_3 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_3)
     d_3 = LeakyReLU(alpha=0.2)(d_3)
