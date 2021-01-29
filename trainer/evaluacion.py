@@ -30,21 +30,37 @@ def add_evaluator_block(old_model, n_input_layers=3):
     # definenewinputshapeasdoublethesize
     input_shape = (in_shape[-3]*2, in_shape[-2]*2, in_shape[-1])
     in_image = Input(shape=input_shape)
-    # definenewinputprocessinglayer
-    d = Conv2D(128, (1, 1), padding='same',
-               kernel_initializer='he_normal')(in_image)
-    d = LeakyReLU(alpha=0.2)(d)
-    # definenewblock
-    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
-    d = LeakyReLU(alpha=0.2)(d)
-    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
-    d = LeakyReLU(alpha=0.2)(d)
-    d = AveragePooling2D()(d)
+    featured_layer = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
+    featured_layer = LeakyReLU(alpha=0.2)(featured_layer)
+    #convolusion block 1
+    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_layer)
+    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    #d = AveragePooling2D()(d)
+    d_1 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    #convolusion block 2
+    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    d_2 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    #convolusion block 3
+    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
+    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    d_3 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_3)
+    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    d_block=Conv2D(128, (1,1), padding='same', kernel_initializer='he_normal')(d_3)
+    d_block = LeakyReLU(alpha=0.2)(d_block)
     for i in range(n_input_layers, len(old_model.layers)):
         if isinstance(old_model.layers[i], Dense):
-            final_layer = old_model.layers[i](d)
+            final_layer = old_model.layers[i](d_block)
         else:
-            d = old_model.layers[i](d)
+            d_block = old_model.layers[i](d_block)
     model = Model(in_image, final_layer)
     return model
 
@@ -54,18 +70,30 @@ def define_evaluator(n_blocks, input_shape=(4, 750, 2)):
     model_list = list()
     # base model input
     in_image = Input(shape=input_shape)
-    # conv 1x1
-    d = Conv2D(128, (1, 1), padding='same',
-               kernel_initializer='he_normal')(in_image)
-    d = LeakyReLU(alpha=0.2)(d)
-    # conv 3x3 (output block)
-    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
-    d = LeakyReLU(alpha=0.2)(d)
-    # conv 4x4
-    d = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d)
-    d = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d)
-    d = LeakyReLU(alpha=0.2)(d)
-    d = Flatten()(d)
+    featured_block = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
+    featured_block = LeakyReLU(alpha=0.2)(featured_block)
+    # convolusion block 1
+    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_block)
+    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    d_1 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    # convolusion block 2
+    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    d_2 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    # convolusion block 3
+    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    d_3 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_3)
+    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
+    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    d = Flatten()(d_3)
     out_class = Dense(9, activation='softmax')(d)
     # define model
     model = Model(in_image, out_class)
