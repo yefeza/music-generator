@@ -326,9 +326,9 @@ def add_generator_block(old_model):
     block_end = old_model.layers[-2].output
     # upsample, and define new block
     upsampling = UpSampling2D()(block_end)
-    upsampling = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
+    featured = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
     #bloque 1
-    g_1 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
+    g_1 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
     g_1 = LeakyReLU(alpha=0.2)(g_1)
     g_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_1)
     g_1 = LeakyReLU(alpha=0.2)(g_1)
@@ -338,7 +338,7 @@ def add_generator_block(old_model):
     g_1 = LeakyReLU(alpha=0.2)(g_1)
     op_1 = Dense(100)(g_1)
     #bloque 2
-    g_2 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
+    g_2 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
     g_2 = LeakyReLU(alpha=0.2)(g_2)
     g_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_2)
     g_2 = LeakyReLU(alpha=0.2)(g_2)
@@ -348,7 +348,7 @@ def add_generator_block(old_model):
     g_2 = LeakyReLU(alpha=0.2)(g_2)
     op_2 = Dense(100)(g_2)
     #bloque 3
-    g_3 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
+    g_3 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
     g_3 = LeakyReLU(alpha=0.2)(g_3)
     g_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_3)
     g_3 = LeakyReLU(alpha=0.2)(g_3)
@@ -358,7 +358,7 @@ def add_generator_block(old_model):
     g_3 = LeakyReLU(alpha=0.2)(g_3)
     op_3 = Dense(100)(g_3)
     #bloque 4
-    g_4 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
+    g_4 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
     g_4 = LeakyReLU(alpha=0.2)(g_4)
     g_4 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_4)
     g_4 = LeakyReLU(alpha=0.2)(g_4)
