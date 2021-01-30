@@ -336,7 +336,7 @@ def add_generator_block(old_model):
     g_1 = LeakyReLU(alpha=0.2)(g_1)
     g_1 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_1)
     g_1 = LeakyReLU(alpha=0.2)(g_1)
-    op_1 = Dense(100)(g_1)
+    op_1 = Dense(50)(g_1)
     #bloque 2
     g_2 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
     g_2 = LeakyReLU(alpha=0.2)(g_2)
@@ -346,7 +346,7 @@ def add_generator_block(old_model):
     g_2 = LeakyReLU(alpha=0.2)(g_2)
     g_2 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_2)
     g_2 = LeakyReLU(alpha=0.2)(g_2)
-    op_2 = Dense(100)(g_2)
+    op_2 = Dense(50)(g_2)
     #bloque 3
     g_3 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
     g_3 = LeakyReLU(alpha=0.2)(g_3)
@@ -356,7 +356,7 @@ def add_generator_block(old_model):
     g_3 = LeakyReLU(alpha=0.2)(g_3)
     g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
     g_3 = LeakyReLU(alpha=0.2)(g_3)
-    op_3 = Dense(100)(g_3)
+    op_3 = Dense(50)(g_3)
     #bloque 4
     g_4 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
     g_4 = LeakyReLU(alpha=0.2)(g_4)
@@ -388,7 +388,7 @@ def add_generator_block(old_model):
     g_6 = LeakyReLU(alpha=0.2)(g_6)
     op_6 = Dense(100)(g_6)
     #sumarize
-    sumarized_blocks=Add()([op_1,op_2,op_3, op_4, op_5, op_6])
+    sumarized_blocks=Add()([op_1,op_2,op_3])
     sumarized_blocks=Dense(100)(sumarized_blocks)
     # to 2 channels
     out_image = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
@@ -424,7 +424,7 @@ def define_generator(n_blocks, lstm_layer):
     g_1 = LeakyReLU(alpha=0.2)(g_1)
     g_1 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_1)
     g_1 = LeakyReLU(alpha=0.2)(g_1)
-    op_1 = Dense(100)(g_1)
+    op_1 = Dense(50)(g_1)
     # bloque 2 deconvolusion
     g_2 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
     g_2 = LeakyReLU(alpha=0.2)(g_2)
@@ -436,7 +436,7 @@ def define_generator(n_blocks, lstm_layer):
     g_2 = LeakyReLU(alpha=0.2)(g_2)
     g_2 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_2)
     g_2 = LeakyReLU(alpha=0.2)(g_2)
-    op_2 = Dense(100)(g_2)
+    op_2 = Dense(50)(g_2)
     # bloque 3 deconvolusion
     g_3 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
     g_3 = LeakyReLU(alpha=0.2)(g_3)
@@ -448,7 +448,7 @@ def define_generator(n_blocks, lstm_layer):
     g_3 = LeakyReLU(alpha=0.2)(g_3)
     g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
     g_3 = LeakyReLU(alpha=0.2)(g_3)
-    op_3 = Dense(100)(g_3)
+    op_3 = Dense(50)(g_3)
     # bloque 4 deconvolusion
     g_4 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
     g_4 = LeakyReLU(alpha=0.2)(g_4)
@@ -486,7 +486,7 @@ def define_generator(n_blocks, lstm_layer):
     g_6 = LeakyReLU(alpha=0.2)(g_6)
     op_6 = Dense(100)(g_6)
     #to 2 channels
-    sumarized_blocks=Add()([op_1, op_2, op_3, op_4, op_5, op_6])
+    sumarized_blocks=Add()([op_1, op_2, op_3])
     sumarized_blocks=Dense(100)(sumarized_blocks)
     wls = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     wls = LeakyReLU(alpha=0.2)(wls)
