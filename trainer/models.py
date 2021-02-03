@@ -120,11 +120,11 @@ class WGAN(keras.Model):
         # the discriminator for `x` more steps (typically 5) as compared to
         # one step of the generator. Here we will train it for 3 extra steps
         # as compared to 5 to reduce the training time.
+        # Get the latent vector
+        random_latent_vectors = tf.random.normal(
+            shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2])
+        )
         for i in range(self.d_steps):
-            # Get the latent vector
-            random_latent_vectors = tf.random.normal(
-                shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2])
-            )
             with tf.GradientTape() as tape:
                 # Generate fake images from the latent vector
                 fake_images = self.generator(random_latent_vectors, training=True)
@@ -138,8 +138,8 @@ class WGAN(keras.Model):
                 # Calculate the gradient penalty
                 gp = self.gradient_penalty(batch_size, real_images, fake_images)
                 # Add the gradient penalty to the original discriminator loss
-                d_loss = d_cost + gp * self.gp_weight
-
+                #d_loss = d_cost + gp * self.gp_weight
+                d_loss = d_cost
             # Get the gradients w.r.t the discriminator loss
             d_gradient = tape.gradient(d_loss, self.discriminator.trainable_variables)
             # Update the weights of the discriminator using the discriminator optimizer
@@ -149,13 +149,15 @@ class WGAN(keras.Model):
 
         # Train the generator
         # Get the latent vector
-        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
+        #random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
         with tf.GradientTape() as tape:
             # Generate fake images using the generator
             generated_images = self.generator(random_latent_vectors, training=True)
             # Get the discriminator logits for fake images
             gen_img_logits = self.discriminator(generated_images, training=True)
-            g_loss = self.g_loss_fn(gen_img_logits)
+            # Get the logits for the real images
+            real_logits = self.discriminator(real_images, training=True)
+            g_loss = self.g_loss_fn(gen_img_logits, real_logits)
 
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
@@ -509,12 +511,14 @@ def define_generator(n_blocks, lstm_layer):
 def discriminator_loss(real_img, fake_img):
     real_loss = tf.reduce_mean(real_img)
     fake_loss = tf.reduce_mean(fake_img)
-    return fake_loss - real_loss
+    return tf.math.abs(fake_loss - real_loss)
 
 
 # Define the loss functions for the generator.
-def generator_loss(fake_img):
-    return -tf.reduce_mean(fake_img)
+def generator_loss(fake_logits, real_logits):
+    real_loss=tf.reduce_mean(real_logits)
+    fake_loss=tf.reduce_mean(fake_logits)
+    return ((fake_loss-real_loss)/tf.math.abs(-(fake_loss-real_loss)))*real_loss
 
 # define composite models for training generators via discriminators
 
