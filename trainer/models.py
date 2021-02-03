@@ -508,17 +508,17 @@ def define_generator(n_blocks, lstm_layer):
 # Define the loss functions for the discriminator,
 # which should be (fake_loss - real_loss).
 # We will add the gradient penalty later to this loss function.
-def discriminator_loss(real_img, fake_img):
-    real_loss = tf.reduce_mean(real_img)
-    fake_loss = tf.reduce_mean(fake_img)
-    return tf.math.abs(fake_loss - real_loss)
+def discriminator_loss(fake_logits, real_logits):
+    real_loss=tf.reduce_mean(real_logits)
+    fake_loss=tf.reduce_mean(fake_logits)
+    return ((fake_loss-real_loss)/tf.math.abs(-(fake_loss-real_loss)))*real_loss
 
 
 # Define the loss functions for the generator.
 def generator_loss(fake_logits, real_logits):
-    real_loss=tf.reduce_mean(real_logits)
-    fake_loss=tf.reduce_mean(fake_logits)
-    return ((fake_loss-real_loss)/tf.math.abs(-(fake_loss-real_loss)))*real_loss
+    real_loss = tf.reduce_mean(real_logits)
+    fake_loss = tf.reduce_mean(fake_logits)
+    return tf.math.abs(fake_loss - real_loss)
 
 # define composite models for training generators via discriminators
 
