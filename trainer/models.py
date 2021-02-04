@@ -12,6 +12,7 @@ from keras.layers import Flatten
 from keras.layers import Reshape
 from keras.layers import LeakyReLU
 from keras.layers import Add
+from keras.layers import LayerNormalization
 from keras.utils.vis_utils import plot_model
 from keras import backend
 import tensorflow as tf
@@ -306,6 +307,7 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     #sumarize blocks
     d = MinibatchStdDev()(d_3)
     d = Flatten()(d)
+    d = LayerNormalization()(d)
     out_class = Dense(1, activation='linear')(d)
     # define model
     model_comp = Model(in_image, out_class)
@@ -533,7 +535,7 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator=d_models[0],
             generator=g_models[0],
             latent_dim=latent_dim,
-            discriminator_extra_steps=2,
+            discriminator_extra_steps=1,
         )
         wgan1.compile(
             d_optimizer=Adam(
@@ -550,7 +552,7 @@ def define_composite(discriminators, generators, latent_dim):
             generator=g_models[1],
             latent_dim=latent_dim,
             fade_in=True,
-            discriminator_extra_steps=2,
+            discriminator_extra_steps=1,
         )
         wgan2.compile(
             d_optimizer=Adam(
