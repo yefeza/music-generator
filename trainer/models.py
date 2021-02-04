@@ -518,7 +518,7 @@ def discriminator_loss(fake_logits, real_logits):
 def generator_loss(fake_logits, real_logits):
     real_loss=tf.reduce_mean(real_logits)
     fake_loss=tf.reduce_mean(fake_logits)
-    return ((fake_loss-real_loss)/tf.math.abs(-(fake_loss-real_loss)))*real_loss
+    return -((fake_loss-real_loss)/tf.math.abs(-(fake_loss-real_loss)))*real_loss
     
 # define composite models for training generators via discriminators
 
