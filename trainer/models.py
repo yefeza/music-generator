@@ -328,7 +328,7 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     #sumarize blocks
     d = MinibatchStdDev()(d_3)
     d = Flatten()(d)
-    out_class = Dense(1, activation='linear')(d)
+    out_class = Dense(1, activation='sigmoid')(d)
     # define model
     model_comp = Model(in_image, out_class)
     # store model
