@@ -96,7 +96,7 @@ class WGAN(keras.Model):
         )
         fake_images = self.generator.predict(random_latent_vectors)
         real_labels=np.ones((real_images.shape[0]))
-        fake_labels=np.zeros((real_images.shape[0]))
+        fake_labels=-np.ones((real_images.shape[0]))
         X=np.concatenate((real_images,fake_images))
         y=np.concatenate((real_labels,fake_labels))
         print(X.shape)
@@ -330,7 +330,7 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     #sumarize blocks
     d = MinibatchStdDev()(d_3)
     d = Flatten()(d)
-    out_class = Dense(1, activation='sigmoid')(d)
+    out_class = Dense(1, activation='tanh')(d)
     # define model
     model_comp = Model(in_image, out_class)
     # store model
