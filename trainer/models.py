@@ -97,8 +97,8 @@ class WGAN(keras.Model):
         fake_images = self.generator.predict(random_latent_vectors)
         real_labels=np.ones((real_images.shape[0]))
         fake_labels=-np.ones((real_images.shape[0]))
-        X=real_images+fake_images
-        y=real_labels+fake_labels
+        X=np.concatenate(real_images,fake_images)
+        y=np.concatenate(real_labels,fake_labels)
         print(X.shape)
         print(y.shape)
         self.discriminator.compile(optimizer='adam', loss='mse', metrics=["accuracy"])

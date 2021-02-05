@@ -208,7 +208,7 @@ def download_diension_dataset(path_dataset, bucket_name, files_format, dimension
 def read_dataset(dimension, files_format):
     data=[]
     y_evaluator=[]
-    limit_songs=10
+    limit_songs=100
     for folder in range(9):
         continuos_error=0
         print("Leyendo dataset en folder "+str(folder+1))
