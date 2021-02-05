@@ -533,14 +533,14 @@ def define_generator(n_blocks, lstm_layer):
 def discriminator_loss(fake_logits, real_logits):
     real_loss=tf.reduce_mean(real_logits)
     fake_loss=tf.reduce_mean(fake_logits)
-    return ((fake_loss-real_loss)/tf.math.abs(-(fake_loss-real_loss)))*real_loss
+    return ((fake_loss-real_loss)/(tf.math.abs(-(fake_loss-real_loss))+0.0001))*real_loss
 
 
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
     real_loss=tf.reduce_mean(real_logits)
     fake_loss=tf.reduce_mean(fake_logits)
-    return ((fake_loss-real_loss)/tf.math.abs(-(fake_loss-real_loss)))*fake_loss
+    return ((fake_loss-real_loss)/(tf.math.abs(-(fake_loss-real_loss))+0.0001))*fake_loss
 
 def generator_loss(fake_logits, real_logits):
     real_loss = tf.reduce_mean(real_logits)
