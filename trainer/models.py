@@ -94,7 +94,7 @@ class WGAN(keras.Model):
         random_latent_vectors = tf.random.normal(
             shape=(real_images.shape[0], self.latent_dim[0], self.latent_dim[1], self.latent_dim[2])
         )
-        fake_images = self.generator(random_latent_vectors, training=True)
+        fake_images = self.generator.predict(random_latent_vectors)
         real_labels=np.ones((real_images.shape[0]))
         fake_labels=-np.ones((real_images.shape[0]))
         X=real_images+fake_images

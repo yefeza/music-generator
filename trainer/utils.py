@@ -77,7 +77,7 @@ def calculate_inception_score(p_yx, eps=1E-16):
 def generar_ejemplos(g_model, prefix, iter_num, n_examples, job_dir, bucket_name, latent_dim, evaluador):
     gen_shape = g_model.output_shape
     random_latent_vectors = tf.random.normal(shape=(n_examples, latent_dim[0], latent_dim[1], latent_dim[2]))
-    gen_auds = g_model(random_latent_vectors)
+    gen_auds = g_model(random_latent_vectors, training=False)
     for i in range(n_examples):
         signal_gen = gen_auds[i].numpy()
         signal_gen = np.reshape(signal_gen, ((gen_shape[-3]*gen_shape[-2]), 2))
