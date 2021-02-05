@@ -181,6 +181,21 @@ class WGAN(keras.Model):
             self.g_optimizer.apply_gradients(
                 zip(gen_gradient, self.generator.trainable_variables)
             )
+            #segunda funcion de costo
+            with tf.GradientTape() as tape:
+                # Generate fake images using the generator
+                generated_images = self.generator(random_latent_vectors, training=True)
+                # Get the discriminator logits for fake images
+                gen_img_logits = self.discriminator(generated_images, training=True)
+                # Get the logits for the real images
+                real_logits = self.discriminator(real_images, training=True)
+                g_loss_2 = self.g_loss_fn(gen_img_logits, real_logits)
+            # Get the gradients w.r.t the generator loss
+            gen_gradient = tape.gradient(g_loss_2, self.generator.trainable_variables)
+            # Update the weights of the generator using the generator optimizer
+            self.g_optimizer.apply_gradients(
+                zip(gen_gradient, self.generator.trainable_variables)
+            )
             #with tf.GradientTape() as tape:
             # Generate fake images using the generator
             generated_images = self.generator(random_latent_vectors, training=True)
@@ -189,7 +204,7 @@ class WGAN(keras.Model):
             # Get the logits for the real images
             real_logits = self.discriminator(real_images, training=True)
             pd_distance = self.g_loss_fn(gen_img_logits, real_logits)
-        return {"d_loss": d_loss, "g_loss": g_loss, "pd_distance": pd_distance}
+        return {"d_loss": d_loss, "g_loss": g_loss, "g_loss_2": g_loss_2, "pd_distance": pd_distance}
 
 # Minibatch Standard Deviation Layer
 
@@ -535,14 +550,14 @@ def define_generator(n_blocks, lstm_layer):
 def discriminator_loss(fake_logits, real_logits):
     real_loss=tf.reduce_mean(real_logits)
     fake_loss=tf.reduce_mean(fake_logits)
-    return ((fake_loss-real_loss)/(tf.math.abs(-(fake_loss-real_loss))+0.0001))*real_loss
+    return ((fake_loss-real_loss)/(tf.math.abs((fake_loss-real_loss))+0.0001))*real_loss
 
 
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
     real_loss=tf.reduce_mean(real_logits)
     fake_loss=tf.reduce_mean(fake_logits)
-    return ((fake_loss-real_loss)/(tf.math.abs(-(fake_loss-real_loss))+0.0001))*fake_loss
+    return ((fake_loss-real_loss)/(tf.math.abs((fake_loss-real_loss))+0.0001))*fake_loss
 
 def generator_loss(fake_logits, real_logits):
     real_loss = tf.reduce_mean(real_logits)
