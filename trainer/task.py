@@ -127,6 +127,7 @@ if __name__ == '__main__':
         scaled_data=scaled_data[:limit]
         print('Scaled Data', scaled_data.shape)
         #train_epochs(g_normal, d_normal, gan_normal, scaled_data, e_norm, n_batch, bucket_name)
+        gan_models[0][0].pre_train_discriminator(scaled_data,n_batch)
         gan_models[0][0].set_train_steps(n_steps)
         cbk=GANMonitor(job_dir=job_dir, evaluador=evaluador)
         #np.random.shuffle(scaled_data)

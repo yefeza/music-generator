@@ -90,6 +90,18 @@ class WGAN(keras.Model):
     def set_train_steps(self, size):
         self.train_steps=size
 
+    def pre_train_discriminator(self, real_images, batch_size):
+        random_latent_vectors = tf.random.normal(
+            shape=(real_images.shape[0], self.latent_dim[0], self.latent_dim[1], self.latent_dim[2])
+        )
+        fake_images = self.generator(random_latent_vectors, training=True)
+        real_labels=np.ones((real_images.shape[0]))
+        fake_labels=-np.ones((real_images.shape[0]))
+        X=real_images+fake_images
+        y=real_labels+fake_labels
+        self.discriminator.compile(optimizer='adam', loss='mse')
+        self.discriminator.fit(X,y, batch_size=batch_size, epochs=50)
+
     def train_step(self, real_images):
         #control actual step
         self.actual_step+=1
