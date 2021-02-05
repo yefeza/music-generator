@@ -208,10 +208,12 @@ def download_diension_dataset(path_dataset, bucket_name, files_format, dimension
 def read_dataset(dimension, files_format):
     data=[]
     y_evaluator=[]
+    limit_songs=10
     for folder in range(9):
         continuos_error=0
         print("Leyendo dataset en folder "+str(folder+1))
         directory="local_ds/" + files_format + "/"+str(dimension[0])+"-"+str(dimension[1])+"/" + str(folder+1) + "/"
+        songs_dir=1
         for song_dirname in os.listdir(directory):
             try:
                 signal, sampling_rate=open_audio(directory+song_dirname)
@@ -220,6 +222,9 @@ def read_dataset(dimension, files_format):
                 data.append(song_reshaped)
                 y_evaluator.append(folder)
                 continuos_error=0
+                songs_dir+=1
+                if songs_dir>=limit_songs:
+                    break
             except:
                 continuos_error+=1
                 if continuos_error==5:
