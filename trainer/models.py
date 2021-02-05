@@ -99,7 +99,9 @@ class WGAN(keras.Model):
         fake_labels=-np.ones((real_images.shape[0]))
         X=real_images+fake_images
         y=real_labels+fake_labels
-        self.discriminator.compile(optimizer='adam', loss='mse')
+        print(X.shape)
+        print(y.shape)
+        self.discriminator.compile(optimizer='adam', loss='mse', metrics=["accuracy"])
         self.discriminator.fit(X,y, batch_size=batch_size, epochs=50)
 
     def train_step(self, real_images):
