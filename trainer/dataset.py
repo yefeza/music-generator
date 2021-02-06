@@ -171,8 +171,8 @@ def download_diension_dataset(path_dataset, bucket_name, files_format, dimension
     bucket = storage_client.bucket(bucket_name)
     #limit_songs=300
     #limit_songs_list=[3000,1500,1000,600,300,200,100,80,50]
-    #limit_songs_list=[900,600,450,300,150,50,30,20,15]
-    limit_songs_list=[1000,900,800,700,600,500,400,300,100]
+    limit_songs_list=[100,90,80,60,50,40,30,20,10]
+    #limit_songs_list=[1000,900,800,700,600,500,400,300,100]
     limit_songs=50
     if dimension[0]==4:
         limit_songs=limit_songs_list[0]
