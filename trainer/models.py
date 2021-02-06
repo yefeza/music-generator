@@ -148,11 +148,10 @@ class WGAN(keras.Model):
             fake_logits = self.discriminator(fake_images, training=True)
             # Get the logits for the real images
             real_logits = self.discriminator(real_images, training=True)
-
             # Calculate the discriminator loss using the fake and real image logits
-            d_cost = self.g_loss_fn_extra(fake_logits, real_logits)
+            d_cost = self.d_loss_fn(fake_logits, real_logits)
             # Calculate the gradient penalty
-            gp = self.gradient_penalty(batch_size, real_images, fake_images)
+            #gp = self.gradient_penalty(batch_size, real_images, fake_images)
             # Add the gradient penalty to the original discriminator loss
             #d_loss = d_cost + gp * self.gp_weight
             d_loss = d_cost
