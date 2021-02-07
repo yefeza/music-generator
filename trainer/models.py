@@ -431,7 +431,7 @@ def add_generator_block(old_model):
     sumarized_blocks=Add()([op_1,op_2,op_3])
     sumarized_blocks=Dense(100)(sumarized_blocks)
     # to 2 channels
-    out_image = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
+    out_image = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal', activation='tanh')(sumarized_blocks)
     # define model
     model1 = Model(old_model.input, out_image)
     #model1.get_layer(name="shared_layer").trainable=False
@@ -528,8 +528,7 @@ def define_generator(n_blocks, lstm_layer):
     #to 2 channels
     sumarized_blocks=Add()([op_1, op_2, op_3])
     sumarized_blocks=Dense(100)(sumarized_blocks)
-    wls = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    wls = LeakyReLU(alpha=0.2)(wls)
+    wls = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal', activation='tanh')(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
     model_list.append([model, model])
