@@ -439,7 +439,7 @@ def add_generator_block(old_model):
     # get the output layer from old model
     out_old = old_model.layers[-1]
     # connect the upsampling to the old output layer
-    out_image2 = out_old(upsampling)
+    out_image2 = (out_old)(upsampling)
     # define new output image as the weighted sum of the old and new models
     merged = WeightedSum()([out_image2, out_image])
     # define model
