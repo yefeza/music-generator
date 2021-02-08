@@ -431,8 +431,8 @@ def add_generator_block(old_model):
     sumarized_blocks=Add()([op_1,op_2,op_3])
     for_sum_layer=Dense(100)(sumarized_blocks)
     # to 2 channels
-    for_sum_layer = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal', activation='linear')(for_sum_layer)
-    out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
+    to_2_channels = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal', activation='linear')(for_sum_layer)
+    out_image = LayerNormalization(axis=[1, 2, 3])(to_2_channels)
     # define model
     model1 = Model(old_model.input, out_image)
     #model1.get_layer(name="shared_layer").trainable=False
