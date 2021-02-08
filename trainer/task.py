@@ -182,7 +182,7 @@ if __name__ == '__main__':
         #guardar_modelo(gan_models[6][0].generator,job_dir,"final_100_epoch")
 
     batch_sizes=[64,32,16,4,2,2]
-    epochs_norm=[100,120,140,180,220,260,300]
+    epochs_norm=[1,120,140,180,220,260,300]
     #epochs_norm=[50,60,70,80,90,100,110]
     epochs_fade=[10,20,30,35,40,45,50]
     # load image data

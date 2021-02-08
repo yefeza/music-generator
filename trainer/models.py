@@ -156,6 +156,8 @@ class WGAN(keras.Model):
                 #d_loss = d_cost
             # Get the gradients w.r.t the discriminator loss
             d_gradient = tape.gradient(d_loss, self.discriminator.trainable_variables)
+            if d_gradient==None:
+                raise ValueError( "fake: "+str(fake_logits) +"real: "+str(real_logits) +"loss: "+str(d_loss) )
             # Update the weights of the discriminator using the discriminator optimizer
             self.d_optimizer.apply_gradients(
                 zip(d_gradient, self.discriminator.trainable_variables)
@@ -175,6 +177,8 @@ class WGAN(keras.Model):
             g_loss = self.g_loss_fn_extra(gen_img_logits, real_logits)
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
+        if gen_gradient==None:
+                raise ValueError( "fake: "+str(gen_img_logits) +"real: "+str(real_logits) +"loss: "+str(g_loss) )
         # Update the weights of the generator using the generator optimizer
         self.g_optimizer.apply_gradients(
             zip(gen_gradient, self.generator.trainable_variables)
@@ -190,6 +194,8 @@ class WGAN(keras.Model):
             g_loss_2 = self.g_loss_fn(gen_img_logits, real_logits)
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss_2, self.generator.trainable_variables)
+        if gen_gradient==None:
+                raise ValueError( "fake: "+str(gen_img_logits) +"real: "+str(real_logits) +"loss: "+str(g_loss_2) )
         # Update the weights of the generator using the generator optimizer
         self.g_optimizer.apply_gradients(
             zip(gen_gradient, self.generator.trainable_variables)
