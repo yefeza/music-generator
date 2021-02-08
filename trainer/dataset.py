@@ -196,6 +196,9 @@ def download_diension_dataset(path_dataset, bucket_name, files_format, dimension
                 dest_file="local_ds/" + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(song+1) + "."+ files_format
                 if not os.path.exists(dest_file):
                     source_blob_name = path_dataset + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(song+1) + "."+ files_format
+                    #habilitar para todas las pistas de la carpeta
+                    #prefix = path_dataset + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1)
+                    #blobs = bucket.list_blobs(prefix=prefix)
                     blob = bucket.blob(source_blob_name)
                     dest_folder="local_ds/" + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/"
                     if not os.path.exists(dest_folder):
