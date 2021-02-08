@@ -110,7 +110,7 @@ class WGAN(keras.Model):
         if self.fade_in:
             models=[self.discriminator, self.generator]
             # calculate current alpha (linear from 0 to 1)
-            alpha = self.actual_step / float(self.total_steps - 1)
+            alpha = self.actual_step / float(self.train_steps - 1)
             # update the alpha for each model
             for model in models:
                 for layer in model.layers:
@@ -165,36 +165,36 @@ class WGAN(keras.Model):
         # Train the generator
         # Get the latent vector
         #random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
-        for i in range(self.d_steps):
-            with tf.GradientTape() as tape:
-                # Generate fake images using the generator
-                generated_images = self.generator(random_latent_vectors, training=True)
-                # Get the discriminator logits for fake images
-                gen_img_logits = self.discriminator(generated_images, training=True)
-                # Get the logits for the real images
-                real_logits = self.discriminator(real_images, training=True)
-                g_loss = self.g_loss_fn_extra(gen_img_logits, real_logits)
-            # Get the gradients w.r.t the generator loss
-            gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
-            # Update the weights of the generator using the generator optimizer
-            self.g_optimizer.apply_gradients(
-                zip(gen_gradient, self.generator.trainable_variables)
-            )
-            #segunda funcion de costo
-            with tf.GradientTape() as tape:
-                # Generate fake images using the generator
-                generated_images = self.generator(random_latent_vectors, training=True)
-                # Get the discriminator logits for fake images
-                gen_img_logits = self.discriminator(generated_images, training=True)
-                # Get the logits for the real images
-                real_logits = self.discriminator(real_images, training=True)
-                g_loss_2 = self.g_loss_fn(gen_img_logits, real_logits)
-            # Get the gradients w.r.t the generator loss
-            gen_gradient = tape.gradient(g_loss_2, self.generator.trainable_variables)
-            # Update the weights of the generator using the generator optimizer
-            self.g_optimizer.apply_gradients(
-                zip(gen_gradient, self.generator.trainable_variables)
-            )
+        #for i in range(self.d_steps):
+        with tf.GradientTape() as tape:
+            # Generate fake images using the generator
+            generated_images = self.generator(random_latent_vectors, training=True)
+            # Get the discriminator logits for fake images
+            gen_img_logits = self.discriminator(generated_images, training=True)
+            # Get the logits for the real images
+            real_logits = self.discriminator(real_images, training=True)
+            g_loss = self.g_loss_fn_extra(gen_img_logits, real_logits)
+        # Get the gradients w.r.t the generator loss
+        gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
+        # Update the weights of the generator using the generator optimizer
+        self.g_optimizer.apply_gradients(
+            zip(gen_gradient, self.generator.trainable_variables)
+        )
+        #segunda funcion de costo
+        with tf.GradientTape() as tape:
+            # Generate fake images using the generator
+            generated_images = self.generator(random_latent_vectors, training=True)
+            # Get the discriminator logits for fake images
+            gen_img_logits = self.discriminator(generated_images, training=True)
+            # Get the logits for the real images
+            real_logits = self.discriminator(real_images, training=True)
+            g_loss_2 = self.g_loss_fn(gen_img_logits, real_logits)
+        # Get the gradients w.r.t the generator loss
+        gen_gradient = tape.gradient(g_loss_2, self.generator.trainable_variables)
+        # Update the weights of the generator using the generator optimizer
+        self.g_optimizer.apply_gradients(
+            zip(gen_gradient, self.generator.trainable_variables)
+        )
         #with tf.GradientTape() as tape:
         # Generate fake images using the generator
         generated_images = self.generator(random_latent_vectors, training=True)
@@ -431,17 +431,16 @@ def add_generator_block(old_model):
     sumarized_blocks=Add()([op_1,op_2,op_3])
     sumarized_blocks=Dense(100)(sumarized_blocks)
     # to 2 channels
-    sumarized_blocks = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal', activation='linear')(sumarized_blocks)
-    out_image = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
+    for_sum_layer = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal', activation='linear')(sumarized_blocks)
+    out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
     # define model
     model1 = Model(old_model.input, out_image)
     #model1.get_layer(name="shared_layer").trainable=False
     # get the output layer from old model
-    out_old = old_model.layers[-2]
-    # connect the upsampling to the old output layer
-    out_image2 = out_old(upsampling)
+    #out_old = old_model.layers[-2]
     # define new output image as the weighted sum of the old and new models
-    merged = WeightedSum()([out_image2, out_image])
+    merged = WeightedSum()([upsampling, for_sum_layer])
+    merged = LayerNormalization(axis=[1, 2, 3])(merged)
     # define model
     model2 = Model(old_model.input, merged)
     #model2.get_layer(name="shared_layer").trainable=False
