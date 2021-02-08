@@ -363,7 +363,7 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
 
 def add_generator_block(old_model):
     # get the end of the last block
-    block_end = old_model.layers[-3].output
+    block_end = old_model.layers[-2].output
     # upsample, and define new block
     upsampling = UpSampling2D()(block_end)
     featured = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
@@ -429,10 +429,10 @@ def add_generator_block(old_model):
     op_6 = Dense(100)(g_6)
     #sumarize
     sumarized_blocks=Add()([op_1,op_2,op_3])
-    for_sum_layer=Dense(100)(sumarized_blocks)
+    sumarized_blocks=Dense(100)(sumarized_blocks)
     # to 2 channels
-    to_2_channels = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal', activation='linear')(for_sum_layer)
-    out_image = LayerNormalization(axis=[1, 2, 3])(to_2_channels)
+    for_sum_layer = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal', activation='linear')(sumarized_blocks)
+    out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
     # define model
     model1 = Model(old_model.input, out_image)
     #model1.get_layer(name="shared_layer").trainable=False
