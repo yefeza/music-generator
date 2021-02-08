@@ -171,8 +171,8 @@ def download_diension_dataset(path_dataset, bucket_name, files_format, dimension
     bucket = storage_client.bucket(bucket_name)
     #limit_songs=300
     #limit_songs_list=[3000,1500,1000,600,300,200,100,80,50]
-    #limit_songs_list=[100,90,80,60,50,40,30,20,10]
-    limit_songs_list=[600,20,480,360,300,240,180,120,60]
+    limit_songs_list=[600,90,80,60,50,40,30,20,10]
+    #limit_songs_list=[600,20,480,360,300,240,180,120,60]
     #limit_songs_list=[20,15,10,5,5,5,5,5,5]
     limit_songs=50
     if dimension[0]==4:
@@ -227,8 +227,8 @@ def read_dataset(dimension, files_format):
                 y_evaluator.append(folder)
                 continuos_error=0
                 songs_dir+=1
-                if songs_dir>=limit_songs and dimension[0]==4:
-                    break
+                #if songs_dir>=limit_songs and dimension[0]==4:
+                #    break
             except:
                 continuos_error+=1
                 if continuos_error==5:
