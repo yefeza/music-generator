@@ -363,7 +363,7 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
 
 def add_generator_block(old_model):
     # get the end of the last block
-    block_end = old_model.layers[-2]
+    block_end = old_model.layers[-2].output
     # upsample, and define new block
     upsampling = UpSampling2D()(block_end)
     featured = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
