@@ -342,7 +342,7 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
     d_3 = LeakyReLU(alpha=0.2)(d_3)
     #sumarize blocks
-    d = MinibatchStdDev()(d_3)
+    #d = MinibatchStdDev()(d_3)
     d = Flatten()(d_3)
     out_class = Dense(1, activation='tanh')(d)
     # define model
