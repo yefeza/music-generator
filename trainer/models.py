@@ -149,7 +149,7 @@ class WGAN(keras.Model):
                 # Get the logits for the real images
                 real_logits = self.discriminator(real_images, training=True)
                 # Calculate the discriminator loss using the fake and real image logits
-                d_loss = self.d_loss_fn(fake_logits, real_logits)
+                d_loss = self.d_loss_fn_extra(fake_logits, real_logits)
                 # Calculate the gradient penalty
                 #gp = self.gradient_penalty(batch_size, real_images, fake_images)
                 # Add the gradient penalty to the original discriminator loss
@@ -247,7 +247,7 @@ class SoftRectifier(Layer):
         self.start_alpha=start_alpha
         self.w = tf.Variable(initial_value=start_alpha, trainable=True)
     def call(self, inputs):
-        return tf.math.tanh(inputs) + (inputs/(self.w+0.1))
+        return tf.math.tanh(inputs) + tf.math.divide_no_nan(inputs,self.w)
 
     def get_config(self):
         config = super(SoftRectifier, self).get_config()
@@ -498,7 +498,9 @@ def define_generator(n_blocks, lstm_layer):
 def discriminator_loss_extra(fake_logits, real_logits):
     real_loss=tf.reduce_mean(real_logits)
     fake_loss=tf.reduce_mean(fake_logits)
-    return (((fake_loss-real_loss)/(tf.math.abs((fake_loss-real_loss))+0.0001))+0.0001)*real_loss
+    a=(fake_loss-real_loss)
+    b=tf.math.abs((fake_loss-real_loss))
+    return tf.math.divide_no_nan(a, b) * real_loss
 
 def discriminator_loss(fake_logits, real_logits):
     real_loss = tf.reduce_mean(real_logits)
@@ -509,7 +511,9 @@ def discriminator_loss(fake_logits, real_logits):
 def generator_loss_extra(fake_logits, real_logits):
     real_loss=tf.reduce_mean(real_logits)
     fake_loss=tf.reduce_mean(fake_logits)
-    return (((fake_loss-real_loss)/(tf.math.abs((fake_loss-real_loss))+0.0001))+0.0001)*fake_loss
+    a=(fake_loss-real_loss)
+    b=tf.math.abs((fake_loss-real_loss))
+    return tf.math.divide_no_nan(a, b) * fake_loss
 
 def generator_loss(fake_logits, real_logits):
     real_loss = tf.reduce_mean(real_logits)
