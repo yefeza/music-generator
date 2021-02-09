@@ -241,12 +241,17 @@ class MinibatchStdDev(Layer):
 
 #custom activation layer (tanh(x)+(x/(alpha+0.1)))
 class SoftRectifier(Layer):
-  def __init__(self, start_alpha=1.0, **kwargs):
-    super(SoftRectifier, self).__init__(**kwargs)
-    self.w = tf.Variable(initial_value=start_alpha, trainable=True)
+    def __init__(self, start_alpha=1.0, **kwargs):
+        super(SoftRectifier, self).__init__(**kwargs)
+        self.start_alpha=start_alpha
+        self.w = tf.Variable(initial_value=start_alpha, trainable=True)
+    def call(self, inputs):
+        return tf.math.tanh(inputs) + (inputs/(self.w+0.1))
 
-  def call(self, inputs):
-    return tf.math.tanh(inputs) + (inputs/(self.w+0.1))
+    def get_config(self):
+        config = super(SoftRectifier, self).get_config()
+        config.update({"start_alpha": self.start_alpha})
+        return config
 
 # agregar bloque a discriminador para escalar las dimensiones
 
