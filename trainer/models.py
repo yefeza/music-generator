@@ -149,26 +149,6 @@ class WGAN(keras.Model):
                 # Get the logits for the real images
                 real_logits = self.discriminator(real_images, training=True)
                 # Calculate the discriminator loss using the fake and real image logits
-                d_loss = self.d_loss_fn_extra(fake_logits, real_logits)
-                # Calculate the gradient penalty
-                #gp = self.gradient_penalty(batch_size, real_images, fake_images)
-                # Add the gradient penalty to the original discriminator loss
-                #d_loss = d_cost + gp * self.gp_weight
-                #d_loss = d_cost
-            # Get the gradients w.r.t the discriminator loss
-            d_gradient = tape.gradient(d_loss, self.discriminator.trainable_variables)
-            # Update the weights of the discriminator using the discriminator optimizer
-            self.d_optimizer.apply_gradients(
-                zip(d_gradient, self.discriminator.trainable_variables)
-            )
-            with tf.GradientTape() as tape:
-                # Generate fake images from the latent vector
-                fake_images = self.generator(random_latent_vectors, training=True)
-                # Get the logits for the fake images
-                fake_logits = self.discriminator(fake_images, training=True)
-                # Get the logits for the real images
-                real_logits = self.discriminator(real_images, training=True)
-                # Calculate the discriminator loss using the fake and real image logits
                 d_loss = self.d_loss_fn(fake_logits, real_logits)
                 # Calculate the gradient penalty
                 #gp = self.gradient_penalty(batch_size, real_images, fake_images)
@@ -549,7 +529,7 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator=d_models[0],
             generator=g_models[0],
             latent_dim=latent_dim,
-            discriminator_extra_steps=3,
+            discriminator_extra_steps=5,
         )
         wgan1.compile(
             d_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
@@ -566,7 +546,7 @@ def define_composite(discriminators, generators, latent_dim):
             generator=g_models[1],
             latent_dim=latent_dim,
             fade_in=True,
-            discriminator_extra_steps=3,
+            discriminator_extra_steps=5,
         )
         wgan2.compile(
             d_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
