@@ -227,8 +227,8 @@ def read_dataset(dimension, files_format):
                 y_evaluator.append(folder)
                 continuos_error=0
                 songs_dir+=1
-                if songs_dir>=limit_songs and dimension[0]==4:
-                    break
+                #if songs_dir>=limit_songs and dimension[0]==4:
+                #    break
             except:
                 continuos_error+=1
                 if continuos_error==5:
