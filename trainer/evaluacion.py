@@ -130,15 +130,15 @@ def load_evaluator(dimension, bucket_name, download, train_dataset, epochs):
         if dimension[0]==4:
             model=evaluadores[0]
             batch_size=64
-            epochs=10
+            epochs=25
         if dimension[0]==8:
             model=evaluadores[1]
             batch_size=32
-            epochs=20
+            epochs=30
         if dimension[0]==16:
             model=evaluadores[2]
             batch_size=16
-            epochs=30
+            epochs=35
         if dimension[0]==32:
             model=evaluadores[3]
             batch_size=8
