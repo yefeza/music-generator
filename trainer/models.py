@@ -10,7 +10,7 @@ from keras.layers.convolutional import Conv2D, Conv1D, Conv2DTranspose, Conv3DTr
 from keras.layers.convolutional import MaxPooling2D, MaxPooling1D, AveragePooling1D, AveragePooling2D
 from keras.layers import Flatten
 from keras.layers import Reshape
-from keras.layers mport SoftRectifier
+from keras.layers import LeakyReLU
 from keras.layers import Add
 from keras.layers import LayerNormalization
 from keras.utils.vis_utils import plot_model
