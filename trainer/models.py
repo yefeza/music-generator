@@ -188,7 +188,7 @@ class WGAN(keras.Model):
         real_logits = self.discriminator(real_images, training=True)
         pd_distance = self.g_loss_fn(gen_img_logits, real_logits)
         self.actual_step+=1
-        return {"d_loss": d_loss, "g_loss": g_loss, "g_loss_2": g_loss_2, "pd_distance": pd_distance}
+        return {"d_loss": d_loss, "g_loss": g_loss, "pd_distance": pd_distance}
 
 # Minibatch Standard Deviation Layer
 
