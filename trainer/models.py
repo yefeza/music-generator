@@ -271,7 +271,6 @@ def add_discriminator_block(old_model, n_input_layers=3):
     d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
     d_1 = SoftRectifier()(d_1)
     d_1 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_1)
-    d_1 = LayerNormalization(axis=[1, 2, 3])(d_1)
     d_1 = SoftRectifier()(d_1)
     #convolusion block 2
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
@@ -279,7 +278,6 @@ def add_discriminator_block(old_model, n_input_layers=3):
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
     d_2 = SoftRectifier()(d_2)
     d_2 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_2)
-    d_2 = LayerNormalization(axis=[1, 2, 3])(d_2)
     d_2 = SoftRectifier()(d_2)
     #convolusion block 3
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
@@ -287,7 +285,6 @@ def add_discriminator_block(old_model, n_input_layers=3):
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
     d_3 = SoftRectifier()(d_3)
     d_3 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_3)
-    d_3 = LayerNormalization(axis=[1, 2, 3])(d_3)
     d_3 = SoftRectifier()(d_3)
     #sumarize blocks
     d_block=Conv2D(128, (1,1), padding='same', kernel_initializer='he_normal')(d_3)
@@ -343,7 +340,6 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     d_1 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_1)
     d_1 = SoftRectifier()(d_1)
     d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
-    d_1 = LayerNormalization(axis=[1, 2, 3])(d_1)
     d_1 = SoftRectifier()(d_1)
     # convolusion block 2
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
@@ -351,7 +347,6 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     d_2 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_2)
     d_2 = SoftRectifier()(d_2)
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
-    d_2 = LayerNormalization(axis=[1, 2, 3])(d_2)
     d_2 = SoftRectifier()(d_2)
     # convolusion block 3
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
@@ -359,7 +354,6 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     d_3 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_3)
     d_3 = SoftRectifier()(d_3)
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
-    d_3 = LayerNormalization(axis=[1, 2, 3])(d_3)
     d_3 = SoftRectifier()(d_3)
     #sumarize blocks
     #d = MinibatchStdDev()(d_3)
