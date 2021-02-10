@@ -226,13 +226,13 @@ class MinibatchStdDev(Layer):
 
 #custom activation layer (tanh(x)+(x/(alpha+0.1)))
 class SoftRectifier(Layer):
-    def __init__(self, start_alpha=1.0, **kwargs):
+    def __init__(self, start_alpha=50.0, **kwargs):
         super(SoftRectifier, self).__init__(**kwargs)
         self.start_alpha=start_alpha
-        self.w = tf.Variable(initial_value=start_alpha, trainable=True)
+        #self.w = tf.Variable(initial_value=start_alpha, trainable=True)
 
     def call(self, inputs):
-        return tf.math.tanh(inputs) + tf.math.divide_no_nan(inputs,self.w)
+        return tf.math.tanh(inputs) + tf.math.divide_no_nan(inputs,self.start_alpha)
 
     def get_config(self):
         config = super(SoftRectifier, self).get_config()
@@ -396,7 +396,6 @@ def add_generator_block(old_model):
     g_1 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_1)
     g_1 = SoftRectifier()(g_1)
     g_1 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_1)
-    g_1 = LayerNormalization(axis=[1, 2, 3])(g_1)
     g_1 = SoftRectifier()(g_1)
     g_1 = Dropout(0.3)(g_1)
     op_1 = Dense(50)(g_1)
@@ -408,7 +407,6 @@ def add_generator_block(old_model):
     g_2 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_2)
     g_2 = SoftRectifier()(g_2)
     g_2 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_2)
-    g_2 = LayerNormalization(axis=[1, 2, 3])(g_2)
     g_2 = SoftRectifier()(g_2)
     g_2 = Dropout(0.3)(g_2)
     op_2 = Dense(50)(g_2)
@@ -420,7 +418,6 @@ def add_generator_block(old_model):
     g_3 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_3)
     g_3 = SoftRectifier()(g_3)
     g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
-    g_3 = LayerNormalization(axis=[1, 2, 3])(g_3)
     g_3 = SoftRectifier()(g_3)
     g_3 = Dropout(0.3)(g_3)
     op_3 = Dense(50)(g_3)
@@ -461,7 +458,6 @@ def define_generator(n_blocks, lstm_layer):
     g_1 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_1)
     g_1 = SoftRectifier()(g_1)
     g_1 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_1)
-    g_1 = LayerNormalization(axis=[1, 2, 3])(g_1)
     g_1 = SoftRectifier()(g_1)
     op_1 = Dense(50)(g_1)
     # bloque 2 deconvolusion
@@ -474,7 +470,6 @@ def define_generator(n_blocks, lstm_layer):
     g_2 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_2)
     g_2 = SoftRectifier()(g_2)
     g_2 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_2)
-    g_2 = LayerNormalization(axis=[1, 2, 3])(g_2)
     g_2 = SoftRectifier()(g_2)
     op_2 = Dense(50)(g_2)
     # bloque 3 deconvolusion
@@ -487,7 +482,6 @@ def define_generator(n_blocks, lstm_layer):
     g_3 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_3)
     g_3 = SoftRectifier()(g_3)
     g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
-    g_3 = LayerNormalization(axis=[1, 2, 3])(g_3)
     g_3 = SoftRectifier()(g_3)
     op_3 = Dense(50)(g_3)
     #to 2 channels
