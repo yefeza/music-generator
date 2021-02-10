@@ -267,25 +267,34 @@ def add_discriminator_block(old_model, n_input_layers=3):
     featured_layer = SoftRectifier()(featured_layer)
     #convolusion block 1
     d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_layer)
+    d_1 = LayerNormalization(axis=[1, 2, 3])(d_1)
     d_1 = SoftRectifier()(d_1)
     d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = LayerNormalization(axis=[1, 2, 3])(d_1)
     d_1 = SoftRectifier()(d_1)
     #d = AveragePooling2D()(d)
     d_1 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = LayerNormalization(axis=[1, 2, 3])(d_1)
     d_1 = SoftRectifier()(d_1)
     #convolusion block 2
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_2 = LayerNormalization(axis=[1, 2, 3])(d_2)
     d_2 = SoftRectifier()(d_2)
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = LayerNormalization(axis=[1, 2, 3])(d_2)
     d_2 = SoftRectifier()(d_2)
     d_2 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = LayerNormalization(axis=[1, 2, 3])(d_2)
     d_2 = SoftRectifier()(d_2)
     #convolusion block 3
-    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_3 = LayerNormalization(axis=[1, 2, 3])(d_3)
     d_3 = SoftRectifier()(d_3)
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
+    d_3 = LayerNormalization(axis=[1, 2, 3])(d_3)
     d_3 = SoftRectifier()(d_3)
     d_3 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_3)
+    d_3 = LayerNormalization(axis=[1, 2, 3])(d_3)
     d_3 = SoftRectifier()(d_3)
     #sumarize blocks
     d_block=Conv2D(128, (1,1), padding='same', kernel_initializer='he_normal')(d_3)
@@ -294,7 +303,7 @@ def add_discriminator_block(old_model, n_input_layers=3):
     # skiptheinput,1x1andactivationfortheoldmodel
     pointer=0
     for i in range(n_input_layers, len(old_model.layers)):
-        if isinstance(old_model.layers[i], StaticOptTanh):
+        if isinstance(old_model.layers[i], Dense):
             final_layer = old_model.layers[i](d_block)
         else:
             d_block = old_model.layers[i](d_block)
@@ -312,7 +321,7 @@ def add_discriminator_block(old_model, n_input_layers=3):
     d = WeightedSum()([block_old, block_new])
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
-        if isinstance(old_model.layers[i], StaticOptTanh):
+        if isinstance(old_model.layers[i], Dense):
             final_layer = old_model.layers[i](d)
         else:
             d = old_model.layers[i](d)
@@ -337,30 +346,39 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     featured_block = SoftRectifier()(featured_block)
     # convolusion block 1
     d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_block)
+    d_1 = LayerNormalization(axis=[1, 2, 3])(d_1)
     d_1 = SoftRectifier()(d_1)
     d_1 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = LayerNormalization(axis=[1, 2, 3])(d_1)
     d_1 = SoftRectifier()(d_1)
     d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = LayerNormalization(axis=[1, 2, 3])(d_1)
     d_1 = SoftRectifier()(d_1)
     # convolusion block 2
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_2 = LayerNormalization(axis=[1, 2, 3])(d_2)
     d_2 = SoftRectifier()(d_2)
     d_2 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = LayerNormalization(axis=[1, 2, 3])(d_2)
     d_2 = SoftRectifier()(d_2)
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = LayerNormalization(axis=[1, 2, 3])(d_2)
     d_2 = SoftRectifier()(d_2)
     # convolusion block 3
-    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_3 = LayerNormalization(axis=[1, 2, 3])(d_3)
     d_3 = SoftRectifier()(d_3)
     d_3 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_3)
+    d_3 = LayerNormalization(axis=[1, 2, 3])(d_3)
     d_3 = SoftRectifier()(d_3)
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
+    d_3 = LayerNormalization(axis=[1, 2, 3])(d_3)
     d_3 = SoftRectifier()(d_3)
     #sumarize blocks
     #d = MinibatchStdDev()(d_3)
     d = Flatten()(d_3)
-    d = Dense(1)(d)
-    out_class=StaticOptTanh()(d)
+    out_class = Dense(1, activation='tanh')(d)
+    #out_class=StaticOptTanh()(d)
     # define model
     model_comp = Model(in_image, out_class)
     # store model
@@ -385,36 +403,49 @@ def add_generator_block(old_model):
     featured = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
     #bloque 1
     g_1 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
+    g_1 = LayerNormalization(axis=[1, 2, 3])(g_1)
     g_1 = SoftRectifier()(g_1)
     g_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = LayerNormalization(axis=[1, 2, 3])(g_1)
     g_1 = SoftRectifier()(g_1)
     g_1 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = LayerNormalization(axis=[1, 2, 3])(g_1)
     g_1 = SoftRectifier()(g_1)
     g_1 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = LayerNormalization(axis=[1, 2, 3])(g_1)
     g_1 = SoftRectifier()(g_1)
     op_1 = Dense(50)(g_1)
     #bloque 2
     g_2 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
+    g_2 = LayerNormalization(axis=[1, 2, 3])(g_2)
     g_2 = SoftRectifier()(g_2)
     g_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_2)
+    g_2 = LayerNormalization(axis=[1, 2, 3])(g_2)
     g_2 = SoftRectifier()(g_2)
     g_2 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_2)
+    g_2 = LayerNormalization(axis=[1, 2, 3])(g_2)
     g_2 = SoftRectifier()(g_2)
     g_2 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_2)
+    g_2 = LayerNormalization(axis=[1, 2, 3])(g_2)
     g_2 = SoftRectifier()(g_2)
     op_2 = Dense(50)(g_2)
     #bloque 3
     g_3 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
+    g_3 = LayerNormalization(axis=[1, 2, 3])(g_3)
     g_3 = SoftRectifier()(g_3)
     g_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_3)
+    g_3 = LayerNormalization(axis=[1, 2, 3])(g_3)
     g_3 = SoftRectifier()(g_3)
     g_3 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_3)
+    g_3 = LayerNormalization(axis=[1, 2, 3])(g_3)
     g_3 = SoftRectifier()(g_3)
     g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
+    g_3 = LayerNormalization(axis=[1, 2, 3])(g_3)
     g_3 = SoftRectifier()(g_3)
     op_3 = Dense(50)(g_3)
     #sumarize
     sumarized_blocks=Add()([op_1,op_2,op_3])
+    sumarized_blocks = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     sumarized_blocks=Dense(100)(sumarized_blocks)
     # to 2 channels
     for_sum_layer = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal', activation='linear')(sumarized_blocks)
@@ -441,42 +472,58 @@ def define_generator(n_blocks, lstm_layer):
     featured = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(ly0)
     # bloque 1 deconvolusion
     g_1 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_1 = LayerNormalization(axis=[1, 2, 3])(g_1)
     g_1 = SoftRectifier()(g_1)
     g_1 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = LayerNormalization(axis=[1, 2, 3])(g_1)
     g_1 = SoftRectifier()(g_1)
     g_1 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = LayerNormalization(axis=[1, 2, 3])(g_1)
     g_1 = SoftRectifier()(g_1)
     g_1 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = LayerNormalization(axis=[1, 2, 3])(g_1)
     g_1 = SoftRectifier()(g_1)
     g_1 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = LayerNormalization(axis=[1, 2, 3])(g_1)
     g_1 = SoftRectifier()(g_1)
     op_1 = Dense(50)(g_1)
     # bloque 2 deconvolusion
     g_2 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_2 = LayerNormalization(axis=[1, 2, 3])(g_2)
     g_2 = SoftRectifier()(g_2)
     g_2 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_2)
+    g_2 = LayerNormalization(axis=[1, 2, 3])(g_2)
     g_2 = SoftRectifier()(g_2)
     g_2 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_2)
+    g_2 = LayerNormalization(axis=[1, 2, 3])(g_2)
     g_2 = SoftRectifier()(g_2)
     g_2 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_2)
+    g_2 = LayerNormalization(axis=[1, 2, 3])(g_2)
     g_2 = SoftRectifier()(g_2)
     g_2 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_2)
+    g_2 = LayerNormalization(axis=[1, 2, 3])(g_2)
     g_2 = SoftRectifier()(g_2)
     op_2 = Dense(50)(g_2)
     # bloque 3 deconvolusion
     g_3 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_3 = LayerNormalization(axis=[1, 2, 3])(g_3)
     g_3 = SoftRectifier()(g_3)
     g_3 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_3)
+    g_3 = LayerNormalization(axis=[1, 2, 3])(g_3)
     g_3 = SoftRectifier()(g_3)
     g_3 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_3)
+    g_3 = LayerNormalization(axis=[1, 2, 3])(g_3)
     g_3 = SoftRectifier()(g_3)
     g_3 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_3)
+    g_3 = LayerNormalization(axis=[1, 2, 3])(g_3)
     g_3 = SoftRectifier()(g_3)
     g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
+    g_3 = LayerNormalization(axis=[1, 2, 3])(g_3)
     g_3 = SoftRectifier()(g_3)
     op_3 = Dense(50)(g_3)
     #to 2 channels
     sumarized_blocks=Add()([op_1, op_2, op_3])
+    sumarized_blocks = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     sumarized_blocks=Dense(100)(sumarized_blocks)
     sumarized_blocks = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal', activation='linear')(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
@@ -529,7 +576,7 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator=d_models[0],
             generator=g_models[0],
             latent_dim=latent_dim,
-            discriminator_extra_steps=5,
+            discriminator_extra_steps=3,
         )
         wgan1.compile(
             d_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
@@ -545,7 +592,7 @@ def define_composite(discriminators, generators, latent_dim):
             generator=g_models[1],
             latent_dim=latent_dim,
             fade_in=True,
-            discriminator_extra_steps=5,
+            discriminator_extra_steps=3,
         )
         wgan2.compile(
             d_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
