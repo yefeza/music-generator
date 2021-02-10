@@ -294,7 +294,7 @@ def add_discriminator_block(old_model, n_input_layers=3):
     # skiptheinput,1x1andactivationfortheoldmodel
     pointer=0
     for i in range(n_input_layers, len(old_model.layers)):
-        if isinstance(old_model.layers[i], Dense):
+        if isinstance(old_model.layers[i], StaticOptTanh):
             final_layer = old_model.layers[i](d_block)
         else:
             d_block = old_model.layers[i](d_block)
@@ -312,7 +312,7 @@ def add_discriminator_block(old_model, n_input_layers=3):
     d = WeightedSum()([block_old, block_new])
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
-        if isinstance(old_model.layers[i], Dense):
+        if isinstance(old_model.layers[i], StaticOptTanh):
             final_layer = old_model.layers[i](d)
         else:
             d = old_model.layers[i](d)
