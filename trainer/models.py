@@ -56,12 +56,11 @@ class WGAN(keras.Model):
         self.total_steps = 0
         self.fade_in=fade_in
 
-    def compile(self, d_optimizer, g_optimizer, d_loss_fn, d_loss_fn_extra, g_loss_fn, g_loss_fn_extra):
+    def compile(self, d_optimizer, g_optimizer, d_loss_fn, g_loss_fn, g_loss_fn_extra):
         super(WGAN, self).compile()
         self.d_optimizer = d_optimizer
         self.g_optimizer = g_optimizer
         self.d_loss_fn = d_loss_fn
-        self.d_loss_fn_extra = d_loss_fn_extra
         self.g_loss_fn = g_loss_fn
         self.g_loss_fn_extra = g_loss_fn_extra
 
@@ -149,7 +148,7 @@ class WGAN(keras.Model):
                 # Get the logits for the real images
                 real_logits = self.discriminator(real_images, training=True)
                 # Calculate the discriminator loss using the fake and real image logits
-                d_loss = self.d_loss_fn_extra(fake_logits, real_logits)
+                d_loss = self.d_loss_fn(fake_logits, real_logits)
                 # Calculate the gradient penalty
                 #gp = self.gradient_penalty(batch_size, real_images, fake_images)
                 # Add the gradient penalty to the original discriminator loss
@@ -176,21 +175,6 @@ class WGAN(keras.Model):
             g_loss = self.g_loss_fn_extra(gen_img_logits, real_logits)
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
-        # Update the weights of the generator using the generator optimizer
-        self.g_optimizer.apply_gradients(
-            zip(gen_gradient, self.generator.trainable_variables)
-        )
-        #segunda funcion de costo
-        with tf.GradientTape() as tape:
-            # Generate fake images using the generator
-            generated_images = self.generator(random_latent_vectors, training=True)
-            # Get the discriminator logits for fake images
-            gen_img_logits = self.discriminator(generated_images, training=True)
-            # Get the logits for the real images
-            real_logits = self.discriminator(real_images, training=True)
-            g_loss_2 = self.g_loss_fn(gen_img_logits, real_logits)
-        # Get the gradients w.r.t the generator loss
-        gen_gradient = tape.gradient(g_loss_2, self.generator.trainable_variables)
         # Update the weights of the generator using the generator optimizer
         self.g_optimizer.apply_gradients(
             zip(gen_gradient, self.generator.trainable_variables)
@@ -246,6 +230,7 @@ class SoftRectifier(Layer):
         super(SoftRectifier, self).__init__(**kwargs)
         self.start_alpha=start_alpha
         self.w = tf.Variable(initial_value=start_alpha, trainable=True)
+
     def call(self, inputs):
         return tf.math.tanh(inputs) + tf.math.divide_no_nan(inputs,self.w)
 
@@ -253,6 +238,21 @@ class SoftRectifier(Layer):
         config = super(SoftRectifier, self).get_config()
         config.update({"start_alpha": self.start_alpha})
         return config
+
+#custom activation layer (tanh(x)+(x/(alpha+0.1)))
+class StaticOptTanh(Layer):
+    def __init__(self, alpha=50.0, **kwargs):
+        super(StaticOptTanh, self).__init__(**kwargs)
+        self.alpha=alpha
+
+    def call(self, inputs):
+        return tf.math.tanh(inputs) + tf.math.divide_no_nan(inputs, self.alpha)
+
+    def get_config(self):
+        config = super(StaticOptTanh, self).get_config()
+        config.update({"alpha": self.alpha})
+        return config
+
 
 # agregar bloque a discriminador para escalar las dimensiones
 
@@ -359,7 +359,8 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     #sumarize blocks
     #d = MinibatchStdDev()(d_3)
     d = Flatten()(d_3)
-    out_class = Dense(1, activation='tanh')(d)
+    d = Dense(1)(d)
+    out_class=StaticOptTanh()(d)
     # define model
     model_comp = Model(in_image, out_class)
     # store model
@@ -495,17 +496,12 @@ def define_generator(n_blocks, lstm_layer):
 # Define the loss functions for the discriminator,
 # which should be (fake_loss - real_loss).
 # We will add the gradient penalty later to this loss function.
-def discriminator_loss_extra(fake_logits, real_logits):
+def discriminator_loss(fake_logits, real_logits):
     real_loss=tf.reduce_mean(real_logits)
     fake_loss=tf.reduce_mean(fake_logits)
     a=(fake_loss-real_loss)
     b=tf.math.abs((fake_loss-real_loss))
-    return tf.math.divide_no_nan(a, b) * real_loss
-
-def discriminator_loss(fake_logits, real_logits):
-    real_loss = tf.reduce_mean(real_logits)
-    fake_loss = tf.reduce_mean(fake_logits)
-    return -tf.math.abs(fake_loss - real_loss)
+    return (tf.math.divide_no_nan(a, b)+0.0001) * real_loss
 
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
@@ -513,7 +509,7 @@ def generator_loss_extra(fake_logits, real_logits):
     fake_loss=tf.reduce_mean(fake_logits)
     a=(fake_loss-real_loss)
     b=tf.math.abs((fake_loss-real_loss))
-    return tf.math.divide_no_nan(a, b) * fake_loss
+    return (tf.math.divide_no_nan(a, b)+0.0001) * fake_loss
 
 def generator_loss(fake_logits, real_logits):
     real_loss = tf.reduce_mean(real_logits)
@@ -540,8 +536,7 @@ def define_composite(discriminators, generators, latent_dim):
             g_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
-            d_loss_fn=discriminator_loss,
-            d_loss_fn_extra=discriminator_loss_extra,
+            d_loss_fn=discriminator_loss
         )
         # fade-in model
         #d_models[3].trainable = False
@@ -557,8 +552,7 @@ def define_composite(discriminators, generators, latent_dim):
             g_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
-            d_loss_fn=discriminator_loss,
-            d_loss_fn_extra=discriminator_loss_extra,
+            d_loss_fn=discriminator_loss
         )
         # store
         model_list.append([wgan1, wgan2])
