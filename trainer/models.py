@@ -241,7 +241,7 @@ class SoftRectifier(Layer):
 
 #custom activation layer (tanh(x)+(x/(alpha+0.1)))
 class StaticOptTanh(Layer):
-    def __init__(self, alpha=50.0, **kwargs):
+    def __init__(self, alpha=250.0, **kwargs):
         super(StaticOptTanh, self).__init__(**kwargs)
         self.alpha=alpha
 
@@ -356,8 +356,8 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
     d_3 = SoftRectifier()(d_3)
     #sumarize blocks
-    #d = MinibatchStdDev()(d_3)
-    d = Flatten()(d_3)
+    d = MinibatchStdDev()(d_3)
+    d = Flatten()(d)
     d = Dense(1)(d)
     out_class=StaticOptTanh()(d)
     # define model
