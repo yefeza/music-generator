@@ -241,7 +241,7 @@ class SoftRectifier(Layer):
 
 #custom activation layer (tanh(x)+(x/(alpha+0.1)))
 class StaticOptTanh(Layer):
-    def __init__(self, alpha=500000000.0, **kwargs):
+    def __init__(self, alpha=50.0, **kwargs):
         super(StaticOptTanh, self).__init__(**kwargs)
         self.alpha=alpha
 
@@ -296,7 +296,7 @@ def add_discriminator_block(old_model, n_input_layers=3):
     # skiptheinput,1x1andactivationfortheoldmodel
     pointer=0
     for i in range(n_input_layers, len(old_model.layers)):
-        if isinstance(old_model.layers[i], Dense):
+        if isinstance(old_model.layers[i], StaticOptTanh):
             final_layer = old_model.layers[i](d_block)
         else:
             d_block = old_model.layers[i](d_block)
@@ -314,7 +314,7 @@ def add_discriminator_block(old_model, n_input_layers=3):
     d = WeightedSum()([block_old, block_new])
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
-        if isinstance(old_model.layers[i], Dense):
+        if isinstance(old_model.layers[i], StaticOptTanh):
             final_layer = old_model.layers[i](d)
         else:
             d = old_model.layers[i](d)
@@ -364,8 +364,8 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     #sumarize blocks
     #d = MinibatchStdDev()(d_3)
     d = Flatten()(d_3)
-    out_class = Dense(1, activation='tanh')(d)
-    #out_class=StaticOptTanh()(d)
+    d = Dense(1)(d)
+    out_class=StaticOptTanh()(d)
     # define model
     model_comp = Model(in_image, out_class)
     # store model
