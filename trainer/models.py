@@ -241,7 +241,7 @@ class SoftRectifier(Layer):
 
 #custom activation layer (tanh(x)+(x/(alpha+0.1)))
 class StaticOptTanh(Layer):
-    def __init__(self, alpha=50.0, **kwargs):
+    def __init__(self, alpha=500000000.0, **kwargs):
         super(StaticOptTanh, self).__init__(**kwargs)
         self.alpha=alpha
 
