@@ -100,7 +100,7 @@ def generar_ejemplos(g_model, prefix, iter_num, n_examples, job_dir, bucket_name
 def generar_ejemplo(g_model, prefix, iter_num, job_dir, bucket_name, latent_dim, evaluador, save):
     gen_shape = g_model.output_shape
     random_latent_vectors = tf.random.normal(shape=(1, latent_dim[0], latent_dim[1], latent_dim[2]))
-    gen_auds = g_model(random_latent_vectors)
+    gen_auds = g_model(random_latent_vectors, training=False)
     if save:
         signal_gen = gen_auds[0].numpy()
         signal_gen = np.reshape(signal_gen, ((gen_shape[-3]*gen_shape[-2]), 2))

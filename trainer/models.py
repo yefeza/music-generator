@@ -414,6 +414,7 @@ def add_generator_block(old_model):
     g_1 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_1)
     g_1 = LayerNormalization(axis=[1, 2, 3])(g_1)
     g_1 = SoftRectifier()(g_1)
+    g_1 = Dropout(0.3)(g_1)
     op_1 = Dense(50)(g_1)
     #bloque 2
     g_2 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
@@ -428,6 +429,7 @@ def add_generator_block(old_model):
     g_2 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_2)
     g_2 = LayerNormalization(axis=[1, 2, 3])(g_2)
     g_2 = SoftRectifier()(g_2)
+    g_2 = Dropout(0.3)(g_2)
     op_2 = Dense(50)(g_2)
     #bloque 3
     g_3 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
@@ -442,6 +444,7 @@ def add_generator_block(old_model):
     g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
     g_3 = LayerNormalization(axis=[1, 2, 3])(g_3)
     g_3 = SoftRectifier()(g_3)
+    g_3 = Dropout(0.3)(g_3)
     op_3 = Dense(50)(g_3)
     #sumarize
     sumarized_blocks=Add()([op_1,op_2,op_3])
