@@ -85,11 +85,11 @@ if __name__ == '__main__':
 
     # define discriminators
 
-    discriminators = define_discriminator(7, shared_layer)
+    discriminators = define_discriminator(6, shared_layer)
 
     # define generator
 
-    generators = define_generator(7, shared_layer2)
+    generators = define_generator(6, shared_layer2)
 
     # define composite models
 
