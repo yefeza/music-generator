@@ -226,7 +226,7 @@ class MinibatchStdDev(Layer):
 
 #custom activation layer (tanh(x)+(x/(alpha+0.1)))
 class SoftRectifier(Layer):
-    def __init__(self, start_alpha=50.0, **kwargs):
+    def __init__(self, start_alpha=100.0, **kwargs):
         super(SoftRectifier, self).__init__(**kwargs)
         self.start_alpha=start_alpha
         #self.w = tf.Variable(initial_value=start_alpha, trainable=True)
@@ -241,7 +241,7 @@ class SoftRectifier(Layer):
 
 #custom activation layer (tanh(x)+(x/(alpha+0.1)))
 class StaticOptTanh(Layer):
-    def __init__(self, alpha=1250.0, **kwargs):
+    def __init__(self, alpha=1500.0, **kwargs):
         super(StaticOptTanh, self).__init__(**kwargs)
         self.alpha=alpha
 
@@ -259,36 +259,56 @@ class StaticOptTanh(Layer):
 def add_discriminator_block(old_model, n_input_layers=3):
     # getshapeofexistingmodel
     in_shape = list(old_model.input[0].shape)
+    alpha=6000.0
+    soft_alpha=6000.0
+    if in_shape[-3]==8:
+        alpha=12000.0
+        soft_alpha=200.0
+    if in_shape[-3]==16:
+        alpha=24000.0
+        soft_alpha=300.0
+    if in_shape[-3]==32:
+        alpha=48000.0
+        soft_alpha=400.0
+    if in_shape[-3]==64:
+        alpha=96000.0
+        soft_alpha=500.0
+    if in_shape[-3]==128:
+        alpha=192000.0
+        soft_alpha=600.0
+    if in_shape[-3]==256:
+        alpha=348000.0
+        soft_alpha=700.0
     # definenewinputshapeasdoublethesize
     input_shape = (in_shape[-3]*2, in_shape[-2]*2, in_shape[-1])
     in_image = Input(shape=input_shape)
     # definenewinputprocessinglayer
     featured_layer = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
-    featured_layer = SoftRectifier()(featured_layer)
+    featured_layer = SoftRectifier(start_alpha=soft_alpha)(featured_layer)
     #convolusion block 1
     d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_layer)
-    d_1 = SoftRectifier()(d_1)
+    d_1 = SoftRectifier(start_alpha=soft_alpha)(d_1)
     d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
-    d_1 = SoftRectifier()(d_1)
+    d_1 = SoftRectifier(start_alpha=soft_alpha)(d_1)
     d_1 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_1)
-    d_1 = SoftRectifier()(d_1)
+    d_1 = SoftRectifier(start_alpha=soft_alpha)(d_1)
     #convolusion block 2
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
-    d_2 = SoftRectifier()(d_2)
+    d_2 = SoftRectifier(start_alpha=soft_alpha)(d_2)
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
-    d_2 = SoftRectifier()(d_2)
+    d_2 = SoftRectifier(start_alpha=soft_alpha)(d_2)
     d_2 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_2)
-    d_2 = SoftRectifier()(d_2)
+    d_2 = SoftRectifier(start_alpha=soft_alpha)(d_2)
     #convolusion block 3
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
-    d_3 = SoftRectifier()(d_3)
+    d_3 = SoftRectifier(start_alpha=soft_alpha)(d_3)
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
-    d_3 = SoftRectifier()(d_3)
+    d_3 = SoftRectifier(start_alpha=soft_alpha)(d_3)
     d_3 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_3)
-    d_3 = SoftRectifier()(d_3)
+    d_3 = SoftRectifier(start_alpha=soft_alpha)(d_3)
     #sumarize blocks
     d_block=Conv2D(128, (1,1), padding='same', kernel_initializer='he_normal')(d_3)
-    d_block = SoftRectifier()(d_block)
+    d_block = SoftRectifier(start_alpha=soft_alpha)(d_block)
     block_new = d_block
     # skiptheinput,1x1andactivationfortheoldmodel
     pointer=0
@@ -296,7 +316,7 @@ def add_discriminator_block(old_model, n_input_layers=3):
         if isinstance(old_model.layers[i], StaticOptTanh):
             final_layer = old_model.layers[i](d_block)
         else:
-            d_block = old_model.layers[i](d_block)
+            d_block = StaticOptTanh(alpha=alpha)(d_block)
     # model 1 without multiple inputs for composite
     model1_comp = Model(in_image, final_layer)
     # compilemodel
@@ -312,7 +332,7 @@ def add_discriminator_block(old_model, n_input_layers=3):
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
         if isinstance(old_model.layers[i], StaticOptTanh):
-            final_layer = old_model.layers[i](d)
+            final_layer = StaticOptTanh(alpha=alpha)(d)
         else:
             d = old_model.layers[i](d)
     # definestraight-throughmodel
@@ -359,7 +379,7 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     d = MinibatchStdDev()(d_3)
     d = Flatten()(d)
     d = Dense(1)(d)
-    out_class=StaticOptTanh()(d)
+    out_class=StaticOptTanh(alpha=3000.0)(d)
     # define model
     model_comp = Model(in_image, out_class)
     # store model

@@ -130,7 +130,7 @@ if __name__ == '__main__':
         #gan_models[0][0].pre_train_discriminator(scaled_data,n_batch)
         gan_models[0][0].set_train_steps(n_steps)
         cbk=GANMonitor(job_dir=job_dir, evaluador=evaluador)
-        #np.random.shuffle(scaled_data)
+        np.random.shuffle(scaled_data)
         history = gan_models[0][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
         plot_losses(history)
         # generate examples
@@ -162,7 +162,7 @@ if __name__ == '__main__':
             print('Scaled Data', scaled_data.shape)
             # train fade-in models for next level of growth
             gan_models[i][1].set_train_steps(n_steps)
-            #np.random.shuffle(scaled_data)
+            np.random.shuffle(scaled_data)
             history = gan_models[i][1].fit(scaled_data, batch_size=n_batch, epochs=e_fadein, callbacks=[cbk])
             plot_losses(history)
             #train_epochs(g_fadein, d_fadein, gan_fadein,
