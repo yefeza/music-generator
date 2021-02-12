@@ -192,10 +192,11 @@ class WGAN(keras.Model):
             g_loss = self.g_loss_fn(gen_img_logits, real_logits)
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
-        # Update the weights of the generator using the generator optimizer
-        self.g_optimizer.apply_gradients(
-            zip(gen_gradient, self.generator.trainable_variables)
-        )
+        if tf.reduce_mean(gen_gradient)>0.0:
+            # Update the weights of the generator using the generator optimizer
+            self.g_optimizer.apply_gradients(
+                zip(gen_gradient, self.generator.trainable_variables)
+            )
         #with tf.GradientTape() as tape:
         random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
         # Generate fake images using the generator
