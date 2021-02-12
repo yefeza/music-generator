@@ -226,7 +226,7 @@ class MinibatchStdDev(Layer):
 
 #custom activation layer (tanh(x)+(x/(alpha+0.1)))
 class SoftRectifier(Layer):
-    def __init__(self, start_alpha=100.0, **kwargs):
+    def __init__(self, start_alpha=500.0, **kwargs):
         super(SoftRectifier, self).__init__(**kwargs)
         self.start_alpha=start_alpha
         #self.w = tf.Variable(initial_value=start_alpha, trainable=True)
@@ -263,22 +263,22 @@ def add_discriminator_block(old_model, n_input_layers=3):
     soft_alpha=6000.0
     if in_shape[-3]==8:
         alpha=12000.0
-        soft_alpha=200.0
+        soft_alpha=700.0
     if in_shape[-3]==16:
         alpha=24000.0
-        soft_alpha=300.0
+        soft_alpha=900.0
     if in_shape[-3]==32:
         alpha=48000.0
-        soft_alpha=400.0
+        soft_alpha=1200.0
     if in_shape[-3]==64:
         alpha=96000.0
-        soft_alpha=500.0
+        soft_alpha=1500.0
     if in_shape[-3]==128:
         alpha=192000.0
-        soft_alpha=600.0
+        soft_alpha=1800.0
     if in_shape[-3]==256:
         alpha=348000.0
-        soft_alpha=700.0
+        soft_alpha=2200.0
     # definenewinputshapeasdoublethesize
     input_shape = (in_shape[-3]*2, in_shape[-2]*2, in_shape[-1])
     in_image = Input(shape=input_shape)
@@ -314,9 +314,9 @@ def add_discriminator_block(old_model, n_input_layers=3):
     pointer=0
     for i in range(n_input_layers, len(old_model.layers)):
         if isinstance(old_model.layers[i], StaticOptTanh):
-            final_layer = old_model.layers[i](d_block)
+            final_layer = StaticOptTanh(alpha=alpha)(d_block)
         else:
-            d_block = StaticOptTanh(alpha=alpha)(d_block)
+            d_block = old_model.layers[i](d_block)
     # model 1 without multiple inputs for composite
     model1_comp = Model(in_image, final_layer)
     # compilemodel
@@ -379,7 +379,7 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     d = MinibatchStdDev()(d_3)
     d = Flatten()(d)
     d = Dense(1)(d)
-    out_class=StaticOptTanh(alpha=3000.0)(d)
+    out_class=StaticOptTanh(alpha=4000.0)(d)
     # define model
     model_comp = Model(in_image, out_class)
     # store model
@@ -552,7 +552,7 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator=d_models[0],
             generator=g_models[0],
             latent_dim=latent_dim,
-            discriminator_extra_steps=3,
+            discriminator_extra_steps=2,
         )
         wgan1.compile(
             d_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
@@ -568,7 +568,7 @@ def define_composite(discriminators, generators, latent_dim):
             generator=g_models[1],
             latent_dim=latent_dim,
             fade_in=True,
-            discriminator_extra_steps=3,
+            discriminator_extra_steps=2,
         )
         wgan2.compile(
             d_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
