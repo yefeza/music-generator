@@ -136,10 +136,10 @@ class WGAN(keras.Model):
         # one step of the generator. Here we will train it for 3 extra steps
         # as compared to 5 to reduce the training time.
         # Get the latent vector
-        random_latent_vectors = tf.random.normal(
-            shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2])
-        )
         for i in range(self.d_steps):
+            random_latent_vectors = tf.random.normal(
+                shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2])
+            )
             with tf.GradientTape() as tape:
                 # Generate fake images from the latent vector
                 fake_images = self.generator(random_latent_vectors, training=True)
@@ -163,7 +163,7 @@ class WGAN(keras.Model):
 
         # Train the generator
         # Get the latent vector
-        #random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
+        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
         #for i in range(self.d_steps):
         with tf.GradientTape() as tape:
             # Generate fake images using the generator
@@ -180,6 +180,7 @@ class WGAN(keras.Model):
             zip(gen_gradient, self.generator.trainable_variables)
         )
         #with tf.GradientTape() as tape:
+        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
         # Generate fake images using the generator
         generated_images = self.generator(random_latent_vectors, training=True)
         # Get the discriminator logits for fake images
