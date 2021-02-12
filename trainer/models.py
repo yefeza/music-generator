@@ -192,7 +192,7 @@ class WGAN(keras.Model):
             g_loss = self.g_loss_fn(gen_img_logits, real_logits)
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
-        flatt_grads=tf.reshape(gen_gradient, [-1])
+        flatt_grads = tf.experimental.numpy.hstack(gen_gradient)
         if tf.reduce_mean(flatt_grads)>0.0:
             # Update the weights of the generator using the generator optimizer
             self.g_optimizer.apply_gradients(
