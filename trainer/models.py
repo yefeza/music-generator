@@ -195,11 +195,11 @@ class WGAN(keras.Model):
         cum=0.0
         for g_layer in gen_gradient:
             cum+=tf.reduce_mean(g_layer)
-        if cum>0:
-            # Update the weights of the generator using the generator optimizer
+        def apply_gr(): 
             self.g_optimizer.apply_gradients(
                 zip(gen_gradient, self.generator.trainable_variables)
             )
+        tf.cond(cum>0, true_fn=apply_gr)
         #with tf.GradientTape() as tape:
         random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
         # Generate fake images using the generator
