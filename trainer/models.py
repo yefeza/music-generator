@@ -189,9 +189,9 @@ class WGAN(keras.Model):
             gen_img_logits = self.discriminator(generated_images, training=True)
             # Get the logits for the real images
             real_logits = self.discriminator(real_images, training=True)
-            g_loss = self.g_loss_fn(gen_img_logits, real_logits)
+            g_loss_2 = self.g_loss_fn(gen_img_logits, real_logits)
         # Get the gradients w.r.t the generator loss
-        gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
+        gen_gradient = tape.gradient(g_loss_2, self.generator.trainable_variables)
         cum=0.0
         for g_layer in gen_gradient:
             cum+=tf.reduce_mean(g_layer)
@@ -210,7 +210,7 @@ class WGAN(keras.Model):
         real_logits = self.discriminator(real_images, training=True)
         pd_distance = self.g_loss_fn(gen_img_logits, real_logits)
         self.actual_step+=1
-        return {"d_loss": d_loss, "g_loss": g_loss, "pd_distance": pd_distance}
+        return {"d_loss": d_loss, "g_loss": g_loss, "g_loss_2": g_loss_2, "pd_distance": pd_distance}
 
 # Minibatch Standard Deviation Layer
 
