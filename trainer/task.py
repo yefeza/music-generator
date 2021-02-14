@@ -75,21 +75,15 @@ if __name__ == '__main__':
     #print("Number of devices: {}".format(strategy.num_replicas_in_sync))
 
     # size of the latent space
-    latent_dim = (1, 50, 2)
+    latent_dim = (1, 100, 2)
 
     #with strategy.scope():
-    # shared layer
 
-    shared_layer = Dense(100)
-    shared_layer2 = Dense(100)
-
-    # define discriminators
-
-    discriminators = define_discriminator(7, shared_layer)
+    discriminators = define_discriminator(7)
 
     # define generator
 
-    generators = define_generator(7, shared_layer2)
+    generators = define_generator(7)
 
     # define composite models
 

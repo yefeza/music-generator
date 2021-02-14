@@ -4,10 +4,8 @@ from keras.optimizers import Adam
 from keras.models import Sequential, Model
 from keras.layers.core import Dense, Activation, Dropout
 from keras.layers import Input, UpSampling2D, Layer
-from keras.layers import LSTM
-from keras.layers.normalization import BatchNormalization
-from keras.layers.convolutional import Conv2D, Conv1D, Conv2DTranspose, Conv3DTranspose
-from keras.layers.convolutional import MaxPooling2D, MaxPooling1D, AveragePooling1D, AveragePooling2D
+from keras.layers.convolutional import Conv2D, Conv2DTranspose
+from keras.layers.convolutional import AveragePooling2D
 from keras.layers import Flatten
 from keras.layers import Reshape
 from keras.layers import LeakyReLU
@@ -35,6 +33,11 @@ class WeightedSum(Add):
         # ((1-a) * input1) + (a * input2)
         output = ((1.0 - self.alpha) * inputs[0]) + (self.alpha * inputs[1])
         return output
+
+    def get_config(self):
+        config = super(SoftRectifier, self).get_config()
+        config.update({"alpha": self.alpha})
+        return config
 
 class WGAN(keras.Model):
     def __init__(
@@ -64,45 +67,8 @@ class WGAN(keras.Model):
         self.g_loss_fn = g_loss_fn
         self.g_loss_fn_extra = g_loss_fn_extra
 
-    def gradient_penalty(self, batch_size, real_images, fake_images):
-        """ Calculates the gradient penalty.
-
-        This loss is calculated on an interpolated image
-        and added to the discriminator loss.
-        """
-        # Get the interpolated image
-        alpha = tf.random.normal([batch_size, 1, 1, 1], 0.0, 1.0)
-        diff = fake_images - real_images
-        interpolated = real_images + alpha * diff
-
-        with tf.GradientTape() as gp_tape:
-            gp_tape.watch(interpolated)
-            # 1. Get the discriminator output for this interpolated image.
-            pred = self.discriminator(interpolated, training=True)
-
-        # 2. Calculate the gradients w.r.t to this interpolated image.
-        grads = gp_tape.gradient(pred, [interpolated])[0]
-        # 3. Calculate the norm of the gradients.
-        norm = tf.sqrt(tf.reduce_sum(tf.square(grads), axis=[1, 2, 3]))
-        gp = tf.reduce_mean((norm - 1.0) ** 2)
-        return gp
-
     def set_train_steps(self, size):
         self.train_steps=size
-
-    def pre_train_discriminator(self, real_images, batch_size):
-        random_latent_vectors = tf.random.normal(
-            shape=(real_images.shape[0], self.latent_dim[0], self.latent_dim[1], self.latent_dim[2])
-        )
-        fake_images = self.generator.predict(random_latent_vectors)
-        real_labels=np.ones((real_images.shape[0]))
-        fake_labels=-np.ones((real_images.shape[0]))
-        X=np.concatenate((real_images,fake_images))
-        y=np.concatenate((real_labels,fake_labels))
-        print(X.shape)
-        print(y.shape)
-        self.discriminator.compile(optimizer='adam', loss='mse', metrics=["accuracy"])
-        self.discriminator.fit(X,y, batch_size=batch_size, epochs=50)
 
     def train_step(self, real_images):
         #control actual step
@@ -250,6 +216,10 @@ class MinibatchStdDev(Layer):
             # [NCHW]  Append as new fmap.
             return tf.concat([x, y], axis=1)
 
+    def get_config(self):
+        config = super(MinibatchStdDev, self).get_config()
+        return config
+
 #custom activation layer (tanh(x)+(x/(alpha+0.1)))
 class SoftRectifier(Layer):
     def __init__(self, start_alpha=500.0, **kwargs):
@@ -278,7 +248,6 @@ class StaticOptTanh(Layer):
         config = super(StaticOptTanh, self).get_config()
         config.update({"alpha": self.alpha})
         return config
-
 
 # agregar bloque a discriminador para escalar las dimensiones
 
@@ -312,32 +281,31 @@ def add_discriminator_block(old_model, n_input_layers=3):
     featured_layer = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
     featured_layer = SoftRectifier(start_alpha=soft_alpha)(featured_layer)
     #convolusion block 1
-    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_layer)
+    d_1 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(featured_layer)
     d_1 = SoftRectifier(start_alpha=soft_alpha)(d_1)
-    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
     d_1 = SoftRectifier(start_alpha=soft_alpha)(d_1)
-    d_1 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = Conv2D(32, (2, 2), padding='same', kernel_initializer='he_normal')(d_1)
     d_1 = SoftRectifier(start_alpha=soft_alpha)(d_1)
     #convolusion block 2
-    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_2 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
     d_2 = SoftRectifier(start_alpha=soft_alpha)(d_2)
-    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
     d_2 = SoftRectifier(start_alpha=soft_alpha)(d_2)
-    d_2 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = Conv2D(32, (2, 2), padding='same', kernel_initializer='he_normal')(d_2)
     d_2 = SoftRectifier(start_alpha=soft_alpha)(d_2)
     #convolusion block 3
-    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_3 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
     d_3 = SoftRectifier(start_alpha=soft_alpha)(d_3)
-    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
+    d_3 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
     d_3 = SoftRectifier(start_alpha=soft_alpha)(d_3)
-    d_3 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_3)
+    d_3 = Conv2D(32, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_3)
     d_3 = SoftRectifier(start_alpha=soft_alpha)(d_3)
     #sumarize blocks
     d_block=Conv2D(128, (1,1), padding='same', kernel_initializer='he_normal')(d_3)
     d_block = SoftRectifier(start_alpha=soft_alpha)(d_block)
     block_new = d_block
     # skiptheinput,1x1andactivationfortheoldmodel
-    pointer=0
     for i in range(n_input_layers, len(old_model.layers)):
         if isinstance(old_model.layers[i], StaticOptTanh):
             final_layer = StaticOptTanh(alpha=alpha)(d_block)
@@ -345,9 +313,6 @@ def add_discriminator_block(old_model, n_input_layers=3):
             d_block = old_model.layers[i](d_block)
     # model 1 without multiple inputs for composite
     model1_comp = Model(in_image, final_layer)
-    # compilemodel
-    #model1.compile(loss=None, optimizer=Adam(
-    #    lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8))
     # downsamplethenewlargerimage
     downsample = AveragePooling2D()(in_image)
     # connectoldinputprocessingtodownsamplednewinput
@@ -361,19 +326,12 @@ def add_discriminator_block(old_model, n_input_layers=3):
             final_layer = StaticOptTanh(alpha=alpha)(d)
         else:
             d = old_model.layers[i](d)
-    # definestraight-throughmodel
-    #model2 = Model([in_image, y_true, is_weight], final_layer)
-    #model2.add_loss(D_wgangp_acgan(y_true, final_layer, is_weight))
-    # model 2 without multiple inputs for composite
     model2_comp = Model(in_image, final_layer)
-    # compilemodel
-    #model2.compile(loss=None, optimizer=Adam(
-    #    lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8))
     return[model1_comp, model2_comp]
 
 # definir los discriminadores
 
-def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
+def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     model_list = list()
     # base model input
     in_image = Input(shape=input_shape)
@@ -381,31 +339,31 @@ def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
     featured_block = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
     featured_block = SoftRectifier()(featured_block)
     # convolusion block 1
-    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_block)
+    d_1 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(featured_block)
     d_1 = SoftRectifier()(d_1)
-    d_1 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = Conv2D(32, (4, 4), padding='same', kernel_initializer='he_normal')(d_1)
     d_1 = SoftRectifier()(d_1)
-    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
     d_1 = SoftRectifier()(d_1)
     # convolusion block 2
-    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_2 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
     d_2 = SoftRectifier()(d_2)
-    d_2 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = Conv2D(32, (4, 4), padding='same', kernel_initializer='he_normal')(d_2)
     d_2 = SoftRectifier()(d_2)
-    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
     d_2 = SoftRectifier()(d_2)
     # convolusion block 3
-    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_3 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
     d_3 = SoftRectifier()(d_3)
-    d_3 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_3)
+    d_3 = Conv2D(32, (4, 4), padding='same', kernel_initializer='he_normal')(d_3)
     d_3 = SoftRectifier()(d_3)
-    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
+    d_3 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
     d_3 = SoftRectifier()(d_3)
     #sumarize blocks
     d = MinibatchStdDev()(d_3)
     d = Flatten()(d)
     d = Dense(1)(d)
-    out_class=StaticOptTanh(alpha=4000.0)(d)
+    out_class=StaticOptTanh(alpha=6000.0)(d)
     # define model
     model_comp = Model(in_image, out_class)
     # store model
@@ -427,107 +385,80 @@ def add_generator_block(old_model):
     block_end = old_model.layers[-2].output
     # upsample, and define new block
     upsampling = UpSampling2D()(block_end)
-    featured = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
-    #bloque 1
-    g_1 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
-    #g_1 = SoftRectifier()(g_1)
-    g_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_1)
-    #g_1 = SoftRectifier()(g_1)
-    g_1 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_1)
-    #g_1 = SoftRectifier()(g_1)
-    g_1 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_1)
-    #g_1 = SoftRectifier()(g_1)
-    g_1 = Dropout(0.3)(g_1)
-    op_1 = Dense(50)(g_1)
-    #bloque 2
-    g_2 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
-    #g_2 = SoftRectifier()(g_2)
-    g_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_2)
-    #g_2 = SoftRectifier()(g_2)
-    g_2 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_2)
-    #g_2 = SoftRectifier()(g_2)
-    g_2 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_2)
-    #g_2 = SoftRectifier()(g_2)
-    g_2 = Dropout(0.3)(g_2)
-    op_2 = Dense(50)(g_2)
-    #bloque 3
-    g_3 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
-    #g_3 = SoftRectifier()(g_3)
-    g_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_3)
-    #g_3 = SoftRectifier()(g_3)
-    g_3 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_3)
-    #g_3 = SoftRectifier()(g_3)
-    g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
-    #g_3 = SoftRectifier()(g_3)
-    g_3 = Dropout(0.3)(g_3)
-    op_3 = Dense(50)(g_3)
+    featured = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(upsampling)
+    # bloque 1 deconvolusion
+    g_1 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_1 = Conv2DTranspose(32, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Dropout(0.25)(g_1)
+    op_1 = Dense(32)(g_1)
+    # bloque 2 deconvolusion
+    g_2 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_2 = Conv2DTranspose(32, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_2)
+    g_2 = Dropout(0.25)(g_2)
+    op_2 = Dense(32)(g_2)
+    # bloque 3 deconvolusion
+    g_3 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_3 = Conv2DTranspose(32, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_3)
+    g_3 = Dropout(0.25)(g_3)
+    op_3 = Dense(32)(g_3)
+    # bloque 3 deconvolusion
+    g_4 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_4 = Conv2DTranspose(32, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_4)
+    g_4 = Dropout(0.25)(g_4)
+    op_4 = Dense(32)(g_4)
     #sumarize
-    sumarized_blocks=Add()([op_1,op_2,op_3])
-    sumarized_blocks=Dense(100)(sumarized_blocks)
-    # to 2 channels
-    for_sum_layer = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal', activation='linear')(sumarized_blocks)
+    sumarized_blocks=Add()([op_1, op_2, op_3, op_4])
+    sumarized_blocks=Conv2D(64, (1, 15), strides=(1,15), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks=Conv2DTranspose(128, (1, 15), strides=(1,15), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks=Dense(32)(sumarized_blocks)
+    for_sum_layer=Dense(2)(sumarized_blocks)
     out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
     # define model
     model1 = Model(old_model.input, out_image)
-    #model1.get_layer(name="shared_layer").trainable=False
-    # get the output layer from old model
-    #out_old = old_model.layers[-2]
     # define new output image as the weighted sum of the old and new models
     merged = WeightedSum()([upsampling, for_sum_layer])
     output_2 = LayerNormalization(axis=[1, 2, 3])(merged)
     # define model
     model2 = Model(old_model.input, output_2)
-    #model2.get_layer(name="shared_layer").trainable=False
     return [model1, model2]
 
 # definir los generadores
 
-def define_generator(n_blocks, lstm_layer):
+def define_generator(n_blocks):
     model_list = list()
     # input
-    ly0 = Input(shape=(1, 50, 2))
-    featured = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(ly0)
+    ly0 = Input(shape=(1, 100, 2))
+    featured = Conv2D(128, (1, 2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(ly0)
     # bloque 1 deconvolusion
-    g_1 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    #g_1 = SoftRectifier()(g_1)
-    g_1 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_1)
-    #g_1 = SoftRectifier()(g_1)
-    g_1 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
-    #g_1 = SoftRectifier()(g_1)
-    g_1 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_1)
-    #g_1 = SoftRectifier()(g_1)
-    g_1 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_1)
-    #g_1 = SoftRectifier()(g_1)
-    op_1 = Dense(50)(g_1)
+    g_1 = Conv2DTranspose(8, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_1 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(32, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Dropout(0.25)(g_1)
+    op_1 = Dense(32)(g_1)
     # bloque 2 deconvolusion
-    g_2 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    #g_2 = SoftRectifier()(g_2)
-    g_2 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_2)
-    #g_2 = SoftRectifier()(g_2)
-    g_2 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_2)
-    #g_2 = SoftRectifier()(g_2)
-    g_2 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_2)
-    #g_2 = SoftRectifier()(g_2)
-    g_2 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_2)
-    #g_2 = SoftRectifier()(g_2)
-    op_2 = Dense(50)(g_2)
+    g_2 = Conv2DTranspose(8, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_2 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_2)
+    g_2 = Conv2DTranspose(32, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_2)
+    g_2 = Dropout(0.25)(g_2)
+    op_2 = Dense(32)(g_2)
     # bloque 3 deconvolusion
-    g_3 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    #g_3 = SoftRectifier()(g_3)
-    g_3 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_3)
-    #g_3 = SoftRectifier()(g_3)
-    g_3 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_3)
-    #g_3 = SoftRectifier()(g_3)
-    g_3 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_3)
-    #g_3 = SoftRectifier()(g_3)
-    g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
-    #g_3 = SoftRectifier()(g_3)
-    op_3 = Dense(50)(g_3)
-    #to 2 channels
-    sumarized_blocks=Add()([op_1, op_2, op_3])
-    sumarized_blocks = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
-    sumarized_blocks=Dense(100)(sumarized_blocks)
-    sumarized_blocks = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal', activation='linear')(sumarized_blocks)
+    g_3 = Conv2DTranspose(8, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_3 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_3)
+    g_3 = Conv2DTranspose(32, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_3)
+    g_3 = Dropout(0.25)(g_3)
+    op_3 = Dense(32)(g_3)
+    # bloque 3 deconvolusion
+    g_4 = Conv2DTranspose(8, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_4 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_4)
+    g_4 = Conv2DTranspose(32, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_4)
+    g_4 = Dropout(0.25)(g_4)
+    op_4 = Dense(32)(g_4)
+    #combinar canales
+    sumarized_blocks=Add()([op_1, op_2, op_3, op_4])
+    sumarized_blocks=Conv2D(64, (1, 15), strides=(1,15), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks=Conv2DTranspose(128, (1, 15), strides=(1,15), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks=Dense(32)(sumarized_blocks)
+    sumarized_blocks=Dense(2)(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
@@ -581,8 +512,8 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator_extra_steps=3,
         )
         wgan1.compile(
-            d_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
-            g_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            d_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            g_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
@@ -597,8 +528,8 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator_extra_steps=3,
         )
         wgan2.compile(
-            d_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
-            g_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            d_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            g_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
@@ -610,7 +541,7 @@ def define_composite(discriminators, generators, latent_dim):
 #checkpoint
 
 class GANMonitor(keras.callbacks.Callback):
-    def __init__(self, job_dir, evaluador, num_examples=20, latent_dim=(1, 50, 2)):
+    def __init__(self, job_dir, evaluador, num_examples=20, latent_dim=(1, 100, 2)):
         self.num_examples = num_examples
         self.latent_dim = latent_dim
         self.bucket_name = "music-gen"
@@ -627,8 +558,9 @@ class GANMonitor(keras.callbacks.Callback):
                 else:
                     save=False
                 pred_batch=generar_ejemplo(self.model.generator, "epoch-"+str(epoch+1)+"/" , i+1, None, self.bucket_name, self.latent_dim, self.evaluador, save)
-                pred.append(pred_batch[0])
+                pred+=list(pred_batch)
                 gen_shape = self.model.generator.output_shape
                 if save:
-                    guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1)
+                    guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "g_")
+                    guardar_checkpoint(self.model.discriminator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "d_")
             save_inception_score(self.model.generator, "epoch-"+str(epoch+1)+"/", self.bucket_name, np.array(pred))
