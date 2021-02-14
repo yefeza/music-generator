@@ -447,14 +447,26 @@ def define_generator(n_blocks):
     g_3 = Conv2DTranspose(32, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_3)
     g_3 = Dropout(0.25)(g_3)
     op_3 = Dense(32)(g_3)
-    # bloque 3 deconvolusion
+    # bloque 4 deconvolusion
     g_4 = Conv2DTranspose(8, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
     g_4 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_4)
     g_4 = Conv2DTranspose(32, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_4)
     g_4 = Dropout(0.25)(g_4)
     op_4 = Dense(32)(g_4)
+    # bloque 5 deconvolusion
+    g_5 = Conv2DTranspose(8, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_5 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_5)
+    g_5 = Conv2DTranspose(32, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_5)
+    g_5 = Dropout(0.25)(g_5)
+    op_5 = Dense(32)(g_5)
+    # bloque 6 deconvolusion
+    g_6 = Conv2DTranspose(8, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_6 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_6)
+    g_6 = Conv2DTranspose(32, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_6)
+    g_6 = Dropout(0.25)(g_6)
+    op_6 = Dense(32)(g_6)
     #combinar canales
-    sumarized_blocks=Add()([op_1, op_2, op_3, op_4])
+    sumarized_blocks=Add()([op_1, op_2, op_3, op_4, op_6])
     sumarized_blocks=Conv2D(64, (1, 15), strides=(1,15), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     sumarized_blocks=Conv2DTranspose(128, (1, 15), strides=(1,15), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     sumarized_blocks=Dense(32)(sumarized_blocks)
@@ -512,8 +524,8 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator_extra_steps=3,
         )
         wgan1.compile(
-            d_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
-            g_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            d_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            g_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
@@ -528,8 +540,8 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator_extra_steps=3,
         )
         wgan2.compile(
-            d_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
-            g_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            d_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            g_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss

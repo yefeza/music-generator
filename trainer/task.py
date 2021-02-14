@@ -109,7 +109,7 @@ if __name__ == '__main__':
             download_diension_dataset(path_dataset, bucket_name, files_format, (gen_shape[-3], gen_shape[-2]))
         scaled_data, y_evaluator = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
         #cargar evaluador
-        evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name,download_evaluators, (scaled_data, y_evaluator), epochs_evaluadores)
+        evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name, True, (scaled_data, y_evaluator), epochs_evaluadores)
         # train normal or straight-through models
         n_batch=batch_sizes[0]
         e_norm=epochs_norm[0]
