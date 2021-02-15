@@ -9,7 +9,7 @@ from keras.layers.convolutional import AveragePooling2D
 from keras.layers import Flatten
 from keras.layers import Reshape
 from keras.layers import LeakyReLU
-from keras.layers import Add
+from keras.layers import Add, Multiply
 from keras.layers import LayerNormalization
 from keras.utils.vis_utils import plot_model
 from keras import backend
@@ -59,13 +59,12 @@ class WGAN(keras.Model):
         self.total_steps = 0
         self.fade_in=fade_in
 
-    def compile(self, d_optimizer, g_optimizer, d_loss_fn, g_loss_fn, g_loss_fn_extra):
+    def compile(self, d_optimizer, g_optimizer, d_loss_fn, g_loss_fn):
         super(WGAN, self).compile()
         self.d_optimizer = d_optimizer
         self.g_optimizer = g_optimizer
         self.d_loss_fn = d_loss_fn
         self.g_loss_fn = g_loss_fn
-        self.g_loss_fn_extra = g_loss_fn_extra
 
     def set_train_steps(self, size):
         self.train_steps=size
@@ -115,22 +114,23 @@ class WGAN(keras.Model):
                 real_logits = self.discriminator(real_images, training=True)
                 # Calculate the discriminator loss using the fake and real image logits
                 d_loss = self.d_loss_fn(fake_logits, real_logits)
-                # Calculate the gradient penalty
-                #gp = self.gradient_penalty(batch_size, real_images, fake_images)
-                # Add the gradient penalty to the original discriminator loss
-                #d_loss = d_cost + gp * self.gp_weight
-                #d_loss = d_cost
             # Get the gradients w.r.t the discriminator loss
             d_gradient = tape.gradient(d_loss, self.discriminator.trainable_variables)
             # Update the weights of the discriminator using the discriminator optimizer
             self.d_optimizer.apply_gradients(
                 zip(d_gradient, self.discriminator.trainable_variables)
             )
-
+        #calculate actual delta value
+        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
+        generated_images = self.generator(random_latent_vectors, training=True)
+        fake_logits = self.discriminator(generated_images, training=True)
+        real_logits = self.discriminator(real_images, training=True)
+        ci_0=tf.reduce_mean(real_logits)
+        cu_0=tf.reduce_mean(fake_logits)
+        delta_0=tf.math.abs((cu_0-ci_0))
         # Train the generator
         # Get the latent vector
         random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
-        #for i in range(self.d_steps):
         with tf.GradientTape() as tape:
             # Generate fake images using the generator
             generated_images = self.generator(random_latent_vectors, training=True)
@@ -138,6 +138,7 @@ class WGAN(keras.Model):
             gen_img_logits = self.discriminator(generated_images, training=True)
             # Get the logits for the real images
             real_logits = self.discriminator(real_images, training=True)
+            # Calculate the generator loss using the fake and real image logits
             g_loss = self.g_loss_fn_extra(gen_img_logits, real_logits)
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
@@ -145,42 +146,16 @@ class WGAN(keras.Model):
         self.g_optimizer.apply_gradients(
             zip(gen_gradient, self.generator.trainable_variables)
         )
-        # Get the latent vector
+        #calculate actual delta value
         random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
-        #for i in range(self.d_steps):
-        with tf.GradientTape() as tape:
-            # Generate fake images using the generator
-            generated_images = self.generator(random_latent_vectors, training=True)
-            # Get the discriminator logits for fake images
-            gen_img_logits = self.discriminator(generated_images, training=True)
-            # Get the logits for the real images
-            real_logits = self.discriminator(real_images, training=True)
-            g_loss_2 = self.g_loss_fn(gen_img_logits, real_logits)
-        # Get the gradients w.r.t the generator loss
-        gen_gradient = tape.gradient(g_loss_2, self.generator.trainable_variables)
-        cum=0.0
-        for g_layer in gen_gradient:
-            cum+=tf.reduce_mean(g_layer)
-        def apply_gr(): 
-            self.g_optimizer.apply_gradients(
-                zip(gen_gradient, self.generator.trainable_variables)
-            )
-            return gen_gradient
-        def false_cond():
-            return gen_gradient
-            
-        tf.cond(cum>0, true_fn=apply_gr, false_fn=false_cond)
-        #with tf.GradientTape() as tape:
-        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
-        # Generate fake images using the generator
         generated_images = self.generator(random_latent_vectors, training=True)
-        # Get the discriminator logits for fake images
-        gen_img_logits = self.discriminator(generated_images, training=True)
-        # Get the logits for the real images
+        fake_logits = self.discriminator(generated_images, training=True)
         real_logits = self.discriminator(real_images, training=True)
-        pd_distance = self.g_loss_fn(gen_img_logits, real_logits)
+        ci_1=tf.reduce_mean(real_logits)
+        cu_1=tf.reduce_mean(fake_logits)
+        delta_1=tf.math.abs((cu_1-ci_1))
         self.actual_step+=1
-        return {"d_loss": d_loss, "g_loss": g_loss, "g_loss_2": g_loss_2, "pd_distance": pd_distance}
+        return {"delta_0": delta_0, "cu_0": cu_0, "ci_0": ci_0, "delta_1": delta_1, "cu_1": cu_1, "ci_1": ci_1}
 
 # Minibatch Standard Deviation Layer
 
@@ -388,39 +363,37 @@ def add_generator_block(old_model):
     featured = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(upsampling)
     # bloque 1 deconvolusion
     g_1 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_1 = Conv2DTranspose(32, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_1)
-    g_1 = Dropout(0.25)(g_1)
-    op_1 = Dense(32)(g_1)
+    g_1 = Dense(32)(g_1)
+    g_1 = Conv2DTranspose(64, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_1)
+    op_1 = Dense(128)(g_1)
     # bloque 2 deconvolusion
     g_2 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_2 = Conv2DTranspose(32, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_2)
-    g_2 = Dropout(0.25)(g_2)
-    op_2 = Dense(32)(g_2)
+    g_2 = Dense(32)(g_2)
+    g_2 = Conv2DTranspose(64, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_2)
+    op_2 = Dense(128)(g_2)
     # bloque 3 deconvolusion
     g_3 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_3 = Conv2DTranspose(32, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_3)
-    g_3 = Dropout(0.25)(g_3)
-    op_3 = Dense(32)(g_3)
+    g_3 = Dense(32)(g_3)
+    g_3 = Conv2DTranspose(64, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_3)
+    op_3 = Dense(128)(g_3)
     # bloque 4 deconvolusion
     g_4 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_4 = Conv2DTranspose(32, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_4)
-    g_4 = Dropout(0.25)(g_4)
-    op_4 = Dense(32)(g_4)
+    g_4 = Dense(32)(g_4)
+    g_4 = Conv2DTranspose(64, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_4)
+    op_4 = Dense(128)(g_4)
     # bloque 5 deconvolusion
     g_5 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_5 = Conv2DTranspose(32, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_5)
-    g_5 = Dropout(0.25)(g_5)
-    op_5 = Dense(32)(g_5)
+    g_5 = Dense(32)(g_5)
+    g_5 = Conv2DTranspose(64, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_5)
+    op_5 = Dense(128)(g_5)
     # bloque 3 deconvolusion
     g_6 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_6 = Conv2DTranspose(32, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_6)
-    g_6 = Dropout(0.25)(g_6)
-    op_6 = Dense(32)(g_6)
+    g_6 = Dense(32)(g_6)
+    g_6 = Conv2DTranspose(64, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_6)
+    op_6 = Dense(128)(g_6)
     #sumarize
-    sumarized_blocks=Add()([op_1, op_2, op_3, op_4, op_5, op_6])
-    sumarized_blocks=Conv2D(64, (1, 15), strides=(1,15), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks=Conv2DTranspose(128, (1, 15), strides=(1,15), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks=Dense(32)(sumarized_blocks)
+    sumarized_blocks=Multiply()([op_1, op_2, op_3, op_4, op_5, op_6])
+    sumarized_blocks=Dense(256)(sumarized_blocks)
     for_sum_layer=Dense(2)(sumarized_blocks)
     out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
     # define model
@@ -440,46 +413,36 @@ def define_generator(n_blocks):
     ly0 = Input(shape=(1, 100, 2))
     featured = Conv2D(128, (1, 2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(ly0)
     # bloque 1 deconvolusion
-    g_1 = Conv2DTranspose(8, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_1 = Conv2DTranspose(4, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_1 = Dense(8)(g_1)
     g_1 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_1)
-    g_1 = Conv2DTranspose(32, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
-    g_1 = Dropout(0.25)(g_1)
-    op_1 = Dense(32)(g_1)
+    g_1 = Dense(32)(g_1)
+    g_1 = Conv2DTranspose(64, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
+    op_1 = Dense(128)(g_1)
     # bloque 2 deconvolusion
-    g_2 = Conv2DTranspose(8, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_2 = Conv2DTranspose(4, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_2 = Dense(8)(g_2)
     g_2 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_2)
-    g_2 = Conv2DTranspose(32, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_2)
-    g_2 = Dropout(0.25)(g_2)
-    op_2 = Dense(32)(g_2)
+    g_2 = Dense(32)(g_2)
+    g_2 = Conv2DTranspose(64, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_2)
+    op_2 = Dense(128)(g_2)
     # bloque 3 deconvolusion
-    g_3 = Conv2DTranspose(8, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_3 = Conv2DTranspose(4, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_3 = Dense(8)(g_3)
     g_3 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_3)
-    g_3 = Conv2DTranspose(32, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_3)
-    g_3 = Dropout(0.25)(g_3)
-    op_3 = Dense(32)(g_3)
+    g_3 = Dense(32)(g_3)
+    g_3 = Conv2DTranspose(64, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_3)
+    op_3 = Dense(128)(g_3)
     # bloque 4 deconvolusion
-    g_4 = Conv2DTranspose(8, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_4 = Conv2DTranspose(4, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_4 = Dense(8)(g_4)
     g_4 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_4)
-    g_4 = Conv2DTranspose(32, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_4)
-    g_4 = Dropout(0.25)(g_4)
-    op_4 = Dense(32)(g_4)
-    # bloque 5 deconvolusion
-    g_5 = Conv2DTranspose(8, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_5 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_5)
-    g_5 = Conv2DTranspose(32, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_5)
-    g_5 = Dropout(0.25)(g_5)
-    op_5 = Dense(32)(g_5)
-    # bloque 6 deconvolusion
-    g_6 = Conv2DTranspose(8, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_6 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_6)
-    g_6 = Conv2DTranspose(32, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_6)
-    g_6 = Dropout(0.25)(g_6)
-    op_6 = Dense(32)(g_6)
+    g_4 = Dense(32)(g_4)
+    g_4 = Conv2DTranspose(64, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_4)
+    op_4 = Dense(128)(g_4)
     #combinar canales
-    sumarized_blocks=Add()([op_1, op_2, op_3, op_4, op_5, op_6])
-    sumarized_blocks=Conv2D(64, (1, 15), strides=(1,15), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks=Conv2DTranspose(128, (1, 15), strides=(1,15), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks=Dense(32)(sumarized_blocks)
+    sumarized_blocks=Multiply()([op_1, op_2, op_3, op_4])
+    sumarized_blocks=Dense(256)(sumarized_blocks)
     sumarized_blocks=Dense(2)(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     model = Model(ly0, wls)
@@ -499,24 +462,21 @@ def define_generator(n_blocks):
 # which should be (fake_loss - real_loss).
 # We will add the gradient penalty later to this loss function.
 def discriminator_loss(fake_logits, real_logits):
-    real_loss=tf.reduce_mean(real_logits)
-    fake_loss=tf.reduce_mean(fake_logits)
-    a=(fake_loss-real_loss)
-    b=tf.math.abs((fake_loss-real_loss))
-    return (tf.math.divide_no_nan(a, b)+0.0001) * real_loss
+    ci=tf.reduce_mean(real_logits)
+    cu=tf.reduce_mean(fake_logits)
+    lamb=(cu-ci)
+    delta=tf.math.abs(lamb)
+    sign=tf.math.divide_no_nan(lamb, delta)+0.0001
+    return (sign * ci) + (sign * delta)
 
 # Define the loss functions for the generator.
-def generator_loss_extra(fake_logits, real_logits):
-    real_loss=tf.reduce_mean(real_logits)
-    fake_loss=tf.reduce_mean(fake_logits)
-    a=(fake_loss-real_loss)
-    b=tf.math.abs((fake_loss-real_loss))
-    return (tf.math.divide_no_nan(a, b)+0.0001) * fake_loss
-
 def generator_loss(fake_logits, real_logits):
-    real_loss = tf.reduce_mean(real_logits)
-    fake_loss = tf.reduce_mean(fake_logits)
-    return tf.math.abs(fake_loss - real_loss)
+    ci=tf.reduce_mean(real_logits)
+    cu=tf.reduce_mean(fake_logits)
+    lamb=(cu-ci)
+    delta=tf.math.abs(lamb)
+    sign=tf.math.divide_no_nan(lamb, delta)+0.0001
+    return (sign * ci)
 
 # define composite models for training generators via discriminators
 
@@ -537,7 +497,6 @@ def define_composite(discriminators, generators, latent_dim):
             d_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
             g_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
             g_loss_fn=generator_loss,
-            g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
         )
         # fade-in model
@@ -553,7 +512,6 @@ def define_composite(discriminators, generators, latent_dim):
             d_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
             g_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
             g_loss_fn=generator_loss,
-            g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
         )
         # store
@@ -575,7 +533,7 @@ class GANMonitor(keras.callbacks.Callback):
         pred=[]
         if not self.model.fade_in:
             for i in range(iters_gen):
-                if ((epoch+1)%5)==0:
+                if ((epoch+1)%10)==0:
                     save=True
                 else:
                     save=False

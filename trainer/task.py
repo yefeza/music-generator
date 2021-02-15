@@ -89,14 +89,18 @@ if __name__ == '__main__':
 
     composite = define_composite(discriminators, generators, latent_dim)
 
-    def plot_losses(history):
-        plt.plot(history.history['d_loss']*-1, label='Negative D Loss')
-        plt.plot(history.history['g_loss'], label='G Loss')
+    def plot_losses(history, dimension):
+        plt.plot(history.history['ci_1'], label='Real Logits')
+        plt.plot(history.history['cu_1'], label='Fake Logits')
+        plt.plot(history.history['delta_1'], label='Delta Evolution')
         plt.title('Losses History')
-        plt.ylabel('Loses')
+        plt.ylabel('Evolution')
         plt.xlabel('No. epoch')
         plt.legend(loc="upper left")
-        plt.show()
+        folder="losses/"+str(dimension[0])+"-"+str(dimension[1])+"/"
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        plt.savefig(folder+"losses.png")
 
     # train the generator and discriminator
 
@@ -126,7 +130,7 @@ if __name__ == '__main__':
         cbk=GANMonitor(job_dir=job_dir, evaluador=evaluador)
         np.random.shuffle(scaled_data)
         history = gan_models[0][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
-        plot_losses(history)
+        plot_losses(history, (gen_shape[-3], gen_shape[-2]))
         # generate examples
         #generar_ejemplos(gan_models[0][0].generator, "first-", 3, job_dir, bucket_name, latent_dim)
         # process each level of growth
@@ -158,7 +162,7 @@ if __name__ == '__main__':
             gan_models[i][1].set_train_steps(n_steps)
             np.random.shuffle(scaled_data)
             history = gan_models[i][1].fit(scaled_data, batch_size=n_batch, epochs=e_fadein, callbacks=[cbk])
-            plot_losses(history)
+            plot_losses(history, (gen_shape[-3], gen_shape[-2]))
             #train_epochs(g_fadein, d_fadein, gan_fadein,
             #            scaled_data, e_fadein, n_batch, True)
             # train normal or straight-through models
@@ -166,7 +170,7 @@ if __name__ == '__main__':
             n_steps=int((scaled_data.shape[0]/n_batch))*e_norm
             gan_models[i][0].set_train_steps(n_steps)
             history = gan_models[i][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
-            plot_losses(history)
+            plot_losses(history, (gen_shape[-3], gen_shape[-2]))
             #train_epochs(g_normal, d_normal, gan_normal,
             #            scaled_data, e_norm, n_batch)
             # generate examples

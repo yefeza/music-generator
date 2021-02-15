@@ -31,7 +31,7 @@ def add_evaluator_block(old_model, n_input_layers=3):
     input_shape = (in_shape[-3]*2, in_shape[-2]*2, in_shape[-1])
     in_image = Input(shape=input_shape)
     featured_layer = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
-    featured_layer = LeakyReLU(alpha=0.2)(featured_layer)
+    #featured_layer = LeakyReLU(alpha=0.2)(featured_layer)
     #convolusion block 1
     d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_layer)
     #d_1 = LeakyReLU(alpha=0.2)(d_1)
@@ -71,7 +71,7 @@ def define_evaluator(n_blocks, input_shape=(4, 750, 2)):
     # base model input
     in_image = Input(shape=input_shape)
     featured_block = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
-    featured_block = LeakyReLU(alpha=0.2)(featured_block)
+    #featured_block = LeakyReLU(alpha=0.2)(featured_block)
     # convolusion block 1
     d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_block)
     #d_1 = LeakyReLU(alpha=0.2)(d_1)
