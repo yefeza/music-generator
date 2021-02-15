@@ -6,6 +6,7 @@ import os
 from .utils import *
 from scipy.io.wavfile import write
 import tensorflow as tf
+import audiofile as af
 
 #descargar de cloud storage
 def download_audio_files(path_dataset, bucket_name):
@@ -220,7 +221,7 @@ def read_dataset(dimension, files_format):
         songs_dir=1
         for song_dirname in os.listdir(directory):
             try:
-                signal, sampling_rate=open_audio(directory+song_dirname)
+                signal, sampling_rate = af.read(directory+song_dirname)
                 song_reshaped = np.reshape(
                         signal, newshape=(dimension[0], dimension[1], 2))
                 data.append(song_reshaped)
