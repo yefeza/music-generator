@@ -139,7 +139,7 @@ class WGAN(keras.Model):
             # Get the logits for the real images
             real_logits = self.discriminator(real_images, training=True)
             # Calculate the generator loss using the fake and real image logits
-            g_loss = self.g_loss_fn_extra(gen_img_logits, real_logits)
+            g_loss = self.g_loss_fn(gen_img_logits, real_logits)
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
         # Update the weights of the generator using the generator optimizer
