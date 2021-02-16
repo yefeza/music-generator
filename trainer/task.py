@@ -90,6 +90,7 @@ if __name__ == '__main__':
     composite = define_composite(discriminators, generators, latent_dim)
 
     def plot_losses(history, dimension):
+        plt.clf()
         plt.plot(history.history['ci_1'], label='Real Logits')
         plt.plot(history.history['cu_1'], label='Fake Logits')
         plt.plot(history.history['delta_1'], label='Delta Evolution')
