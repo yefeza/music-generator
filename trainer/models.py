@@ -480,8 +480,8 @@ def generator_loss(fake_logits, real_logits):
     lamb=(cu-ci)
     delta=tf.math.abs(lamb)
     sign=tf.math.divide_no_nan(lamb, delta)+0.0001
-    return (sign * ci) + (sign * delta)
-
+    return (sign * ci) + delta
+    
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, latent_dim):
