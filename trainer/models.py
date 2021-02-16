@@ -229,26 +229,26 @@ class StaticOptTanh(Layer):
 def add_discriminator_block(old_model, n_input_layers=3):
     # getshapeofexistingmodel
     in_shape = list(old_model.input[0].shape)
-    alpha=6000.0
-    soft_alpha=6000.0
+    alpha=20000.0
+    soft_alpha=20000.0
     if in_shape[-3]==8:
-        alpha=12000.0
-        soft_alpha=700.0
+        alpha=40000.0
+        soft_alpha=7000.0
     if in_shape[-3]==16:
-        alpha=24000.0
-        soft_alpha=900.0
+        alpha=60000.0
+        soft_alpha=8000.0
     if in_shape[-3]==32:
-        alpha=48000.0
-        soft_alpha=1200.0
+        alpha=80000.0
+        soft_alpha=9000.0
     if in_shape[-3]==64:
-        alpha=96000.0
-        soft_alpha=1500.0
+        alpha=100000.0
+        soft_alpha=10000.0
     if in_shape[-3]==128:
-        alpha=192000.0
-        soft_alpha=1800.0
+        alpha=150000.0
+        soft_alpha=11000.0
     if in_shape[-3]==256:
-        alpha=348000.0
-        soft_alpha=2200.0
+        alpha=350000.0
+        soft_alpha=12000.0
     # definenewinputshapeasdoublethesize
     input_shape = (in_shape[-3]*2, in_shape[-2]*2, in_shape[-1])
     in_image = Input(shape=input_shape)
@@ -338,7 +338,7 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     d = MinibatchStdDev()(d_3)
     d = Flatten()(d)
     d = Dense(1)(d)
-    out_class=StaticOptTanh(alpha=6000.0)(d)
+    out_class=StaticOptTanh(alpha=20000.0)(d)
     # define model
     model_comp = Model(in_image, out_class)
     # store model
