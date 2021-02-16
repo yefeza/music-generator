@@ -394,6 +394,8 @@ def add_generator_block(old_model):
     #sumarize
     sumarized_blocks=Add()([op_1, op_2, op_3, op_4, op_5, op_6])
     sumarized_blocks=Dense(256)(sumarized_blocks)
+    sumarized_blocks=Dense(64)(sumarized_blocks)
+    sumarized_blocks=Dense(8)(sumarized_blocks)
     for_sum_layer=Dense(2)(sumarized_blocks)
     out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
     # define model
@@ -443,6 +445,8 @@ def define_generator(n_blocks):
     #combinar canales
     sumarized_blocks=Add()([op_1, op_2, op_3, op_4])
     sumarized_blocks=Dense(256)(sumarized_blocks)
+    sumarized_blocks=Dense(64)(sumarized_blocks)
+    sumarized_blocks=Dense(8)(sumarized_blocks)
     sumarized_blocks=Dense(2)(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     model = Model(ly0, wls)
@@ -494,8 +498,8 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator_extra_steps=3,
         )
         wgan1.compile(
-            d_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
-            g_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            d_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            g_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
             g_loss_fn=generator_loss,
             d_loss_fn=discriminator_loss
         )
@@ -509,8 +513,8 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator_extra_steps=3,
         )
         wgan2.compile(
-            d_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
-            g_optimizer=Adam(lr=0.0001, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            d_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            g_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
             g_loss_fn=generator_loss,
             d_loss_fn=discriminator_loss
         )
