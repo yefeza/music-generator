@@ -471,7 +471,8 @@ def discriminator_loss(fake_logits, real_logits):
     lamb=(cu-ci)
     delta=tf.math.abs(lamb)
     sign=tf.math.divide_no_nan(lamb, delta)+0.0001
-    return (sign * ci) + (sign * delta)
+    sign_2=(tf.math.divide_no_nan(lamb, delta)+0.0000999)*-1.0
+    return (sign * ci) + (sign_2 * cu)
 
 # Define the loss functions for the generator.
 def generator_loss(fake_logits, real_logits):
@@ -495,7 +496,7 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator=d_models[0],
             generator=g_models[0],
             latent_dim=latent_dim,
-            discriminator_extra_steps=3,
+            discriminator_extra_steps=5,
         )
         wgan1.compile(
             d_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.99, epsilon=10e-8),
@@ -510,7 +511,7 @@ def define_composite(discriminators, generators, latent_dim):
             generator=g_models[1],
             latent_dim=latent_dim,
             fade_in=True,
-            discriminator_extra_steps=3,
+            discriminator_extra_steps=5,
         )
         wgan2.compile(
             d_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.99, epsilon=10e-8),

@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
     # direccion de el dataset
 
-    path_dataset = 'keras_dir/full-ds/'
+    path_dataset = 'keras_dir/full-ds-inst/'
     bucket_name='music-gen'
     files_format='mp3'
     download_data=True
