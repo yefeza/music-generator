@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
     # direccion de el dataset
 
-    path_dataset = 'keras_dir/full-ds-inst/'
+    path_dataset = 'keras_dir/full-ds/'
     bucket_name='music-gen'
     files_format='mp3'
     download_data=True
@@ -106,6 +106,7 @@ if __name__ == '__main__':
     # train the generator and discriminator
 
     def train(g_models, d_models, gan_models, dataset, latent_dim, epochs_norm, epochs_fade, batch_sizes, job_dir, bucket_name, files_format, path_dataset, download_data, download_evaluators, epochs_evaluadores):
+        get_evaluators=[True,True,False,False,False,False,False,False,False]
         # fit the baseline model
         g_normal, d_normal, gan_normal = g_models[0][0], d_models[0][0], gan_models[0][0]
         # scale dataset to appropriate size
@@ -114,7 +115,8 @@ if __name__ == '__main__':
             download_diension_dataset(path_dataset, bucket_name, files_format, (gen_shape[-3], gen_shape[-2]))
         scaled_data, y_evaluator = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
         #cargar evaluador
-        evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name, True, (scaled_data, y_evaluator), epochs_evaluadores)
+        geval=get_evaluators[0]
+        evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name, geval, (scaled_data, y_evaluator), epochs_evaluadores)
         # train normal or straight-through models
         n_batch=batch_sizes[0]
         e_norm=epochs_norm[0]
@@ -146,7 +148,8 @@ if __name__ == '__main__':
                 download_diension_dataset(path_dataset, bucket_name, files_format, (gen_shape[-3], gen_shape[-2]))
             scaled_data, y_evaluator = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
             #cargar evaluador
-            evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name,download_evaluators, (scaled_data, y_evaluator), epochs_evaluadores)
+            geval=get_evaluators[i]
+            evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name, geval, (scaled_data, y_evaluator), epochs_evaluadores)
             cbk=GANMonitor(job_dir=job_dir, evaluador=evaluador)
             #scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
             #get batch size for model
