@@ -6,6 +6,7 @@ import os
 from .utils import *
 from scipy.io.wavfile import write
 import tensorflow as tf
+import audiofile as af
 
 #descargar de cloud storage
 def download_audio_files(path_dataset, bucket_name):
@@ -170,8 +171,10 @@ def download_diension_dataset(path_dataset, bucket_name, files_format, dimension
     storage_client = storage.Client(project='ia-devs')
     bucket = storage_client.bucket(bucket_name)
     #limit_songs=300
-    limit_songs_list=[3000,1500,1000,600,300,200,100,80,50]
-    #limit_songs_list=[900,600,450,300,150,50,30,20,15]
+    #limit_songs_list=[3000,1500,1000,600,300,200,100,80,50]
+    #limit_songs_list=[600,90,80,60,50,40,30,20,10]
+    #limit_songs_list=[600,560,480,360,300,240,180,120,60]
+    limit_songs_list=[10,20,30,40,50,60,70,80,90]
     limit_songs=50
     if dimension[0]==4:
         limit_songs=limit_songs_list[0]
@@ -194,6 +197,9 @@ def download_diension_dataset(path_dataset, bucket_name, files_format, dimension
                 dest_file="local_ds/" + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(song+1) + "."+ files_format
                 if not os.path.exists(dest_file):
                     source_blob_name = path_dataset + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/" + str(song+1) + "."+ files_format
+                    #habilitar para todas las pistas de la carpeta
+                    #prefix = path_dataset + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1)
+                    #blobs = bucket.list_blobs(prefix=prefix)
                     blob = bucket.blob(source_blob_name)
                     dest_folder="local_ds/" + files_format + "/" + str(dimension[0]) + "-" + str(dimension[1]) + "/" + str(folder+1) + "/"
                     if not os.path.exists(dest_folder):
@@ -207,18 +213,23 @@ def download_diension_dataset(path_dataset, bucket_name, files_format, dimension
 def read_dataset(dimension, files_format):
     data=[]
     y_evaluator=[]
+    limit_songs=20
     for folder in range(9):
         continuos_error=0
         print("Leyendo dataset en folder "+str(folder+1))
         directory="local_ds/" + files_format + "/"+str(dimension[0])+"-"+str(dimension[1])+"/" + str(folder+1) + "/"
+        songs_dir=1
         for song_dirname in os.listdir(directory):
             try:
-                signal, sampling_rate=open_audio(directory+song_dirname)
+                signal, sampling_rate = af.read(directory+song_dirname)
                 song_reshaped = np.reshape(
                         signal, newshape=(dimension[0], dimension[1], 2))
                 data.append(song_reshaped)
                 y_evaluator.append(folder)
                 continuos_error=0
+                songs_dir+=1
+                #if songs_dir>=limit_songs and dimension[0]==4:
+                #    break
             except:
                 continuos_error+=1
                 if continuos_error==5:

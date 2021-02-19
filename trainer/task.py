@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
     # direccion de el dataset
 
-    path_dataset = 'keras_dir/full-ds-inst/'
+    path_dataset = 'keras_dir/full-ds/'
     bucket_name='music-gen'
     files_format='mp3'
     download_data=True
@@ -75,38 +75,38 @@ if __name__ == '__main__':
     #print("Number of devices: {}".format(strategy.num_replicas_in_sync))
 
     # size of the latent space
-    latent_dim = (1, 50, 2)
+    latent_dim = (1, 100, 2)
 
     #with strategy.scope():
-    # shared layer
 
-    shared_layer = Dense(100)
-    shared_layer2 = Dense(100)
-
-    # define discriminators
-
-    discriminators = define_discriminator(7, shared_layer)
+    discriminators = define_discriminator(7)
 
     # define generator
 
-    generators = define_generator(7, shared_layer2)
+    generators = define_generator(7)
 
     # define composite models
 
     composite = define_composite(discriminators, generators, latent_dim)
 
-    def plot_losses(history):
-        plt.plot(history.history['d_loss']*-1, label='Negative D Loss')
-        plt.plot(history.history['g_loss'], label='G Loss')
+    def plot_losses(history, dimension):
+        plt.clf()
+        plt.plot(history.history['ci_1'], label='Real Logits')
+        plt.plot(history.history['cu_1'], label='Fake Logits')
+        plt.plot(history.history['delta_1'], label='Delta Evolution')
         plt.title('Losses History')
-        plt.ylabel('Loses')
+        plt.ylabel('Evolution')
         plt.xlabel('No. epoch')
         plt.legend(loc="upper left")
-        plt.show()
+        folder="losses/"+str(dimension[0])+"-"+str(dimension[1])+"/"
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        plt.savefig(folder+"losses.png")
 
     # train the generator and discriminator
 
     def train(g_models, d_models, gan_models, dataset, latent_dim, epochs_norm, epochs_fade, batch_sizes, job_dir, bucket_name, files_format, path_dataset, download_data, download_evaluators, epochs_evaluadores):
+        get_evaluators=[True,True,False,False,False,False,False,False,False]
         # fit the baseline model
         g_normal, d_normal, gan_normal = g_models[0][0], d_models[0][0], gan_models[0][0]
         # scale dataset to appropriate size
@@ -115,7 +115,8 @@ if __name__ == '__main__':
             download_diension_dataset(path_dataset, bucket_name, files_format, (gen_shape[-3], gen_shape[-2]))
         scaled_data, y_evaluator = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
         #cargar evaluador
-        evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name,download_evaluators, (scaled_data, y_evaluator), epochs_evaluadores)
+        geval=get_evaluators[0]
+        evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name, geval, (scaled_data, y_evaluator), epochs_evaluadores)
         # train normal or straight-through models
         n_batch=batch_sizes[0]
         e_norm=epochs_norm[0]
@@ -127,11 +128,12 @@ if __name__ == '__main__':
         scaled_data=scaled_data[:limit]
         print('Scaled Data', scaled_data.shape)
         #train_epochs(g_normal, d_normal, gan_normal, scaled_data, e_norm, n_batch, bucket_name)
+        #gan_models[0][0].pre_train_discriminator(scaled_data,n_batch)
         gan_models[0][0].set_train_steps(n_steps)
         cbk=GANMonitor(job_dir=job_dir, evaluador=evaluador)
-        #np.random.shuffle(scaled_data)
+        np.random.shuffle(scaled_data)
         history = gan_models[0][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
-        plot_losses(history)
+        plot_losses(history, (gen_shape[-3], gen_shape[-2]))
         # generate examples
         #generar_ejemplos(gan_models[0][0].generator, "first-", 3, job_dir, bucket_name, latent_dim)
         # process each level of growth
@@ -146,7 +148,8 @@ if __name__ == '__main__':
                 download_diension_dataset(path_dataset, bucket_name, files_format, (gen_shape[-3], gen_shape[-2]))
             scaled_data, y_evaluator = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
             #cargar evaluador
-            evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name,download_evaluators, (scaled_data, y_evaluator), epochs_evaluadores)
+            geval=get_evaluators[i]
+            evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name, geval, (scaled_data, y_evaluator), epochs_evaluadores)
             cbk=GANMonitor(job_dir=job_dir, evaluador=evaluador)
             #scaled_data = get_resampled_data(gen_shape[-3], gen_shape[-2], dataset)
             #get batch size for model
@@ -161,9 +164,9 @@ if __name__ == '__main__':
             print('Scaled Data', scaled_data.shape)
             # train fade-in models for next level of growth
             gan_models[i][1].set_train_steps(n_steps)
-            #np.random.shuffle(scaled_data)
+            np.random.shuffle(scaled_data)
             history = gan_models[i][1].fit(scaled_data, batch_size=n_batch, epochs=e_fadein, callbacks=[cbk])
-            plot_losses(history)
+            plot_losses(history, (gen_shape[-3], gen_shape[-2]))
             #train_epochs(g_fadein, d_fadein, gan_fadein,
             #            scaled_data, e_fadein, n_batch, True)
             # train normal or straight-through models
@@ -171,7 +174,7 @@ if __name__ == '__main__':
             n_steps=int((scaled_data.shape[0]/n_batch))*e_norm
             gan_models[i][0].set_train_steps(n_steps)
             history = gan_models[i][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
-            plot_losses(history)
+            plot_losses(history, (gen_shape[-3], gen_shape[-2]))
             #train_epochs(g_normal, d_normal, gan_normal,
             #            scaled_data, e_norm, n_batch)
             # generate examples
@@ -180,10 +183,10 @@ if __name__ == '__main__':
         #print("guardando modelo")
         #guardar_modelo(gan_models[6][0].generator,job_dir,"final_100_epoch")
 
-    batch_sizes=[64,32,16,4,2,2]
-    epochs_norm=[100,120,140,180,220,260,300]
+    batch_sizes=[16,8,4,2,2,2,2]
+    epochs_norm=[200,220,250,280,300,350,420]
     #epochs_norm=[50,60,70,80,90,100,110]
-    epochs_fade=[10,20,30,35,40,45,50]
+    epochs_fade=[10,15,32,25,30,35,40]
     # load image data
     dataset = []
     #dataset = get_audio_list(path_dataset, bucket_name)

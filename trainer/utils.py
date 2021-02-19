@@ -4,6 +4,7 @@ import os
 from google.cloud import storage
 import keras
 import tensorflow as tf
+import random
 
 # update alpha for Weighted Sum
 
@@ -77,11 +78,11 @@ def calculate_inception_score(p_yx, eps=1E-16):
 def generar_ejemplos(g_model, prefix, iter_num, n_examples, job_dir, bucket_name, latent_dim, evaluador):
     gen_shape = g_model.output_shape
     random_latent_vectors = tf.random.normal(shape=(n_examples, latent_dim[0], latent_dim[1], latent_dim[2]))
-    gen_auds = g_model(random_latent_vectors)
+    gen_auds = g_model(random_latent_vectors, training=False)
     for i in range(n_examples):
         signal_gen = gen_auds[i].numpy()
         signal_gen = np.reshape(signal_gen, ((gen_shape[-3]*gen_shape[-2]), 2))
-        signal_gen /= np.max(np.abs(signal_gen), axis=0)
+        #signal_gen /= np.max(np.abs(signal_gen), axis=0)
         local_path = "local_gen/" + \
             str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
             "/" + prefix + str(i*iter_num) + '.wav'
@@ -99,10 +100,10 @@ def generar_ejemplos(g_model, prefix, iter_num, n_examples, job_dir, bucket_name
 
 def generar_ejemplo(g_model, prefix, iter_num, job_dir, bucket_name, latent_dim, evaluador, save):
     gen_shape = g_model.output_shape
-    random_latent_vectors = tf.random.normal(shape=(1, latent_dim[0], latent_dim[1], latent_dim[2]))
-    gen_auds = g_model(random_latent_vectors)
+    random_latent_vectors = tf.random.normal(shape=(10, latent_dim[0], latent_dim[1], latent_dim[2]))
+    gen_auds = g_model(random_latent_vectors, training=False)
     if save:
-        signal_gen = gen_auds[0].numpy()
+        signal_gen = gen_auds[random.randrange(0,9)].numpy()
         signal_gen = np.reshape(signal_gen, ((gen_shape[-3]*gen_shape[-2]), 2))
         signal_gen /= np.max(np.abs(signal_gen), axis=0)
         local_path = "local_gen/" + \
@@ -144,11 +145,11 @@ def guardar_modelo(keras_model, job_dir, name):
     export_path = tf.compat.v1.keras.experimental.export_saved_model(keras_model, job_dir + '/keras_export_'+name)
     print('Model exported to: {}'.format(export_path))
 
-def guardar_checkpoint(keras_model, bucket_name, dimension, epoch):
+def guardar_checkpoint(keras_model, bucket_name, dimension, epoch, prefix):
     storage_client = storage.Client(project='ia-devs')
     bucket = storage_client.bucket(bucket_name)
     path='ckeckpoints/'+str(dimension[0])+"-"+str(dimension[1])+"/epoch"+str(epoch)+"/"
-    file_name='ckeckpoints/'+str(dimension[0])+"-"+str(dimension[1])+"/epoch"+str(epoch)+"/model.h5"
+    file_name='ckeckpoints/'+str(dimension[0])+"-"+str(dimension[1])+"/epoch"+str(epoch)+"/"+prefix+"model.h5"
     if not os.path.exists(path):
             os.makedirs(path)
     keras_model.save(file_name)
