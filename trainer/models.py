@@ -4,14 +4,13 @@ from keras.optimizers import Adam
 from keras.models import Sequential, Model
 from keras.layers.core import Dense, Activation, Dropout
 from keras.layers import Input, UpSampling2D, Layer
-from keras.layers import LSTM
-from keras.layers.normalization import BatchNormalization
-from keras.layers.convolutional import Conv2D, Conv1D, Conv2DTranspose, Conv3DTranspose
-from keras.layers.convolutional import MaxPooling2D, MaxPooling1D, AveragePooling1D, AveragePooling2D
+from keras.layers.convolutional import Conv2D, Conv2DTranspose
+from keras.layers.convolutional import AveragePooling2D
 from keras.layers import Flatten
 from keras.layers import Reshape
 from keras.layers import LeakyReLU
-from keras.layers import Add
+from keras.layers import Add, Multiply
+from keras.layers import LayerNormalization
 from keras.utils.vis_utils import plot_model
 from keras import backend
 import tensorflow as tf
@@ -34,6 +33,11 @@ class WeightedSum(Add):
         # ((1-a) * input1) + (a * input2)
         output = ((1.0 - self.alpha) * inputs[0]) + (self.alpha * inputs[1])
         return output
+
+    def get_config(self):
+        config = super(SoftRectifier, self).get_config()
+        config.update({"alpha": self.alpha})
+        return config
 
 class WGAN(keras.Model):
     def __init__(
@@ -62,39 +66,15 @@ class WGAN(keras.Model):
         self.d_loss_fn = d_loss_fn
         self.g_loss_fn = g_loss_fn
 
-    def gradient_penalty(self, batch_size, real_images, fake_images):
-        """ Calculates the gradient penalty.
-
-        This loss is calculated on an interpolated image
-        and added to the discriminator loss.
-        """
-        # Get the interpolated image
-        alpha = tf.random.normal([batch_size, 1, 1, 1], 0.0, 1.0)
-        diff = fake_images - real_images
-        interpolated = real_images + alpha * diff
-
-        with tf.GradientTape() as gp_tape:
-            gp_tape.watch(interpolated)
-            # 1. Get the discriminator output for this interpolated image.
-            pred = self.discriminator(interpolated, training=True)
-
-        # 2. Calculate the gradients w.r.t to this interpolated image.
-        grads = gp_tape.gradient(pred, [interpolated])[0]
-        # 3. Calculate the norm of the gradients.
-        norm = tf.sqrt(tf.reduce_sum(tf.square(grads), axis=[1, 2, 3]))
-        gp = tf.reduce_mean((norm - 1.0) ** 2)
-        return gp
-
     def set_train_steps(self, size):
         self.train_steps=size
 
     def train_step(self, real_images):
         #control actual step
-        self.actual_step+=1
         if self.fade_in:
             models=[self.discriminator, self.generator]
             # calculate current alpha (linear from 0 to 1)
-            alpha = self.actual_step / float(self.total_steps - 1)
+            alpha = self.actual_step / float(self.train_steps - 1)
             # update the alpha for each model
             for model in models:
                 for layer in model.layers:
@@ -120,8 +100,8 @@ class WGAN(keras.Model):
         # the discriminator for `x` more steps (typically 5) as compared to
         # one step of the generator. Here we will train it for 3 extra steps
         # as compared to 5 to reduce the training time.
+        # Get the latent vector
         for i in range(self.d_steps):
-            # Get the latent vector
             random_latent_vectors = tf.random.normal(
                 shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2])
             )
@@ -132,21 +112,22 @@ class WGAN(keras.Model):
                 fake_logits = self.discriminator(fake_images, training=True)
                 # Get the logits for the real images
                 real_logits = self.discriminator(real_images, training=True)
-
                 # Calculate the discriminator loss using the fake and real image logits
-                d_cost = self.d_loss_fn(real_img=real_logits, fake_img=fake_logits)
-                # Calculate the gradient penalty
-                gp = self.gradient_penalty(batch_size, real_images, fake_images)
-                # Add the gradient penalty to the original discriminator loss
-                d_loss = d_cost + gp * self.gp_weight
-
+                d_loss = self.d_loss_fn(fake_logits, real_logits)
             # Get the gradients w.r.t the discriminator loss
             d_gradient = tape.gradient(d_loss, self.discriminator.trainable_variables)
             # Update the weights of the discriminator using the discriminator optimizer
             self.d_optimizer.apply_gradients(
                 zip(d_gradient, self.discriminator.trainable_variables)
             )
-
+        #calculate actual delta value
+        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
+        generated_images = self.generator(random_latent_vectors, training=True)
+        fake_logits = self.discriminator(generated_images, training=True)
+        real_logits = self.discriminator(real_images, training=True)
+        ci_0=tf.reduce_mean(real_logits)
+        cu_0=tf.reduce_mean(fake_logits)
+        delta_0=tf.math.abs((cu_0-ci_0))
         # Train the generator
         # Get the latent vector
         random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
@@ -155,15 +136,26 @@ class WGAN(keras.Model):
             generated_images = self.generator(random_latent_vectors, training=True)
             # Get the discriminator logits for fake images
             gen_img_logits = self.discriminator(generated_images, training=True)
-            g_loss = self.g_loss_fn(gen_img_logits)
-
+            # Get the logits for the real images
+            real_logits = self.discriminator(real_images, training=True)
+            # Calculate the generator loss using the fake and real image logits
+            g_loss = self.g_loss_fn(gen_img_logits, real_logits)
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
         # Update the weights of the generator using the generator optimizer
         self.g_optimizer.apply_gradients(
             zip(gen_gradient, self.generator.trainable_variables)
         )
-        return {"d_loss": d_loss, "g_loss": g_loss}
+        #calculate actual delta value
+        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
+        generated_images = self.generator(random_latent_vectors, training=True)
+        fake_logits = self.discriminator(generated_images, training=True)
+        real_logits = self.discriminator(real_images, training=True)
+        ci_1=tf.reduce_mean(real_logits)
+        cu_1=tf.reduce_mean(fake_logits)
+        delta_1=tf.math.abs((cu_1-ci_1))
+        self.actual_step+=1
+        return {"delta_0": delta_0, "cu_0": cu_0, "ci_0": ci_0, "delta_1": delta_1, "cu_1": cu_1, "ci_1": ci_1}
 
 # Minibatch Standard Deviation Layer
 
@@ -199,55 +191,103 @@ class MinibatchStdDev(Layer):
             # [NCHW]  Append as new fmap.
             return tf.concat([x, y], axis=1)
 
+    def get_config(self):
+        config = super(MinibatchStdDev, self).get_config()
+        return config
+
+#custom activation layer (tanh(x)+(x/(alpha+0.1)))
+class SoftRectifier(Layer):
+    def __init__(self, start_alpha=20000.0, **kwargs):
+        super(SoftRectifier, self).__init__(**kwargs)
+        self.start_alpha=start_alpha
+        #self.w = tf.Variable(initial_value=start_alpha, trainable=True)
+
+    def call(self, inputs):
+        return tf.math.tanh(inputs) + tf.math.divide_no_nan(inputs,self.start_alpha)
+
+    def get_config(self):
+        config = super(SoftRectifier, self).get_config()
+        config.update({"start_alpha": self.start_alpha})
+        return config
+
+#custom activation layer (tanh(x)+(x/(alpha+0.1)))
+class StaticOptTanh(Layer):
+    def __init__(self, alpha=1500.0, **kwargs):
+        super(StaticOptTanh, self).__init__(**kwargs)
+        self.alpha=alpha
+
+    def call(self, inputs):
+        return tf.math.tanh(inputs) + tf.math.divide_no_nan(inputs, self.alpha)
+
+    def get_config(self):
+        config = super(StaticOptTanh, self).get_config()
+        config.update({"alpha": self.alpha})
+        return config
+
 # agregar bloque a discriminador para escalar las dimensiones
 
 def add_discriminator_block(old_model, n_input_layers=3):
     # getshapeofexistingmodel
     in_shape = list(old_model.input[0].shape)
+    alpha=40000.0
+    soft_alpha=20000.0
+    if in_shape[-3]==8:
+        alpha=60000.0
+        soft_alpha=40000.0
+    if in_shape[-3]==16:
+        alpha=90000.0
+        soft_alpha=80000.0
+    if in_shape[-3]==32:
+        alpha=120000.0
+        soft_alpha=120000.0
+    if in_shape[-3]==64:
+        alpha=150000.0
+        soft_alpha=150000.0
+    if in_shape[-3]==128:
+        alpha=200000.0
+        soft_alpha=11000.0
+    if in_shape[-3]==256:
+        alpha=350000.0
+        soft_alpha=200000.0
     # definenewinputshapeasdoublethesize
     input_shape = (in_shape[-3]*2, in_shape[-2]*2, in_shape[-1])
     in_image = Input(shape=input_shape)
     # definenewinputprocessinglayer
     featured_layer = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
-    featured_layer = LeakyReLU(alpha=0.2)(featured_layer)
+    featured_layer = SoftRectifier(start_alpha=soft_alpha)(featured_layer)
     #convolusion block 1
-    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_layer)
-    d_1 = LeakyReLU(alpha=0.2)(d_1)
-    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
-    d_1 = LeakyReLU(alpha=0.2)(d_1)
-    #d = AveragePooling2D()(d)
-    d_1 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_1)
-    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    d_1 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(featured_layer)
+    d_1 = SoftRectifier(start_alpha=soft_alpha)(d_1)
+    d_1 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = SoftRectifier(start_alpha=soft_alpha)(d_1)
+    d_1 = Conv2D(32, (2, 2), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = SoftRectifier(start_alpha=soft_alpha)(d_1)
     #convolusion block 2
-    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
-    d_2 = LeakyReLU(alpha=0.2)(d_2)
-    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
-    d_2 = LeakyReLU(alpha=0.2)(d_2)
-    d_2 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_2)
-    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    d_2 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_2 = SoftRectifier(start_alpha=soft_alpha)(d_2)
+    d_2 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = SoftRectifier(start_alpha=soft_alpha)(d_2)
+    d_2 = Conv2D(32, (2, 2), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = SoftRectifier(start_alpha=soft_alpha)(d_2)
     #convolusion block 3
-    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
-    d_3 = LeakyReLU(alpha=0.2)(d_3)
-    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
-    d_3 = LeakyReLU(alpha=0.2)(d_3)
-    d_3 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_3)
-    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    d_3 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_3 = SoftRectifier(start_alpha=soft_alpha)(d_3)
+    d_3 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
+    d_3 = SoftRectifier(start_alpha=soft_alpha)(d_3)
+    d_3 = Conv2D(32, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_3)
+    d_3 = SoftRectifier(start_alpha=soft_alpha)(d_3)
     #sumarize blocks
     d_block=Conv2D(128, (1,1), padding='same', kernel_initializer='he_normal')(d_3)
-    d_block = LeakyReLU(alpha=0.2)(d_block)
+    d_block = SoftRectifier(start_alpha=soft_alpha)(d_block)
     block_new = d_block
     # skiptheinput,1x1andactivationfortheoldmodel
-    pointer=0
     for i in range(n_input_layers, len(old_model.layers)):
-        if isinstance(old_model.layers[i], Dense):
-            final_layer = old_model.layers[i](d_block)
+        if isinstance(old_model.layers[i], StaticOptTanh):
+            final_layer = StaticOptTanh(alpha=alpha)(d_block)
         else:
             d_block = old_model.layers[i](d_block)
     # model 1 without multiple inputs for composite
     model1_comp = Model(in_image, final_layer)
-    # compilemodel
-    #model1.compile(loss=None, optimizer=Adam(
-    #    lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8))
     # downsamplethenewlargerimage
     downsample = AveragePooling2D()(in_image)
     # connectoldinputprocessingtodownsamplednewinput
@@ -257,54 +297,48 @@ def add_discriminator_block(old_model, n_input_layers=3):
     d = WeightedSum()([block_old, block_new])
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
-        if isinstance(old_model.layers[i], Dense):
-            final_layer = old_model.layers[i](d)
+        if isinstance(old_model.layers[i], StaticOptTanh):
+            final_layer = StaticOptTanh(alpha=alpha)(d)
         else:
             d = old_model.layers[i](d)
-    # definestraight-throughmodel
-    #model2 = Model([in_image, y_true, is_weight], final_layer)
-    #model2.add_loss(D_wgangp_acgan(y_true, final_layer, is_weight))
-    # model 2 without multiple inputs for composite
     model2_comp = Model(in_image, final_layer)
-    # compilemodel
-    #model2.compile(loss=None, optimizer=Adam(
-    #    lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8))
     return[model1_comp, model2_comp]
 
 # definir los discriminadores
 
-def define_discriminator(n_blocks, lstm_layer, input_shape=(4, 750, 2)):
+def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     model_list = list()
     # base model input
     in_image = Input(shape=input_shape)
     # conv 1x1
     featured_block = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
-    featured_block = LeakyReLU(alpha=0.2)(featured_block)
+    featured_block = SoftRectifier()(featured_block)
     # convolusion block 1
-    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_block)
-    d_1 = LeakyReLU(alpha=0.2)(d_1)
-    d_1 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_1)
-    d_1 = LeakyReLU(alpha=0.2)(d_1)
-    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
-    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    d_1 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(featured_block)
+    d_1 = SoftRectifier()(d_1)
+    d_1 = Conv2D(32, (4, 4), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = SoftRectifier()(d_1)
+    d_1 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_1 = SoftRectifier()(d_1)
     # convolusion block 2
-    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
-    d_2 = LeakyReLU(alpha=0.2)(d_2)
-    d_2 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_2)
-    d_2 = LeakyReLU(alpha=0.2)(d_2)
-    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
-    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    d_2 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
+    d_2 = SoftRectifier()(d_2)
+    d_2 = Conv2D(32, (4, 4), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = SoftRectifier()(d_2)
+    d_2 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_2 = SoftRectifier()(d_2)
     # convolusion block 3
-    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
-    d_3 = LeakyReLU(alpha=0.2)(d_3)
-    d_3 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_3)
-    d_3 = LeakyReLU(alpha=0.2)(d_3)
-    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
-    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    d_3 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
+    d_3 = SoftRectifier()(d_3)
+    d_3 = Conv2D(32, (4, 4), padding='same', kernel_initializer='he_normal')(d_3)
+    d_3 = SoftRectifier()(d_3)
+    d_3 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
+    d_3 = SoftRectifier()(d_3)
     #sumarize blocks
     d = MinibatchStdDev()(d_3)
     d = Flatten()(d)
-    out_class = Dense(1, activation='linear')(d)
+    d = Dense(1)(d)
+    out_class=StaticOptTanh(alpha=40000.0)(d)
     # define model
     model_comp = Model(in_image, out_class)
     # store model
@@ -326,170 +360,95 @@ def add_generator_block(old_model):
     block_end = old_model.layers[-2].output
     # upsample, and define new block
     upsampling = UpSampling2D()(block_end)
-    featured = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(upsampling)
-    #bloque 1
-    g_1 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
-    g_1 = LeakyReLU(alpha=0.2)(g_1)
-    g_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_1)
-    g_1 = LeakyReLU(alpha=0.2)(g_1)
-    g_1 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_1)
-    g_1 = LeakyReLU(alpha=0.2)(g_1)
-    g_1 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_1)
-    g_1 = LeakyReLU(alpha=0.2)(g_1)
-    op_1 = Dense(50)(g_1)
-    #bloque 2
-    g_2 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
-    g_2 = LeakyReLU(alpha=0.2)(g_2)
-    g_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_2)
-    g_2 = LeakyReLU(alpha=0.2)(g_2)
-    g_2 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_2)
-    g_2 = LeakyReLU(alpha=0.2)(g_2)
-    g_2 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_2)
-    g_2 = LeakyReLU(alpha=0.2)(g_2)
-    op_2 = Dense(50)(g_2)
-    #bloque 3
-    g_3 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
-    g_3 = LeakyReLU(alpha=0.2)(g_3)
-    g_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_3)
-    g_3 = LeakyReLU(alpha=0.2)(g_3)
-    g_3 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_3)
-    g_3 = LeakyReLU(alpha=0.2)(g_3)
-    g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
-    g_3 = LeakyReLU(alpha=0.2)(g_3)
-    op_3 = Dense(50)(g_3)
-    #bloque 4
-    g_4 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
-    g_4 = LeakyReLU(alpha=0.2)(g_4)
-    g_4 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_4)
-    g_4 = LeakyReLU(alpha=0.2)(g_4)
-    g_4 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_4)
-    g_4 = LeakyReLU(alpha=0.2)(g_4)
-    g_4 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_4)
-    g_4 = LeakyReLU(alpha=0.2)(g_4)
-    op_4 = Dense(100)(g_4)
-    #bloque 5
-    g_5 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
-    g_5 = LeakyReLU(alpha=0.2)(g_5)
-    g_5 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_5)
-    g_5 = LeakyReLU(alpha=0.2)(g_5)
-    g_5 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_5)
-    g_5 = LeakyReLU(alpha=0.2)(g_5)
-    g_5 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_5)
-    g_5 = LeakyReLU(alpha=0.2)(g_5)
-    op_5 = Dense(100)(g_5)
-    #bloque 6
-    g_6 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_normal')(featured)
-    g_6 = LeakyReLU(alpha=0.2)(g_6)
-    g_6 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(g_6)
-    g_6 = LeakyReLU(alpha=0.2)(g_6)
-    g_6 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_6)
-    g_6 = LeakyReLU(alpha=0.2)(g_6)
-    g_6 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_6)
-    g_6 = LeakyReLU(alpha=0.2)(g_6)
-    op_6 = Dense(100)(g_6)
+    featured = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(upsampling)
+    # bloque 1 deconvolusion
+    g_1 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_1 = Dense(32)(g_1)
+    g_1 = Conv2DTranspose(64, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_1)
+    op_1 = Dense(128)(g_1)
+    # bloque 2 deconvolusion
+    g_2 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_2 = Dense(32)(g_2)
+    g_2 = Conv2DTranspose(64, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_2)
+    op_2 = Dense(128)(g_2)
+    # bloque 3 deconvolusion
+    g_3 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_3 = Dense(32)(g_3)
+    g_3 = Conv2DTranspose(64, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_3)
+    op_3 = Dense(128)(g_3)
+    # bloque 4 deconvolusion
+    g_4 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_4 = Dense(32)(g_4)
+    g_4 = Conv2DTranspose(64, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_4)
+    op_4 = Dense(128)(g_4)
+    # bloque 5 deconvolusion
+    g_5 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_5 = Dense(32)(g_5)
+    g_5 = Conv2DTranspose(64, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_5)
+    op_5 = Dense(128)(g_5)
+    # bloque 3 deconvolusion
+    g_6 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_6 = Dense(32)(g_6)
+    g_6 = Conv2DTranspose(64, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_6)
+    op_6 = Dense(128)(g_6)
     #sumarize
-    sumarized_blocks=Add()([op_1,op_2,op_3])
-    sumarized_blocks=Dense(100)(sumarized_blocks)
-    # to 2 channels
-    out_image = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks=Add()([op_1, op_2, op_3, op_4, op_5, op_6])
+    sumarized_blocks=Dense(256)(sumarized_blocks)
+    sumarized_blocks=Dense(64)(sumarized_blocks)
+    sumarized_blocks=Dense(8)(sumarized_blocks)
+    for_sum_layer=Dense(2)(sumarized_blocks)
+    out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
     # define model
     model1 = Model(old_model.input, out_image)
-    #model1.get_layer(name="shared_layer").trainable=False
-    # get the output layer from old model
-    out_old = old_model.layers[-1]
-    # connect the upsampling to the old output layer
-    out_image2 = out_old(upsampling)
     # define new output image as the weighted sum of the old and new models
-    merged = WeightedSum()([out_image2, out_image])
+    merged = WeightedSum()([upsampling, for_sum_layer])
+    output_2 = LayerNormalization(axis=[1, 2, 3])(merged)
     # define model
-    model2 = Model(old_model.input, merged)
-    #model2.get_layer(name="shared_layer").trainable=False
+    model2 = Model(old_model.input, output_2)
     return [model1, model2]
 
 # definir los generadores
 
-def define_generator(n_blocks, lstm_layer):
+def define_generator(n_blocks):
     model_list = list()
     # input
-    ly0 = Input(shape=(1, 50, 2))
-    featured = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(ly0)
+    ly0 = Input(shape=(1, 100, 2))
+    featured = Conv2D(128, (1, 2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(ly0)
     # bloque 1 deconvolusion
-    g_1 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_1 = LeakyReLU(alpha=0.2)(g_1)
-    g_1 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_1)
-    g_1 = LeakyReLU(alpha=0.2)(g_1)
-    g_1 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
-    g_1 = LeakyReLU(alpha=0.2)(g_1)
-    g_1 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_1)
-    g_1 = LeakyReLU(alpha=0.2)(g_1)
-    g_1 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_1)
-    g_1 = LeakyReLU(alpha=0.2)(g_1)
-    op_1 = Dense(50)(g_1)
+    g_1 = Conv2DTranspose(4, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_1 = Dense(8)(g_1)
+    g_1 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Dense(32)(g_1)
+    g_1 = Conv2DTranspose(64, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
+    op_1 = Dense(128)(g_1)
     # bloque 2 deconvolusion
-    g_2 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_2 = LeakyReLU(alpha=0.2)(g_2)
-    g_2 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_2)
-    g_2 = LeakyReLU(alpha=0.2)(g_2)
-    g_2 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_2)
-    g_2 = LeakyReLU(alpha=0.2)(g_2)
-    g_2 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_2)
-    g_2 = LeakyReLU(alpha=0.2)(g_2)
-    g_2 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_2)
-    g_2 = LeakyReLU(alpha=0.2)(g_2)
-    op_2 = Dense(50)(g_2)
+    g_2 = Conv2DTranspose(4, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_2 = Dense(8)(g_2)
+    g_2 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_2)
+    g_2 = Dense(32)(g_2)
+    g_2 = Conv2DTranspose(64, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_2)
+    op_2 = Dense(128)(g_2)
     # bloque 3 deconvolusion
-    g_3 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_3 = LeakyReLU(alpha=0.2)(g_3)
-    g_3 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_3)
-    g_3 = LeakyReLU(alpha=0.2)(g_3)
-    g_3 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_3)
-    g_3 = LeakyReLU(alpha=0.2)(g_3)
-    g_3 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_3)
-    g_3 = LeakyReLU(alpha=0.2)(g_3)
-    g_3 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_3)
-    g_3 = LeakyReLU(alpha=0.2)(g_3)
-    op_3 = Dense(50)(g_3)
+    g_3 = Conv2DTranspose(4, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_3 = Dense(8)(g_3)
+    g_3 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_3)
+    g_3 = Dense(32)(g_3)
+    g_3 = Conv2DTranspose(64, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_3)
+    op_3 = Dense(128)(g_3)
     # bloque 4 deconvolusion
-    g_4 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_4 = LeakyReLU(alpha=0.2)(g_4)
-    g_4 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_4)
-    g_4 = LeakyReLU(alpha=0.2)(g_4)
-    g_4 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_4)
-    g_4 = LeakyReLU(alpha=0.2)(g_4)
-    g_4 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_4)
-    g_4 = LeakyReLU(alpha=0.2)(g_4)
-    g_4 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_4)
-    g_4 = LeakyReLU(alpha=0.2)(g_4)
-    op_4 = Dense(100)(g_4)
-    # bloque 5 deconvolusion
-    g_5 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_5 = LeakyReLU(alpha=0.2)(g_5)
-    g_5 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_5)
-    g_5 = LeakyReLU(alpha=0.2)(g_5)
-    g_5 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_5)
-    g_5 = LeakyReLU(alpha=0.2)(g_5)
-    g_5 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_5)
-    g_5 = LeakyReLU(alpha=0.2)(g_5)
-    g_5 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_5)
-    g_5 = LeakyReLU(alpha=0.2)(g_5)
-    op_5 = Dense(100)(g_5)
-    # bloque 6 deconvolusion
-    g_6 = Conv2DTranspose(32, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_6 = LeakyReLU(alpha=0.2)(g_6)
-    g_6 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_6)
-    g_6 = LeakyReLU(alpha=0.2)(g_6)
-    g_6 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_6)
-    g_6 = LeakyReLU(alpha=0.2)(g_6)
-    g_6 = Conv2D(64, (6,6), padding='same', kernel_initializer='he_normal')(g_6)
-    g_6 = LeakyReLU(alpha=0.2)(g_6)
-    g_6 = Conv2D(128, (6, 6), padding='same', kernel_initializer='he_normal')(g_6)
-    g_6 = LeakyReLU(alpha=0.2)(g_6)
-    op_6 = Dense(100)(g_6)
-    #to 2 channels
-    sumarized_blocks=Add()([op_1, op_2, op_3])
-    sumarized_blocks=Dense(100)(sumarized_blocks)
-    wls = Conv2D(2, (1, 1), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    wls = LeakyReLU(alpha=0.2)(wls)
+    g_4 = Conv2DTranspose(4, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_4 = Dense(8)(g_4)
+    g_4 = Conv2DTranspose(16, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_4)
+    g_4 = Dense(32)(g_4)
+    g_4 = Conv2DTranspose(64, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_4)
+    op_4 = Dense(128)(g_4)
+    #combinar canales
+    sumarized_blocks=Add()([op_1, op_2, op_3, op_4])
+    sumarized_blocks=Dense(256)(sumarized_blocks)
+    sumarized_blocks=Dense(64)(sumarized_blocks)
+    sumarized_blocks=Dense(8)(sumarized_blocks)
+    sumarized_blocks=Dense(2)(sumarized_blocks)
+    wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
     model_list.append([model, model])
@@ -506,16 +465,24 @@ def define_generator(n_blocks, lstm_layer):
 # Define the loss functions for the discriminator,
 # which should be (fake_loss - real_loss).
 # We will add the gradient penalty later to this loss function.
-def discriminator_loss(real_img, fake_img):
-    real_loss = tf.reduce_mean(real_img)
-    fake_loss = tf.reduce_mean(fake_img)
-    return fake_loss - real_loss
-
+def discriminator_loss(fake_logits, real_logits):
+    ci=tf.reduce_mean(real_logits)
+    cu=tf.reduce_mean(fake_logits)
+    lamb=(cu-ci)
+    delta=tf.math.abs(lamb)
+    sign=tf.math.divide_no_nan(lamb, delta)+0.0001
+    sign_2=(tf.math.divide_no_nan(lamb, delta)+0.0000999)*-1.0
+    return (sign * ci) + (sign_2 * cu)
 
 # Define the loss functions for the generator.
-def generator_loss(fake_img):
-    return -tf.reduce_mean(fake_img)
-
+def generator_loss(fake_logits, real_logits):
+    ci=tf.reduce_mean(real_logits)
+    cu=tf.reduce_mean(fake_logits)
+    lamb=(cu-ci)
+    delta=tf.math.abs(lamb)
+    sign=tf.math.divide_no_nan(lamb, delta)+0.0001
+    return (sign * ci) + delta
+    
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, latent_dim):
@@ -529,15 +496,13 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator=d_models[0],
             generator=g_models[0],
             latent_dim=latent_dim,
-            discriminator_extra_steps=2,
+            discriminator_extra_steps=1,
         )
         wgan1.compile(
-            d_optimizer=Adam(
-            lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
-            g_optimizer=Adam(
-            lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            d_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            g_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.99, epsilon=10e-8),
             g_loss_fn=generator_loss,
-            d_loss_fn=discriminator_loss,
+            d_loss_fn=discriminator_loss
         )
         # fade-in model
         #d_models[3].trainable = False
@@ -546,15 +511,13 @@ def define_composite(discriminators, generators, latent_dim):
             generator=g_models[1],
             latent_dim=latent_dim,
             fade_in=True,
-            discriminator_extra_steps=2,
+            discriminator_extra_steps=1,
         )
         wgan2.compile(
-            d_optimizer=Adam(
-            lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
-            g_optimizer=Adam(
-            lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            d_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            g_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.99, epsilon=10e-8),
             g_loss_fn=generator_loss,
-            d_loss_fn=discriminator_loss,
+            d_loss_fn=discriminator_loss
         )
         # store
         model_list.append([wgan1, wgan2])
@@ -563,7 +526,7 @@ def define_composite(discriminators, generators, latent_dim):
 #checkpoint
 
 class GANMonitor(keras.callbacks.Callback):
-    def __init__(self, job_dir, evaluador, num_examples=20, latent_dim=(1, 50, 2)):
+    def __init__(self, job_dir, evaluador, num_examples=20, latent_dim=(1, 100, 2)):
         self.num_examples = num_examples
         self.latent_dim = latent_dim
         self.bucket_name = "music-gen"
@@ -575,13 +538,14 @@ class GANMonitor(keras.callbacks.Callback):
         pred=[]
         if not self.model.fade_in:
             for i in range(iters_gen):
-                if ((epoch+1)%5)==0:
+                if ((epoch+1)%10)==0:
                     save=True
                 else:
                     save=False
                 pred_batch=generar_ejemplo(self.model.generator, "epoch-"+str(epoch+1)+"/" , i+1, None, self.bucket_name, self.latent_dim, self.evaluador, save)
-                pred.append(pred_batch[0])
+                pred+=list(pred_batch)
                 gen_shape = self.model.generator.output_shape
                 if save:
-                    guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1)
+                    guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "g_")
+                    guardar_checkpoint(self.model.discriminator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "d_")
             save_inception_score(self.model.generator, "epoch-"+str(epoch+1)+"/", self.bucket_name, np.array(pred))

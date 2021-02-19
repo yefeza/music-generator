@@ -31,31 +31,31 @@ def add_evaluator_block(old_model, n_input_layers=3):
     input_shape = (in_shape[-3]*2, in_shape[-2]*2, in_shape[-1])
     in_image = Input(shape=input_shape)
     featured_layer = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
-    featured_layer = LeakyReLU(alpha=0.2)(featured_layer)
+    #featured_layer = LeakyReLU(alpha=0.2)(featured_layer)
     #convolusion block 1
     d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_layer)
-    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    #d_1 = LeakyReLU(alpha=0.2)(d_1)
     d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
-    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    #d_1 = LeakyReLU(alpha=0.2)(d_1)
     #d = AveragePooling2D()(d)
     d_1 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_1)
-    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    #d_1 = LeakyReLU(alpha=0.2)(d_1)
     #convolusion block 2
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
-    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    #d_2 = LeakyReLU(alpha=0.2)(d_2)
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
-    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    #d_2 = LeakyReLU(alpha=0.2)(d_2)
     d_2 = Conv2D(128, (2, 2), padding='same', kernel_initializer='he_normal')(d_2)
-    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    #d_2 = LeakyReLU(alpha=0.2)(d_2)
     #convolusion block 3
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
-    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    #d_3 = LeakyReLU(alpha=0.2)(d_3)
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
-    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    #d_3 = LeakyReLU(alpha=0.2)(d_3)
     d_3 = Conv2D(128, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_3)
-    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    #d_3 = LeakyReLU(alpha=0.2)(d_3)
     d_block=Conv2D(128, (1,1), padding='same', kernel_initializer='he_normal')(d_3)
-    d_block = LeakyReLU(alpha=0.2)(d_block)
+    #d_block = LeakyReLU(alpha=0.2)(d_block)
     for i in range(n_input_layers, len(old_model.layers)):
         if isinstance(old_model.layers[i], Dense):
             final_layer = old_model.layers[i](d_block)
@@ -71,28 +71,28 @@ def define_evaluator(n_blocks, input_shape=(4, 750, 2)):
     # base model input
     in_image = Input(shape=input_shape)
     featured_block = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
-    featured_block = LeakyReLU(alpha=0.2)(featured_block)
+    #featured_block = LeakyReLU(alpha=0.2)(featured_block)
     # convolusion block 1
     d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_block)
-    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    #d_1 = LeakyReLU(alpha=0.2)(d_1)
     d_1 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_1)
-    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    #d_1 = LeakyReLU(alpha=0.2)(d_1)
     d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
-    d_1 = LeakyReLU(alpha=0.2)(d_1)
+    #d_1 = LeakyReLU(alpha=0.2)(d_1)
     # convolusion block 2
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
-    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    #d_2 = LeakyReLU(alpha=0.2)(d_2)
     d_2 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_2)
-    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    #d_2 = LeakyReLU(alpha=0.2)(d_2)
     d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
-    d_2 = LeakyReLU(alpha=0.2)(d_2)
+    #d_2 = LeakyReLU(alpha=0.2)(d_2)
     # convolusion block 3
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
-    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    #d_3 = LeakyReLU(alpha=0.2)(d_3)
     d_3 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_3)
-    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    #d_3 = LeakyReLU(alpha=0.2)(d_3)
     d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
-    d_3 = LeakyReLU(alpha=0.2)(d_3)
+    #d_3 = LeakyReLU(alpha=0.2)(d_3)
     d = Flatten()(d_3)
     out_class = Dense(9, activation='softmax')(d)
     # define model
@@ -130,24 +130,31 @@ def load_evaluator(dimension, bucket_name, download, train_dataset, epochs):
         if dimension[0]==4:
             model=evaluadores[0]
             batch_size=64
+            epochs=10
         if dimension[0]==8:
             model=evaluadores[1]
             batch_size=32
+            epochs=20
         if dimension[0]==16:
             model=evaluadores[2]
             batch_size=16
+            epochs=30
         if dimension[0]==32:
             model=evaluadores[3]
             batch_size=8
+            epochs=40
         if dimension[0]==64:
             model=evaluadores[4]
             batch_size=4
+            epochs=50
         if dimension[0]==128:
             model=evaluadores[5]
             batch_size=2
+            epochs=60
         if dimension[0]==256:
             model=evaluadores[6]
             batch_size=2
+            epochs=70
         X=train_dataset[0]
         y=train_dataset[1]
         model.compile(optimizer="Adam", loss='categorical_crossentropy', metrics=["accuracy"])

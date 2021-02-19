@@ -7,3 +7,4 @@ librosa==0.6.3
 numba==0.48
 scipy==1.4.1
 matplotlib==3.3.3
+audiofile==0.4.1
