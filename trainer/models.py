@@ -17,6 +17,8 @@ import tensorflow as tf
 from keras.losses import categorical_crossentropy
 import numpy as np
 from .utils import *
+from google.cloud import storage
+import os
 
 # Weighted Sum Layer para el proceso de fade-in
 
@@ -483,6 +485,28 @@ def generator_loss(fake_logits, real_logits):
     sign=tf.math.divide_no_nan(lamb, delta)+0.0001
     return (sign * ci) + delta
     
+def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoint=200):
+    storage_client = storage.Client(project='ia-devs')
+    bucket = storage_client.bucket(bucket_name)
+    #crear carpeta local si no existe
+    path = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1])
+    if not os.path.exists(path):
+        os.makedirs(path)
+    #cargar discriminador
+    gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/d_model.h5"
+    local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/d_model.h5"
+    blob = bucket.blob(gcloud_file_name)
+    blob.download_to_filename(local_file_name)
+    d_model=keras.models.load_model(local_file_name)
+    #cargar generador
+    gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/g_model.h5"
+    local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/g_model.h5"
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(gcloud_file_name)
+    blob.download_to_filename(local_file_name)
+    g_model=keras.models.load_model(local_file_name)
+    return g_model, d_model
+
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, latent_dim):
@@ -490,6 +514,11 @@ def define_composite(discriminators, generators, latent_dim):
     # create composite models
     for i in range(len(discriminators)):
         g_models, d_models = generators[i], discriminators[i]
+        #precargar pesos previos de un checkpoint
+        if i==0:
+            prev_g_model, prev_d_model=get_saved_model()
+            d_models[0].set_weights(prev_d_model.get_weights())
+            g_models[0].set_weights(prev_g_model.get_weights())
         # straight-through model
         #d_models[2].trainable = False
         wgan1 = WGAN(

@@ -106,7 +106,7 @@ if __name__ == '__main__':
     # train the generator and discriminator
 
     def train(g_models, d_models, gan_models, dataset, latent_dim, epochs_norm, epochs_fade, batch_sizes, job_dir, bucket_name, files_format, path_dataset, download_data, download_evaluators, epochs_evaluadores):
-        get_evaluators=[True,True,False,False,False,False,False,False,False]
+        get_evaluators=[True,False,False,False,False,False,False,False,False]
         # fit the baseline model
         g_normal, d_normal, gan_normal = g_models[0][0], d_models[0][0], gan_models[0][0]
         # scale dataset to appropriate size
