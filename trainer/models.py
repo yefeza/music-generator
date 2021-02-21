@@ -279,7 +279,7 @@ def add_discriminator_block(old_model, n_input_layers=3):
     d_3 = Conv2D(512, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(d_3)
     d_3 = SoftRectifier(start_alpha=soft_alpha)(d_3)
     #sumarize blocks
-    d_block=Conv2D(128, (1,1), padding='same', kernel_initializer='he_normal')(d_3)
+    d_block=Conv2D(512, (1,1), padding='same', kernel_initializer='he_normal')(d_3)
     d_block = SoftRectifier(start_alpha=soft_alpha)(d_block)
     block_new = d_block
     # skiptheinput,1x1andactivationfortheoldmodel
