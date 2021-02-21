@@ -61,12 +61,13 @@ class WGAN(keras.Model):
         self.total_steps = 0
         self.fade_in=fade_in
 
-    def compile(self, d_optimizer, g_optimizer, d_loss_fn, g_loss_fn):
+    def compile(self, d_optimizer, g_optimizer, d_loss_fn, g_loss_fn, g_loss_fn_extra):
         super(WGAN, self).compile()
         self.d_optimizer = d_optimizer
         self.g_optimizer = g_optimizer
         self.d_loss_fn = d_loss_fn
         self.g_loss_fn = g_loss_fn
+        self.g_loss_fn_extra = g_loss_fn_extra
 
     def set_train_steps(self, size):
         self.train_steps=size
@@ -148,6 +149,31 @@ class WGAN(keras.Model):
         self.g_optimizer.apply_gradients(
             zip(gen_gradient, self.generator.trainable_variables)
         )
+        # Get the latent vector
+        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
+        with tf.GradientTape() as tape:
+            # Generate fake images using the generator
+            generated_images = self.generator(random_latent_vectors, training=True)
+            # Get the discriminator logits for fake images
+            gen_img_logits = self.discriminator(generated_images, training=True)
+            # Get the logits for the real images
+            real_logits = self.discriminator(real_images, training=True)
+            # Calculate the generator loss using the fake and real image logits
+            g_loss = self.g_loss_fn_extra(gen_img_logits, real_logits)
+        # Get the gradients w.r.t the generator loss
+        gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
+        def on_false():
+            return gen_gradient
+        def on_true():
+            # Update the weights of the generator using the generator optimizer
+            self.g_optimizer.apply_gradients(
+                zip(gen_gradient, self.generator.trainable_variables)
+            )
+            return gen_gradient
+        cum=0.0
+        for g_layer in gen_gradient:
+            cum+=tf.reduce_mean(g_layer)
+        tf.cond(cum>0, true_fn=on_true, false_fn=on_false)
         #calculate actual delta value
         random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
         generated_images = self.generator(random_latent_vectors, training=False)
@@ -499,7 +525,15 @@ def generator_loss(fake_logits, real_logits):
     lamb=(cu-ci)
     delta=tf.math.abs(lamb)
     sign=tf.math.divide_no_nan(lamb, delta)+0.0001
-    return (sign * ci) + delta
+    return sign * cu
+
+# Define the loss functions for the generator.
+def generator_loss_extra(fake_logits, real_logits):
+    ci=tf.reduce_mean(real_logits)
+    cu=tf.reduce_mean(fake_logits)
+    lamb=(cu-ci)
+    delta=tf.math.abs(lamb)
+    return delta
     
 def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoint=200):
     storage_client = storage.Client(project='ia-devs')
@@ -547,6 +581,7 @@ def define_composite(discriminators, generators, latent_dim):
             d_optimizer=Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=10e-8),
             g_optimizer=Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=10e-8),
             g_loss_fn=generator_loss,
+            g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
         )
         # fade-in model
@@ -562,6 +597,7 @@ def define_composite(discriminators, generators, latent_dim):
             d_optimizer=Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=10e-8),
             g_optimizer=Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=10e-8),
             g_loss_fn=generator_loss,
+            g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
         )
         # store
