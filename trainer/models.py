@@ -124,9 +124,9 @@ class WGAN(keras.Model):
             )
         #calculate actual delta value
         random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
-        generated_images = self.generator(random_latent_vectors, training=True)
-        fake_logits = self.discriminator(generated_images, training=True)
-        real_logits = self.discriminator(real_images, training=True)
+        generated_images = self.generator(random_latent_vectors, training=False)
+        fake_logits = self.discriminator(generated_images, training=False)
+        real_logits = self.discriminator(real_images, training=False)
         ci_0=tf.reduce_mean(real_logits)
         cu_0=tf.reduce_mean(fake_logits)
         delta_0=tf.math.abs((cu_0-ci_0))
@@ -150,9 +150,9 @@ class WGAN(keras.Model):
         )
         #calculate actual delta value
         random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
-        generated_images = self.generator(random_latent_vectors, training=True)
-        fake_logits = self.discriminator(generated_images, training=True)
-        real_logits = self.discriminator(real_images, training=True)
+        generated_images = self.generator(random_latent_vectors, training=False)
+        fake_logits = self.discriminator(generated_images, training=False)
+        real_logits = self.discriminator(real_images, training=False)
         ci_1=tf.reduce_mean(real_logits)
         cu_1=tf.reduce_mean(fake_logits)
         delta_1=tf.math.abs((cu_1-ci_1))
@@ -528,8 +528,8 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator_extra_steps=1,
         )
         wgan1.compile(
-            d_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.99, epsilon=10e-8),
-            g_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            d_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
+            g_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
             g_loss_fn=generator_loss,
             d_loss_fn=discriminator_loss
         )
