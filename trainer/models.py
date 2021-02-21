@@ -150,6 +150,7 @@ class WGAN(keras.Model):
             zip(gen_gradient, self.generator.trainable_variables)
         )
         # Get the latent vector
+        '''
         random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
         with tf.GradientTape() as tape:
             # Generate fake images using the generator
@@ -174,6 +175,7 @@ class WGAN(keras.Model):
         for g_layer in gen_gradient:
             cum+=tf.reduce_mean(g_layer)
         tf.cond(cum>0, true_fn=on_true, false_fn=on_false)
+        '''
         #calculate actual delta value
         random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
         generated_images = self.generator(random_latent_vectors, training=False)
@@ -423,7 +425,6 @@ def add_generator_block(old_model):
     sumarized_blocks=Add()([op_1, op_2, op_3, op_4, op_5, op_6])
     sumarized_blocks=Dense(512)(sumarized_blocks)
     sumarized_blocks=Dense(128)(sumarized_blocks)
-    sumarized_blocks=Dense(64)(sumarized_blocks)
     sumarized_blocks=Dense(32)(sumarized_blocks)
     for_sum_layer=Dense(2)(sumarized_blocks)
     out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
@@ -489,7 +490,6 @@ def define_generator(n_blocks):
     sumarized_blocks=Add()([op_1, op_2, op_3, op_4, op_5, op_6])
     sumarized_blocks=Dense(512)(sumarized_blocks)
     sumarized_blocks=Dense(128)(sumarized_blocks)
-    sumarized_blocks=Dense(64)(sumarized_blocks)
     sumarized_blocks=Dense(32)(sumarized_blocks)
     sumarized_blocks=Dense(2)(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
@@ -525,7 +525,7 @@ def generator_loss(fake_logits, real_logits):
     lamb=(cu-ci)
     delta=tf.math.abs(lamb)
     sign=tf.math.divide_no_nan(lamb, delta)+0.0001
-    return sign * cu
+    return (sign * cu) + delta
 
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
