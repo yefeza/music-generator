@@ -156,7 +156,7 @@ class MinibatchStdDev(Layer):
         super(MinibatchStdDev, self).__init__(**kwargs)
 
     def call(self, inputs):
-        group_size = 8
+        group_size = 4
         x = inputs
         with tf.compat.v1.variable_scope('MinibatchStddev'):
             # Minibatch must be divisible by (or smaller than) group_size.
@@ -344,8 +344,8 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     d_3 = SoftRectifier()(d_3)
     d_3 = Dropout(0.2)(d_3)
     #sumarize blocks
-    d = Flatten()(d_3)
-    d = MinibatchStdDev()(d)
+    d = MinibatchStdDev()(d_3)
+    d = Flatten()(d)
     d = Dense(1)(d)
     out_class=StaticOptTanh(alpha=40000.0)(d)
     # define model
