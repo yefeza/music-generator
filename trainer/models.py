@@ -9,7 +9,7 @@ from keras.layers.convolutional import AveragePooling2D
 from keras.layers import Flatten
 from keras.layers import Reshape
 from keras.layers import LeakyReLU
-from keras.layers import Add, Multiply
+from keras.layers import Add, Multiply, Average
 from keras.layers import LayerNormalization
 from keras.utils.vis_utils import plot_model
 from keras import backend
@@ -401,7 +401,7 @@ def add_generator_block(old_model):
     g_6 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_6)
     op_6 = Dense(512)(g_6)
     #sumarize
-    sumarized_blocks=Add()([op_1, op_2, op_3, op_4, op_5, op_6])
+    sumarized_blocks=Average()([op_1, op_2, op_3, op_4, op_5, op_6])
     sumarized_blocks=Dense(128)(sumarized_blocks)
     sumarized_blocks=Dense(32)(sumarized_blocks)
     for_sum_layer=Dense(2)(sumarized_blocks)
@@ -465,7 +465,7 @@ def define_generator(n_blocks):
     g_6 = Conv2DTranspose(256, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_6)
     op_6 = Dense(512)(g_6)
     #combinar canales
-    sumarized_blocks=Add()([op_1, op_2, op_3, op_4, op_5, op_6])
+    sumarized_blocks=Average()([op_1, op_2, op_3, op_4, op_5, op_6])
     sumarized_blocks=Dense(128)(sumarized_blocks)
     sumarized_blocks=Dense(32)(sumarized_blocks)
     sumarized_blocks=Dense(2)(sumarized_blocks)
