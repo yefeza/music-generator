@@ -402,7 +402,6 @@ def add_generator_block(old_model):
     op_6 = Dense(512)(g_6)
     #sumarize
     sumarized_blocks=Add()([op_1, op_2, op_3, op_4, op_5, op_6])
-    sumarized_blocks=Dense(512)(sumarized_blocks)
     sumarized_blocks=Dense(128)(sumarized_blocks)
     sumarized_blocks=Dense(32)(sumarized_blocks)
     for_sum_layer=Dense(2)(sumarized_blocks)
@@ -467,7 +466,6 @@ def define_generator(n_blocks):
     op_6 = Dense(512)(g_6)
     #combinar canales
     sumarized_blocks=Add()([op_1, op_2, op_3, op_4, op_5, op_6])
-    sumarized_blocks=Dense(512)(sumarized_blocks)
     sumarized_blocks=Dense(128)(sumarized_blocks)
     sumarized_blocks=Dense(32)(sumarized_blocks)
     sumarized_blocks=Dense(2)(sumarized_blocks)
@@ -544,7 +542,7 @@ def define_composite(discriminators, generators, latent_dim):
     for i in range(len(discriminators)):
         g_models, d_models = generators[i], discriminators[i]
         #precargar pesos previos de un checkpoint
-        if i==0:
+        if False and i==0:
             prev_g_model, prev_d_model=get_saved_model()
             d_models[0].set_weights(prev_d_model.get_weights())
             g_models[0].set_weights(prev_g_model.get_weights())
