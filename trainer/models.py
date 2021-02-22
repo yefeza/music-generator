@@ -123,14 +123,6 @@ class WGAN(keras.Model):
             self.d_optimizer.apply_gradients(
                 zip(d_gradient, self.discriminator.trainable_variables)
             )
-        #calculate actual delta value
-        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
-        generated_images = self.generator(random_latent_vectors, training=False)
-        fake_logits = self.discriminator(generated_images, training=False)
-        real_logits = self.discriminator(real_images, training=False)
-        ci_0=tf.reduce_mean(real_logits)
-        cu_0=tf.reduce_mean(fake_logits)
-        delta_0=tf.math.abs((cu_0-ci_0))
         # Train the generator
         # Get the latent vector
         random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
@@ -149,43 +141,12 @@ class WGAN(keras.Model):
         self.g_optimizer.apply_gradients(
             zip(gen_gradient, self.generator.trainable_variables)
         )
-        # Get the latent vector
-        '''
-        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
-        with tf.GradientTape() as tape:
-            # Generate fake images using the generator
-            generated_images = self.generator(random_latent_vectors, training=True)
-            # Get the discriminator logits for fake images
-            gen_img_logits = self.discriminator(generated_images, training=True)
-            # Get the logits for the real images
-            real_logits = self.discriminator(real_images, training=True)
-            # Calculate the generator loss using the fake and real image logits
-            g_loss = self.g_loss_fn_extra(gen_img_logits, real_logits)
-        # Get the gradients w.r.t the generator loss
-        gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
-        def on_false():
-            return gen_gradient
-        def on_true():
-            # Update the weights of the generator using the generator optimizer
-            self.g_optimizer.apply_gradients(
-                zip(gen_gradient, self.generator.trainable_variables)
-            )
-            return gen_gradient
-        cum=0.0
-        for g_layer in gen_gradient:
-            cum+=tf.reduce_mean(g_layer)
-        tf.cond(cum>0, true_fn=on_true, false_fn=on_false)
-        '''
         #calculate actual delta value
-        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
-        generated_images = self.generator(random_latent_vectors, training=False)
-        fake_logits = self.discriminator(generated_images, training=False)
-        real_logits = self.discriminator(real_images, training=False)
         ci_1=tf.reduce_mean(real_logits)
-        cu_1=tf.reduce_mean(fake_logits)
+        cu_1=tf.reduce_mean(gen_img_logits)
         delta_1=tf.math.abs((cu_1-ci_1))
         self.actual_step+=1
-        return {"delta_0": delta_0, "cu_0": cu_0, "ci_0": ci_0, "delta_1": delta_1, "cu_1": cu_1, "ci_1": ci_1}
+        return {"delta_1": delta_1, "cu_1": cu_1, "ci_1": ci_1}
 
 # Minibatch Standard Deviation Layer
 
@@ -535,7 +496,7 @@ def generator_loss_extra(fake_logits, real_logits):
     delta=tf.math.abs(lamb)
     return delta
     
-def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoint=200):
+def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoint=40):
     storage_client = storage.Client(project='ia-devs')
     bucket = storage_client.bucket(bucket_name)
     #crear carpeta local si no existe
@@ -565,7 +526,7 @@ def define_composite(discriminators, generators, latent_dim):
     for i in range(len(discriminators)):
         g_models, d_models = generators[i], discriminators[i]
         #precargar pesos previos de un checkpoint
-        if False and i==0:
+        if i==0:
             prev_g_model, prev_d_model=get_saved_model()
             d_models[0].set_weights(prev_d_model.get_weights())
             g_models[0].set_weights(prev_g_model.get_weights())
