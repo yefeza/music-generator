@@ -344,8 +344,8 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     d_3 = SoftRectifier()(d_3)
     d_3 = Dropout(0.2)(d_3)
     #sumarize blocks
-    #d = MinibatchStdDev()(d_3)
     d = Flatten()(d_3)
+    d = MinibatchStdDev()(d)
     d = Dense(1)(d)
     out_class=StaticOptTanh(alpha=40000.0)(d)
     # define model
