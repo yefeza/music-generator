@@ -208,7 +208,7 @@ class StaticOptTanh(Layer):
         self.alpha=alpha
 
     def call(self, inputs):
-        return tf.math.tanh(inputs) + tf.math.divide_no_nan(inputs, self.alpha)
+        return tf.math.tanh(inputs)
 
     def get_config(self):
         config = super(StaticOptTanh, self).get_config()
@@ -481,7 +481,7 @@ def define_composite(discriminators, generators, latent_dim):
     for i in range(len(discriminators)):
         g_models, d_models = generators[i], discriminators[i]
         #precargar pesos previos de un checkpoint
-        if i==0:
+        if False and i==0:
             prev_g_model, prev_d_model=get_saved_model()
             d_models[0].set_weights(prev_d_model.get_weights())
             g_models[0].set_weights(prev_g_model.get_weights())
@@ -495,7 +495,7 @@ def define_composite(discriminators, generators, latent_dim):
         )
         wgan1.compile(
             d_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.999, epsilon=10e-8),
-            g_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.999, epsilon=10e-8),
+            g_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
@@ -511,7 +511,7 @@ def define_composite(discriminators, generators, latent_dim):
         )
         wgan2.compile(
             d_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.999, epsilon=10e-8),
-            g_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.999, epsilon=10e-8),
+            g_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
