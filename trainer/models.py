@@ -329,34 +329,29 @@ def add_generator_block(old_model):
     upsampling = UpSampling2D()(block_end)
     featured = Conv2D(512, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(upsampling)
     # bloque 1 deconvolusion
-    g_1 = Conv2DTranspose(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_1 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured)
     op_1 = Dense(512)(g_1)
     # bloque 2 deconvolusion
-    g_2 = Conv2DTranspose(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_2 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_2)
+    g_2 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured)
     op_2 = Dense(512)(g_2)
     # bloque 3 deconvolusion
-    g_3 = Conv2DTranspose(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_3 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_3)
+    g_3 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured)
     op_3 = Dense(512)(g_3)
     # bloque 4 deconvolusion
-    g_4 = Conv2DTranspose(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_4 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_4)
+    g_4 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured)
     op_4 = Dense(512)(g_4)
     # bloque 5 deconvolusion
-    g_5 = Conv2DTranspose(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_5 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_5)
+    g_5 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured)
     op_5 = Dense(512)(g_5)
     # bloque 3 deconvolusion
-    g_6 = Conv2DTranspose(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_6 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(g_6)
+    g_6 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured)
     op_6 = Dense(512)(g_6)
     #sumarize
     sumarized_blocks=Add()([op_1, op_2, op_3, op_4, op_5, op_6])
-    sumarized_blocks=Dense(128)(sumarized_blocks)
-    sumarized_blocks=Dense(32)(sumarized_blocks)
-    for_sum_layer=Dense(2)(sumarized_blocks)
+    sumarized_blocks = Conv2DTranspose(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Dense(64)(sumarized_blocks)
+    sumarized_blocks = Dense(32)(sumarized_blocks)
+    for_sum_layer = Dense(2)(sumarized_blocks)
     out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
     # define model
     model1 = Model(old_model.input, out_image)
@@ -372,42 +367,27 @@ def add_generator_block(old_model):
 def define_generator(n_blocks):
     model_list = list()
     # input
-    ly0 = Input(shape=(1, 100, 2))
-    featured = Conv2D(512, (1, 2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(ly0)
+    ly0 = Input(shape=(1, 10, 2))
+    featured = Dense(32)(ly0)
     # bloque 1 deconvolusion
-    g_1 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_1 = Conv2DTranspose(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_1)
-    g_1 = Conv2DTranspose(256, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
-    op_1 = Dense(512)(g_1)
+    g_1 = Conv2DTranspose(64, (1, 5), strides=(1, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_1 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
+    op_1 = Dense(256)(g_1)
     # bloque 2 deconvolusion
-    g_2 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_2 = Conv2DTranspose(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_2)
-    g_2 = Conv2DTranspose(256, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_2)
-    op_2 = Dense(512)(g_2)
+    g_2 = Conv2DTranspose(64, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
+    g_2 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_2)
+    op_2 = Dense(256)(g_2)
     # bloque 3 deconvolusion
-    g_3 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_3 = Conv2DTranspose(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_3)
-    g_3 = Conv2DTranspose(256, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_3)
-    op_3 = Dense(512)(g_3)
-    # bloque 4 deconvolusion
-    g_4 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_4 = Conv2DTranspose(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_4)
-    g_4 = Conv2DTranspose(256, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_4)
-    op_4 = Dense(512)(g_4)
-    # bloque 4 deconvolusion
-    g_5 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_5 = Conv2DTranspose(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_5)
-    g_5 = Conv2DTranspose(256, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_5)
-    op_5 = Dense(512)(g_5)
-    # bloque 4 deconvolusion
-    g_6 = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured)
-    g_6 = Conv2DTranspose(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(g_6)
-    g_6 = Conv2DTranspose(256, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_6)
-    op_6 = Dense(512)(g_6)
+    g_3 = Conv2DTranspose(64, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
+    g_3 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_3)
+    op_3 = Dense(256)(g_3)
     #combinar canales
-    sumarized_blocks=Add()([op_1, op_2, op_3, op_4, op_5, op_6])
-    sumarized_blocks=Dense(16)(sumarized_blocks)
-    sumarized_blocks=Dense(2)(sumarized_blocks)
+    sumarized_blocks=Add()([op_1, op_2, op_3])
+    sumarized_blocks = Conv2DTranspose(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Dense(32)(sumarized_blocks)
+    sumarized_blocks = Dense(16)(sumarized_blocks)
+    sumarized_blocks = Dense(2)(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
@@ -481,7 +461,7 @@ def define_composite(discriminators, generators, latent_dim):
     for i in range(len(discriminators)):
         g_models, d_models = generators[i], discriminators[i]
         #precargar pesos previos de un checkpoint
-        if i==0:
+        if False and i==0:
             prev_g_model, prev_d_model=get_saved_model()
             d_models[0].set_weights(prev_d_model.get_weights())
             g_models[0].set_weights(prev_g_model.get_weights())
