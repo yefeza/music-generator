@@ -370,7 +370,7 @@ def define_generator(n_blocks):
     ly0 = Input(shape=(1, 10, 2))
     featured = Dense(32)(ly0)
     # bloque 1 deconvolusion
-    g_1 = Conv2DTranspose(64, (1, 5), strides=(1, 1), padding='valid', kernel_initializer='he_normal')(featured)
+    g_1 = Conv2DTranspose(64, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
     g_1 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
     op_1 = Dense(256)(g_1)
     # bloque 2 deconvolusion
