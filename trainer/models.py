@@ -481,7 +481,7 @@ def define_composite(discriminators, generators, latent_dim):
     for i in range(len(discriminators)):
         g_models, d_models = generators[i], discriminators[i]
         #precargar pesos previos de un checkpoint
-        if False and i==0:
+        if i==0:
             prev_g_model, prev_d_model=get_saved_model()
             d_models[0].set_weights(prev_d_model.get_weights())
             g_models[0].set_weights(prev_g_model.get_weights())
