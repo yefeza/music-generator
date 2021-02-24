@@ -451,7 +451,7 @@ def generator_loss_extra(fake_logits, real_logits):
     delta=tf.math.abs(lamb)
     return delta
     
-def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoint=200):
+def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoint=260):
     storage_client = storage.Client(project='ia-devs')
     bucket = storage_client.bucket(bucket_name)
     #crear carpeta local si no existe
