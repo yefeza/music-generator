@@ -372,8 +372,7 @@ def define_generator(n_blocks):
     # bloque 1 deconvolusion
     g_1 = Conv2DTranspose(512, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
     g_1 = Conv2DTranspose(512, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
-    sumarized_blocks = Dense(512)(g_1)
-    sumarized_blocks = Conv2DTranspose(512, (4, 1), strides=(4, 1), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2DTranspose(512, (4, 1), strides=(4, 1), padding='valid', kernel_initializer='he_normal')(g_1)
     sumarized_blocks = Dense(128)(sumarized_blocks)
     sumarized_blocks = Dense(32)(sumarized_blocks)
     sumarized_blocks = Dense(2)(sumarized_blocks)
