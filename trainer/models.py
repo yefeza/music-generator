@@ -352,12 +352,12 @@ def add_generator_block(old_model):
     sumarized_blocks = Dense(64)(sumarized_blocks)
     sumarized_blocks = Dense(32)(sumarized_blocks)
     for_sum_layer = Dense(2)(sumarized_blocks)
-    out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
+    out_image = LayerNormalization(axis=[1, 2, 3], center=True, scale=True)(for_sum_layer)
     # define model
     model1 = Model(old_model.input, out_image)
     # define new output image as the weighted sum of the old and new models
     merged = WeightedSum()([upsampling, for_sum_layer])
-    output_2 = LayerNormalization(axis=[1, 2, 3])(merged)
+    output_2 = LayerNormalization(axis=[1, 2, 3], center=True, scale=True)(merged)
     # define model
     model2 = Model(old_model.input, output_2)
     return [model1, model2]
@@ -388,7 +388,7 @@ def define_generator(n_blocks):
     sumarized_blocks = Dense(32)(sumarized_blocks)
     sumarized_blocks = Dense(16)(sumarized_blocks)
     sumarized_blocks = Dense(2)(sumarized_blocks)
-    wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
+    wls = LayerNormalization(axis=[1, 2, 3], center=True, scale=True)(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
     model_list.append([model, model])
@@ -474,7 +474,7 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator_extra_steps=1,
         )
         wgan1.compile(
-            d_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.999, epsilon=10e-8),
+            d_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
             g_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
@@ -490,7 +490,7 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator_extra_steps=1,
         )
         wgan2.compile(
-            d_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.999, epsilon=10e-8),
+            d_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
             g_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
