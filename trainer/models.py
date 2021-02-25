@@ -370,23 +370,13 @@ def define_generator(n_blocks):
     ly0 = Input(shape=(1, 10, 2))
     featured = Dense(32)(ly0)
     # bloque 1 deconvolusion
-    g_1 = Conv2DTranspose(64, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
-    g_1 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
-    op_1 = Dense(256)(g_1)
-    # bloque 2 deconvolusion
-    g_2 = Conv2DTranspose(64, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
-    g_2 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_2)
-    op_2 = Dense(256)(g_2)
-    # bloque 3 deconvolusion
-    g_3 = Conv2DTranspose(64, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
-    g_3 = Conv2DTranspose(128, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_3)
-    op_3 = Dense(256)(g_3)
-    #combinar canales
-    sumarized_blocks=Add()([op_1, op_2, op_3])
-    sumarized_blocks = Conv2DTranspose(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2DTranspose(64, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    g_1 = Conv2DTranspose(512, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
+    g_1 = Conv2DTranspose(512, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
+    sumarized_blocks = Dense(512)(g_1)
+    sumarized_blocks = Conv2DTranspose(256, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2DTranspose(256, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Dense(128)(sumarized_blocks)
     sumarized_blocks = Dense(32)(sumarized_blocks)
-    sumarized_blocks = Dense(16)(sumarized_blocks)
     sumarized_blocks = Dense(2)(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     model = Model(ly0, wls)
@@ -461,7 +451,7 @@ def define_composite(discriminators, generators, latent_dim):
     for i in range(len(discriminators)):
         g_models, d_models = generators[i], discriminators[i]
         #precargar pesos previos de un checkpoint
-        if i==0:
+        if False and i==0:
             prev_g_model, prev_d_model=get_saved_model()
             d_models[0].set_weights(prev_d_model.get_weights())
             g_models[0].set_weights(prev_g_model.get_weights())
@@ -474,8 +464,8 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator_extra_steps=1,
         )
         wgan1.compile(
-            d_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
-            g_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
+            d_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.999, epsilon=10e-8),
+            g_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.999, epsilon=10e-8),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
@@ -490,8 +480,8 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator_extra_steps=1,
         )
         wgan2.compile(
-            d_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
-            g_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
+            d_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.999, epsilon=10e-8),
+            g_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.999, epsilon=10e-8),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
