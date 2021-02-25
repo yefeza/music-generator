@@ -357,7 +357,7 @@ def add_generator_block(old_model):
     model1 = Model(old_model.input, out_image)
     # define new output image as the weighted sum of the old and new models
     merged = WeightedSum()([upsampling, for_sum_layer])
-    output_2 = LayerNormalization(axis=[1, 2, 3], center=True, scale=True)(merged)
+    output_2 = LayerNormalization(axis=[1, 2, 3])(merged)
     # define model
     model2 = Model(old_model.input, output_2)
     return [model1, model2]
