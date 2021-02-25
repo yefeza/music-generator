@@ -352,7 +352,7 @@ def add_generator_block(old_model):
     sumarized_blocks = Dense(64)(sumarized_blocks)
     sumarized_blocks = Dense(32)(sumarized_blocks)
     for_sum_layer = Dense(2)(sumarized_blocks)
-    out_image = LayerNormalization(axis=[1, 2, 3], center=True, scale=True)(for_sum_layer)
+    out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
     # define model
     model1 = Model(old_model.input, out_image)
     # define new output image as the weighted sum of the old and new models
@@ -388,7 +388,7 @@ def define_generator(n_blocks):
     sumarized_blocks = Dense(32)(sumarized_blocks)
     sumarized_blocks = Dense(16)(sumarized_blocks)
     sumarized_blocks = Dense(2)(sumarized_blocks)
-    wls = LayerNormalization(axis=[1, 2, 3], center=True, scale=True)(sumarized_blocks)
+    wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
     model_list.append([model, model])
