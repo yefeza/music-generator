@@ -474,8 +474,8 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator_extra_steps=1,
         )
         wgan1.compile(
-            d_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.999, epsilon=10e-8),
-            g_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.999, epsilon=10e-8),
+            d_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
+            g_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
@@ -490,8 +490,8 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator_extra_steps=1,
         )
         wgan2.compile(
-            d_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.999, epsilon=10e-8),
-            g_optimizer=Adam(lr=0.001, beta_1=0, beta_2=0.999, epsilon=10e-8),
+            d_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
+            g_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
