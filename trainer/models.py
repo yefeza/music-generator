@@ -9,7 +9,7 @@ from keras.layers.convolutional import AveragePooling2D
 from keras.layers import Flatten
 from keras.layers import Reshape
 from keras.layers import LeakyReLU
-from keras.layers import Add, Multiply, Average
+from keras.layers import Add, Multiply, Concatenate
 from keras.layers import LayerNormalization
 from keras.utils.vis_utils import plot_model
 from keras import backend
@@ -372,8 +372,20 @@ def define_generator(n_blocks):
     # bloque 1 deconvolusion
     g_1 = Conv2DTranspose(512, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
     g_1 = Conv2DTranspose(512, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
-    sumarized_blocks = Conv2DTranspose(512, (4, 1), strides=(4, 1), padding='valid', kernel_initializer='he_normal')(g_1)
-    sumarized_blocks = Dense(128)(sumarized_blocks)
+    # bloque 2 deconvolusion
+    g_2 = Conv2DTranspose(512, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
+    g_2 = Conv2DTranspose(512, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_2)
+    # bloque 3 deconvolusion
+    g_3 = Conv2DTranspose(512, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
+    g_3 = Conv2DTranspose(512, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_3)
+    # bloque 4 deconvolusion
+    g_4 = Conv2DTranspose(512, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
+    g_4 = Conv2DTranspose(512, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_4)
+    #unir 4 segundos
+    sumarized_blocks = Concatenate(axis=1)([g_1, g_2, g_3, g_4])
+    #upsample para trabajar texturas en conjunto
+    sumarized_blocks = UpSampling2D()(sumarized_blocks)
+    sumarized_blocks = Conv2D(128, (2,2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     sumarized_blocks = Dense(32)(sumarized_blocks)
     sumarized_blocks = Dense(2)(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
