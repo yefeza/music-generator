@@ -370,24 +370,15 @@ def define_generator(n_blocks):
     ly0 = Input(shape=(1, 10, 2))
     featured = Dense(32)(ly0)
     # bloque 1 deconvolusion
-    g_1 = Conv2DTranspose(512, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
-    g_1 = Conv2DTranspose(512, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
-    # bloque 2 deconvolusion
-    g_2 = Conv2DTranspose(512, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
-    g_2 = Conv2DTranspose(512, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_2)
-    # bloque 3 deconvolusion
-    g_3 = Conv2DTranspose(512, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
-    g_3 = Conv2DTranspose(512, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_3)
-    # bloque 4 deconvolusion
-    g_4 = Conv2DTranspose(512, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
-    g_4 = Conv2DTranspose(512, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_4)
+    g_1 = Conv2DTranspose(1024, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
+    g_1 = Conv2DTranspose(1024, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
     #unir 4 segundos
-    sumarized_blocks = Concatenate(axis=1)([g_1, g_2, g_3, g_4])
     #upsample para trabajar texturas en conjunto
+    sumarized_blocks = UpSampling2D()(g_1)
     sumarized_blocks = UpSampling2D()(sumarized_blocks)
-    sumarized_blocks = Conv2D(128, (2,2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Dense(32)(sumarized_blocks)
-    sumarized_blocks = Dense(2)(sumarized_blocks)
+    sumarized_blocks = UpSampling2D()(sumarized_blocks)
+    sumarized_blocks = Conv2D(512, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2D(2, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
