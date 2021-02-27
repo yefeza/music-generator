@@ -258,8 +258,8 @@ def add_discriminator_block(old_model, n_input_layers=3):
     block_new = d_block
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
-        if isinstance(old_model.layers[i], StaticOptTanh):
-            final_layer = StaticOptTanh(alpha=alpha)(d_block)
+        if isinstance(old_model.layers[i], Dense):
+            final_layer = old_model.layers[i](d_block)
         else:
             d_block = old_model.layers[i](d_block)
     # model 1 without multiple inputs for composite
@@ -273,8 +273,8 @@ def add_discriminator_block(old_model, n_input_layers=3):
     d = WeightedSum()([block_old, block_new])
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
-        if isinstance(old_model.layers[i], StaticOptTanh):
-            final_layer = StaticOptTanh(alpha=alpha)(d)
+        if isinstance(old_model.layers[i], Dense):
+            final_layer = old_model.layers[i](d)
         else:
             d = old_model.layers[i](d)
     model2_comp = Model(in_image, final_layer)
@@ -304,8 +304,8 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     d_1 = SoftRectifier()(d_1)
     #sumarize blocks
     d = MinibatchStdDev()(d_1)
-    d = Dense(1)(d)
-    out_class=StaticOptTanh(alpha=400.0)(d)
+    out_class = Dense(1)(d)
+    #out_class=StaticOptTanh(alpha=400.0)(d)
     # define model
     model_comp = Model(in_image, out_class)
     # store model
@@ -396,8 +396,8 @@ def define_generator(n_blocks):
 # which should be (fake_loss - real_loss).
 # We will add the gradient penalty later to this loss function.
 def discriminator_loss(fake_logits, real_logits):
-    ci=tf.reduce_mean(real_logits)
-    cu=tf.reduce_mean(fake_logits)
+    ci=tf.reduce_mean(tf.math.tanh(real_logits))
+    cu=tf.reduce_mean(tf.math.tanh(fake_logits))
     lamb=(cu-ci)
     delta=tf.math.abs(lamb)
     sign=tf.math.divide_no_nan(lamb, (delta+0.0001))+0.0001
@@ -406,12 +406,12 @@ def discriminator_loss(fake_logits, real_logits):
 
 # Define the loss functions for the generator.
 def generator_loss(fake_logits, real_logits):
-    ci=tf.reduce_mean(real_logits)
-    cu=tf.reduce_mean(fake_logits)
+    ci=tf.reduce_mean(tf.math.tanh(real_logits))
+    cu=tf.reduce_mean(tf.math.tanh(fake_logits))
     lamb=(cu-ci)
     delta=tf.math.abs(lamb)
     sign=tf.math.divide_no_nan(lamb, (delta+0.0001))+0.0001
-    return (sign * cu) + delta
+    return sign * fake_logits
 
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
