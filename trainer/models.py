@@ -402,7 +402,7 @@ def discriminator_loss(fake_logits, real_logits):
     delta=tf.math.abs(lamb)
     sign=tf.math.divide_no_nan(lamb, (delta+0.0001))+0.0001
     sign_2=(tf.math.divide_no_nan(lamb, (delta+0.0001))+0.0000999)*-1.0
-    return (sign * ci) + (sign_2 * cu)
+    return (sign * real_logits) + (sign_2 * fake_logits)
 
 # Define the loss functions for the generator.
 def generator_loss(fake_logits, real_logits):
