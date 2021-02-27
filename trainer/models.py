@@ -376,7 +376,6 @@ def define_generator(n_blocks):
     #upsample para trabajar texturas en conjunto
     sumarized_blocks = UpSampling2D()(g_1)
     sumarized_blocks = UpSampling2D()(sumarized_blocks)
-    sumarized_blocks = UpSampling2D()(sumarized_blocks)
     sumarized_blocks = Conv2D(512, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     sumarized_blocks = Conv2D(2, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
