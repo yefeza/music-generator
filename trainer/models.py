@@ -270,7 +270,7 @@ def add_discriminator_block(old_model, n_input_layers=2):
     block_old = old_model.layers[1](downsample)
     block_old = old_model.layers[2](block_old)
     # fadeinoutputofoldmodelinputlayerwithnewinput
-    d = WeightedSum()([block_old, block_new])
+    d = WeightedSum()([downsample, block_new])
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
         if isinstance(old_model.layers[i], Dense):
