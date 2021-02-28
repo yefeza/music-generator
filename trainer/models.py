@@ -1,6 +1,6 @@
 # keras imports
 import keras
-from keras.optimizers import Adam
+from keras.optimizers import Adam, Adamax
 from keras.models import Sequential, Model
 from keras.layers.core import Dense, Activation, Dropout
 from keras.layers import Input, UpSampling2D, Layer
@@ -288,22 +288,19 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     in_image = Input(shape=input_shape)
     # conv 1x1
     featured_block = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
-    featured_block = SoftRectifier()(featured_block)
+    #featured_block = SoftRectifier()(featured_block)
     # convolusion block 1
-    d_1 = Conv2D(256, (2, 1), strides=(2,1), padding='valid', kernel_initializer='he_normal')(featured_block)
-    d_1 = SoftRectifier()(d_1)
-    d_1 = Conv2D(256, (2, 1), strides=(2,1), padding='valid', kernel_initializer='he_normal')(d_1)
-    d_1 = SoftRectifier()(d_1)
+    d_1 = Conv2D(128, (1, 5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(featured_block)
+    #d_1 = SoftRectifier()(d_1)
+    d_1 = Conv2D(128, (1, 5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(d_1)
+    #d_1 = SoftRectifier()(d_1)
+    d_1 = Conv2D(128, (4, 1), strides=(4,1), padding='valid', kernel_initializer='he_normal')(d_1)
+    #d_1 = SoftRectifier()(d_1)
     d_1 = Dropout(0.2)(d_1)
-    d_1 = Conv2D(256, (1, 15), strides=(1,15), padding='valid', kernel_initializer='he_normal')(d_1)
-    d_1 = SoftRectifier()(d_1)
-    d_1 = Conv2D(256, (1, 5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(d_1)
-    d_1 = SoftRectifier()(d_1)
-    d_1 = Dropout(0.2)(d_1)
-    d_1 = Conv2D(256, (1, 10), strides=(1,10), padding='valid', kernel_initializer='he_normal')(d_1)
-    d_1 = SoftRectifier()(d_1)
+    #d_1 = SoftRectifier()(d_1)
     #sumarize blocks
     d = MinibatchStdDev()(d_1)
+    d = Flatten()(d)
     out_class = Dense(1)(d)
     #out_class=StaticOptTanh(alpha=400.0)(d)
     # define model
@@ -370,13 +367,14 @@ def define_generator(n_blocks):
     ly0 = Input(shape=(1, 10, 2))
     featured = Dense(32)(ly0)
     # bloque 1 deconvolusion
-    g_1 = Conv2DTranspose(1024, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
-    g_1 = Conv2DTranspose(1024, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(128, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
+    g_1 = Conv2DTranspose(256, (1, 3), strides=(1, 3), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(512, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(g_1)
     #unir 4 segundos
     #upsample para trabajar texturas en conjunto
     sumarized_blocks = UpSampling2D()(g_1)
     sumarized_blocks = UpSampling2D()(sumarized_blocks)
-    sumarized_blocks = Conv2D(512, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2D(128, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     sumarized_blocks = Conv2D(2, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     model = Model(ly0, wls)
@@ -465,8 +463,8 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator_extra_steps=1,
         )
         wgan1.compile(
-            d_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
-            g_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
+            d_optimizer=Adamax(),
+            g_optimizer=Adamax(),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
@@ -481,8 +479,8 @@ def define_composite(discriminators, generators, latent_dim):
             discriminator_extra_steps=1,
         )
         wgan2.compile(
-            d_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
-            g_optimizer=Adam(lr=0.0005, beta_1=0, beta_2=0.999, epsilon=10e-8),
+            d_optimizer=Adamax(),
+            g_optimizer=Adamax(),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
