@@ -217,7 +217,7 @@ class StaticOptTanh(Layer):
 
 # agregar bloque a discriminador para escalar las dimensiones
 
-def add_discriminator_block(old_model, n_input_layers=3):
+def add_discriminator_block(old_model, n_input_layers=2):
     # getshapeofexistingmodel
     in_shape = list(old_model.input[0].shape)
     alpha=400.0
@@ -245,7 +245,7 @@ def add_discriminator_block(old_model, n_input_layers=3):
     in_image = Input(shape=input_shape)
     # definenewinputprocessinglayer
     featured_layer = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
-    featured_layer = SoftRectifier(start_alpha=soft_alpha)(featured_layer)
+    #featured_layer = SoftRectifier(start_alpha=soft_alpha)(featured_layer)
     #convolusion block 1
     d_1 = Conv2D(256, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured_layer)
     d_1 = SoftRectifier(start_alpha=soft_alpha)(d_1)
