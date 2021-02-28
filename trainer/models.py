@@ -409,7 +409,7 @@ def generator_loss(fake_logits, real_logits):
     delta=tf.math.abs(lamb)
     sign=tf.math.divide_no_nan(lamb, (delta+0.0001))+0.0001
     sign_2=(tf.math.divide_no_nan(lamb, (delta+0.0001))+0.0000999)*-1.0
-    return (sign_2 * real_logits) + (sign * fake_logits)
+    return (sign_2 * real_logits) + (sign * fake_logits) + tf.math.abs((fake_logits-real_logits))
 
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
