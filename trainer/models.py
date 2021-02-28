@@ -296,7 +296,7 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     d_1 = Conv2D(128, (4, 1), strides=(4,1), padding='valid', kernel_initializer='he_normal')(d_1)
     #d_1 = SoftRectifier()(d_1)
     d_1 = Dropout(0.2)(d_1)
-    #d_1 = SoftRectifier()(d_1)
+    d_1 = SoftRectifier()(d_1)
     #sumarize blocks
     d = MinibatchStdDev()(d_1)
     d = Flatten()(d)
