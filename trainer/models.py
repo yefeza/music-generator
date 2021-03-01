@@ -403,21 +403,15 @@ def discriminator_loss(fake_logits, real_logits):
 
 # Define the loss functions for the generator.
 def generator_loss(fake_logits, real_logits):
-    ci=tf.reduce_mean(tf.math.tanh(real_logits))
-    cu=tf.reduce_mean(tf.math.tanh(fake_logits))
-    lamb=(cu-ci)
-    delta=tf.math.abs(lamb)
-    sign=tf.math.divide_no_nan(lamb, (delta+0.0001))+0.0001
-    sign_2=(tf.math.divide_no_nan(lamb, (delta+0.0001))+0.0000999)*-1.0
-    return (sign_2 * real_logits) + (sign * fake_logits) + tf.math.abs((fake_logits-real_logits))
+    delta=tf.math.abs(fake_logits-real_logits)
+    theta=tf.math.abs((fake_logits/500)*real_logits)
+    return delta + theta
 
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
-    ci=tf.reduce_mean(real_logits)
-    cu=tf.reduce_mean(fake_logits)
-    lamb=(cu-ci)
-    delta=tf.math.abs(lamb)
-    return delta
+    delta=tf.math.abs(fake_logits-real_logits)
+    theta=tf.math.abs((fake_logits/500)*real_logits)
+    return -delta + theta
     
 def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoint=500):
     storage_client = storage.Client(project='ia-devs')
