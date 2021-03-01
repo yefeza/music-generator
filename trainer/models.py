@@ -374,7 +374,7 @@ def discriminator_loss(fake_logits, real_logits):
 def generator_loss(fake_logits, real_logits):
     delta=tf.math.abs(fake_logits-real_logits)
     theta=tf.math.abs((fake_logits/10000)*real_logits)
-    return delta + theta
+    return (delta/0.1) + theta
 
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
