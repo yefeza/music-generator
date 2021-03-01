@@ -57,7 +57,6 @@ if __name__ == '__main__':
     folder_start=0
     song_start=0
     fragment_start=0
-    download_evaluators=False
     epochs_evaluadores=20
 
 
@@ -83,7 +82,7 @@ if __name__ == '__main__':
 
     # define generator
 
-    generators = define_generator(7)
+    generators = define_generator(7, latent_dim)
 
     # define composite models
 
@@ -105,17 +104,17 @@ if __name__ == '__main__':
 
     # train the generator and discriminator
 
-    def train(g_models, d_models, gan_models, dataset, latent_dim, epochs_norm, epochs_fade, batch_sizes, job_dir, bucket_name, files_format, path_dataset, download_data, download_evaluators, epochs_evaluadores):
-        get_evaluators=[True,True,False,False,False,False,False,False,False]
+    def train(gan_models, latent_dim, epochs_norm, epochs_fade, batch_sizes, job_dir, bucket_name, files_format, path_dataset, download_data, epochs_evaluadores, start_from_growing):
+        get_evaluators=[True,True,False,False,False,False,False]
         # fit the baseline model
-        g_normal, d_normal, gan_normal = g_models[0][0], d_models[0][0], gan_models[0][0]
+        g_normal = gan_models[start_from_growing][0].generator
         # scale dataset to appropriate size
         gen_shape = g_normal.output_shape
         if download_data:
             download_diension_dataset(path_dataset, bucket_name, files_format, (gen_shape[-3], gen_shape[-2]))
         scaled_data, y_evaluator = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
         #cargar evaluador
-        geval=get_evaluators[0]
+        geval=get_evaluators[start_from_growing]
         evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name, geval, (scaled_data, y_evaluator), epochs_evaluadores)
         # train normal or straight-through models
         n_batch=batch_sizes[0]
@@ -128,25 +127,23 @@ if __name__ == '__main__':
         scaled_data=scaled_data[:limit]
         print('Scaled Data', scaled_data.shape)
         gan_models[0][0].set_train_steps(n_steps)
-        cbk=GANMonitor(job_dir=job_dir, evaluador=evaluador)
+        cbk=GANMonitor(job_dir=job_dir, evaluador=evaluador, latent_dim=latent_dim)
         np.random.shuffle(scaled_data)
         history = gan_models[0][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
         plot_losses(history, (gen_shape[-3], gen_shape[-2]))
         # process each level of growth
-        for i in range(1, len(g_models)):
+        for i in range((start_from_growing+1), len(gan_models)):
             # retrieve models for this level of growth
-            [g_normal, g_fadein] = g_models[i]
-            [d_normal, d_fadein] = d_models[i]
             [gan_normal, gan_fadein] = gan_models[i]
             # scale dataset to appropriate size
-            gen_shape = g_normal.output_shape
+            gen_shape = gan_normal.generator.output_shape
             if download_data:
                 download_diension_dataset(path_dataset, bucket_name, files_format, (gen_shape[-3], gen_shape[-2]))
             scaled_data, y_evaluator = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)
             #cargar evaluador
             geval=get_evaluators[i]
             evaluador=load_evaluator((gen_shape[-3], gen_shape[-2]), bucket_name, geval, (scaled_data, y_evaluator), epochs_evaluadores)
-            cbk=GANMonitor(job_dir=job_dir, evaluador=evaluador)
+            cbk=GANMonitor(job_dir=job_dir, evaluador=evaluador, latent_dim=latent_dim)
             #get batch size for model
             n_batch=batch_sizes[i]
             e_norm=epochs_norm[i]
@@ -172,11 +169,6 @@ if __name__ == '__main__':
     epochs_norm=[400,300,200,280,300,350,420]
     #epochs_norm=[50,60,70,80,90,100,110]
     epochs_fade=[10,15,32,25,30,35,40]
-    # load image data
-    dataset = []
-    #dataset = get_audio_list(path_dataset, bucket_name)
-    e_norm=NUM_EPOCHS
-    e_fadein=int(e_norm/4)
+    start_from_growing=0
     # train model
-    train(generators, discriminators, composite, dataset,
-        latent_dim, epochs_norm, epochs_fade, batch_sizes, JOB_DIR, bucket_name, files_format, path_dataset, download_data, download_evaluators, epochs_evaluadores)
+    train(composite, latent_dim, epochs_norm, epochs_fade, batch_sizes, JOB_DIR, bucket_name, files_format, path_dataset, download_data, epochs_evaluadores, start_from_growing)

@@ -61,13 +61,16 @@ class WGAN(keras.Model):
         self.total_steps = 0
         self.fade_in=fade_in
 
-    def compile(self, d_optimizer, g_optimizer, d_loss_fn, g_loss_fn, g_loss_fn_extra):
+    def compile(self, d_optimizer, g_optimizer, d_loss_fn, g_loss_fn, g_loss_fn_extra, was_loaded=False):
         super(WGAN, self).compile()
         self.d_optimizer = d_optimizer
         self.g_optimizer = g_optimizer
         self.d_loss_fn = d_loss_fn
         self.g_loss_fn = g_loss_fn
         self.g_loss_fn_extra = g_loss_fn_extra
+        if not was_loaded:
+            self.generator.compile(optimizer=g_optimizer)
+            self.discriminator.compile(optimizer=d_optimizer)
 
     def set_train_steps(self, size):
         self.train_steps=size
@@ -120,7 +123,7 @@ class WGAN(keras.Model):
             # Get the gradients w.r.t the discriminator loss
             d_gradient = tape.gradient(d_loss, self.discriminator.trainable_variables)
             # Update the weights of the discriminator using the discriminator optimizer
-            self.d_optimizer.apply_gradients(
+            self.discriminator.optimizer.apply_gradients(
                 zip(d_gradient, self.discriminator.trainable_variables)
             )
         # Train the generator
@@ -138,7 +141,7 @@ class WGAN(keras.Model):
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
         # Update the weights of the generator using the generator optimizer
-        self.g_optimizer.apply_gradients(
+        self.generator.optimizer.apply_gradients(
             zip(gen_gradient, self.generator.trainable_variables)
         )
         #calculate actual delta value
@@ -316,7 +319,7 @@ def add_generator_block(old_model):
     g_1 = Conv2DTranspose(512, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(block_end)
     #sumarize
     sumarized_blocks = UpSampling2D()(g_1)
-    sumarized_blocks = Conv2D(128, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2D(256, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     for_sum_layer = Conv2D(2, (1,1), strides=(1,1), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
     # define model
@@ -330,10 +333,10 @@ def add_generator_block(old_model):
 
 # definir los generadores
 
-def define_generator(n_blocks):
+def define_generator(n_blocks, latent_dim):
     model_list = list()
     # input
-    ly0 = Input(shape=(1, 10, 2))
+    ly0 = Input(shape=latent_dim)
     featured = Dense(32)(ly0)
     # bloque 1 deconvolusion
     g_1 = Conv2DTranspose(128, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
@@ -343,8 +346,9 @@ def define_generator(n_blocks):
     #upsample para trabajar texturas en conjunto
     sumarized_blocks = UpSampling2D()(g_1)
     sumarized_blocks = UpSampling2D()(sumarized_blocks)
+    sumarized_blocks = Conv2D(256, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     sumarized_blocks = Conv2D(128, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(2, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2D(2, (1,1), strides=(1,1), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
@@ -408,15 +412,19 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, latent_dim):
+    resume_models=[False, False, False, False, False, False, False]
+    dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models
     for i in range(len(discriminators)):
         g_models, d_models = generators[i], discriminators[i]
         #precargar pesos previos de un checkpoint
-        if i==0:
-            prev_g_model, prev_d_model=get_saved_model()
-            d_models[0].set_weights(prev_d_model.get_weights())
-            g_models[0].set_weights(prev_g_model.get_weights())
+        if resume_models[i]:
+            prev_g_model, prev_d_model=get_saved_model(dimension=dimensions[i])
+            d_models[i].set_weights(prev_d_model.get_weights())
+            g_models[i].set_weights(prev_g_model.get_weights())
+            d_models[i].compile(optimizer=prev_d_model.optimizer)
+            g_models[i].compile(optimizer=prev_g_model.optimizer)
         # straight-through model
         #d_models[2].trainable = False
         wgan1 = WGAN(
@@ -430,7 +438,8 @@ def define_composite(discriminators, generators, latent_dim):
             g_optimizer=Adamax(),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
-            d_loss_fn=discriminator_loss
+            d_loss_fn=discriminator_loss,
+            was_loaded=resume_models[i]
         )
         # fade-in model
         #d_models[3].trainable = False
