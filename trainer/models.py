@@ -188,7 +188,7 @@ class MinibatchStdDev(Layer):
 
 #custom activation layer (tanh(x)+(x/(alpha+0.1)))
 class SoftRectifier(Layer):
-    def __init__(self, start_alpha=400.0, **kwargs):
+    def __init__(self, start_alpha=40000.0, **kwargs):
         super(SoftRectifier, self).__init__(**kwargs)
         self.start_alpha=start_alpha
         #self.w = tf.Variable(initial_value=start_alpha, trainable=True)
