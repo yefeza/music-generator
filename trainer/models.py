@@ -188,7 +188,7 @@ class MinibatchStdDev(Layer):
 
 #custom activation layer (tanh(x)+(x/(alpha+0.1)))
 class SoftRectifier(Layer):
-    def __init__(self, start_alpha=40000.0, **kwargs):
+    def __init__(self, start_alpha=400.0, **kwargs):
         super(SoftRectifier, self).__init__(**kwargs)
         self.start_alpha=start_alpha
         #self.w = tf.Variable(initial_value=start_alpha, trainable=True)
@@ -203,7 +203,7 @@ class SoftRectifier(Layer):
 
 #custom activation layer (tanh(x)+(x/(alpha+0.1)))
 class StaticOptTanh(Layer):
-    def __init__(self, alpha=400.0, **kwargs):
+    def __init__(self, alpha=40000.0, **kwargs):
         super(StaticOptTanh, self).__init__(**kwargs)
         self.alpha=alpha
 
@@ -252,8 +252,8 @@ def add_discriminator_block(old_model, n_input_layers=2):
     block_new = d_block
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
-        if isinstance(old_model.layers[i], Dense):
-            final_layer = old_model.layers[i](d_block)
+        if isinstance(old_model.layers[i], StaticOptTanh):
+            final_layer = StaticOptTanh()(d_block)
         else:
             d_block = old_model.layers[i](d_block)
     # model 1 without multiple inputs for composite
@@ -266,8 +266,8 @@ def add_discriminator_block(old_model, n_input_layers=2):
     d = WeightedSum()([block_old, block_new])
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
-        if isinstance(old_model.layers[i], Dense):
-            final_layer = old_model.layers[i](d)
+        if isinstance(old_model.layers[i], StaticOptTanh):
+            final_layer = StaticOptTanh()(d)
         else:
             d = old_model.layers[i](d)
     model2_comp = Model(in_image, final_layer)
@@ -289,7 +289,8 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     d_1 = SoftRectifier()(d_1)
     d = MinibatchStdDev()(d_1)
     d = Flatten()(d)
-    out_class = Dense(1)(d)
+    d = Dense(1)(d)
+    out_class = StaticOptTanh()(d)
     # define model
     model_comp = Model(in_image, out_class)
     # store model
@@ -362,19 +363,15 @@ def define_generator(n_blocks):
 # which should be (fake_loss - real_loss).
 # We will add the gradient penalty later to this loss function.
 def discriminator_loss(fake_logits, real_logits):
-    ci=tf.reduce_mean(tf.math.tanh(real_logits))
-    cu=tf.reduce_mean(tf.math.tanh(fake_logits))
-    lamb=(cu-ci)
-    delta=tf.math.abs(lamb)
-    sign=tf.math.divide_no_nan(lamb, (delta+0.0001))+0.0001
-    sign_2=(tf.math.divide_no_nan(lamb, (delta+0.0001))+0.0000999)*-1.0
-    return (sign * real_logits) + (sign_2 * fake_logits) + (fake_logits/2)
+    delta=(tf.math.abs(fake_logits-real_logits)/0.1)
+    theta=tf.math.abs((real_logits/10000)*fake_logits)
+    return -delta + theta
 
 # Define the loss functions for the generator.
 def generator_loss(fake_logits, real_logits):
-    delta=tf.math.abs(fake_logits-real_logits)
+    delta=(tf.math.abs(fake_logits-real_logits)/0.1)
     theta=tf.math.abs((fake_logits/10000)*real_logits)
-    return (delta/0.1) + theta
+    return delta + theta
 
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
