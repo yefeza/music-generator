@@ -393,13 +393,9 @@ def define_generator(n_blocks):
 # which should be (fake_loss - real_loss).
 # We will add the gradient penalty later to this loss function.
 def discriminator_loss(fake_logits, real_logits):
-    ci=tf.reduce_mean(tf.math.tanh(real_logits))
-    cu=tf.reduce_mean(tf.math.tanh(fake_logits))
-    lamb=(cu-ci)
-    delta=tf.math.abs(lamb)
-    sign=tf.math.divide_no_nan(lamb, (delta+0.0001))+0.0001
-    sign_2=(tf.math.divide_no_nan(lamb, (delta+0.0001))+0.0000999)*-1.0
-    return (sign * real_logits) + (sign_2 * fake_logits) + (fake_logits/2)
+    delta=tf.math.abs(fake_logits-real_logits)
+    theta=tf.math.abs((real_logits/500)-fake_logits)
+    return -delta + theta
 
 # Define the loss functions for the generator.
 def generator_loss(fake_logits, real_logits):
