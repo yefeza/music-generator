@@ -208,7 +208,7 @@ class StaticOptTanh(Layer):
         self.alpha=alpha
 
     def call(self, inputs):
-        return tf.math.tanh(inputs)
+        return tf.math.tanh(inputs) + tf.math.divide_no_nan(inputs,self.alpha)
 
     def get_config(self):
         config = super(StaticOptTanh, self).get_config()
