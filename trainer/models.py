@@ -147,7 +147,8 @@ class WGAN(keras.Model):
         #calculate actual delta value
         ci_1=tf.reduce_mean(real_logits)
         cu_1=tf.reduce_mean(gen_img_logits)
-        delta_1=tf.math.abs((cu_1-ci_1))
+        dif=cu_1-ci_1
+        delta_1=tf.math.abs(dif)
         self.actual_step+=1
         return {"delta_1": delta_1, "cu_1": cu_1, "ci_1": ci_1}
 
