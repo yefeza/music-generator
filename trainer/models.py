@@ -243,18 +243,12 @@ def add_discriminator_block(old_model, n_input_layers=2):
     # definenewinputshapeasdoublethesize
     input_shape = (in_shape[-3]*2, in_shape[-2]*2, in_shape[-1])
     in_image = Input(shape=input_shape)
-    # definenewinputprocessinglayer
     featured_layer = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
-    #featured_layer = SoftRectifier(start_alpha=soft_alpha)(featured_layer)
     #convolusion block 1
-    d_1 = Conv2D(256, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(featured_layer)
-    d_1 = SoftRectifier(start_alpha=soft_alpha)(d_1)
-    d_1 = Conv2D(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(d_1)
-    d_1 = SoftRectifier(start_alpha=soft_alpha)(d_1)
+    d_1 = Conv2D(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured_layer)
+    d_1 = Conv2D(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(d_1)
     d_1 = Dropout(0.2)(d_1)
-    #sumarize blocks
-    d_block=Conv2D(128, (1,1), padding='same', kernel_initializer='he_normal')(d_1)
-    d_block = SoftRectifier(start_alpha=soft_alpha)(d_block)
+    d_block = SoftRectifier(start_alpha=soft_alpha)(d_1)
     block_new = d_block
     # skiptheinput,1x1andactivationfortheoldmodel
     for i in range(n_input_layers, len(old_model.layers)):
@@ -287,21 +281,15 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     in_image = Input(shape=input_shape)
     # conv 1x1
     featured_block = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
-    #featured_block = SoftRectifier()(featured_block)
     # convolusion block 1
     d_1 = Conv2D(128, (1, 5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(featured_block)
-    #d_1 = SoftRectifier()(d_1)
     d_1 = Conv2D(128, (1, 5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(d_1)
-    #d_1 = SoftRectifier()(d_1)
     d_1 = Conv2D(128, (4, 1), strides=(4,1), padding='valid', kernel_initializer='he_normal')(d_1)
-    #d_1 = SoftRectifier()(d_1)
     d_1 = Dropout(0.2)(d_1)
     d_1 = SoftRectifier()(d_1)
-    #sumarize blocks
     d = MinibatchStdDev()(d_1)
     d = Flatten()(d)
     out_class = Dense(1)(d)
-    #out_class=StaticOptTanh(alpha=400.0)(d)
     # define model
     model_comp = Model(in_image, out_class)
     # store model
@@ -323,31 +311,12 @@ def add_generator_block(old_model):
     block_end = old_model.layers[-2].output
     # upsample, and define new block
     upsampling = UpSampling2D()(block_end)
-    featured = Conv2D(512, (2, 2), strides=(2,2), padding='valid', kernel_initializer='he_normal')(upsampling)
     # bloque 1 deconvolusion
-    g_1 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured)
-    op_1 = Dense(512)(g_1)
-    # bloque 2 deconvolusion
-    g_2 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured)
-    op_2 = Dense(512)(g_2)
-    # bloque 3 deconvolusion
-    g_3 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured)
-    op_3 = Dense(512)(g_3)
-    # bloque 4 deconvolusion
-    g_4 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured)
-    op_4 = Dense(512)(g_4)
-    # bloque 5 deconvolusion
-    g_5 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured)
-    op_5 = Dense(512)(g_5)
-    # bloque 3 deconvolusion
-    g_6 = Conv2DTranspose(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured)
-    op_6 = Dense(512)(g_6)
+    g_1 = Conv2DTranspose(512, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(block_end)
     #sumarize
-    sumarized_blocks=Add()([op_1, op_2, op_3, op_4, op_5, op_6])
-    sumarized_blocks = Conv2DTranspose(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Dense(64)(sumarized_blocks)
-    sumarized_blocks = Dense(32)(sumarized_blocks)
-    for_sum_layer = Dense(2)(sumarized_blocks)
+    sumarized_blocks = UpSampling2D()(g_1)
+    sumarized_blocks = Conv2D(128, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    for_sum_layer = Conv2D(2, (1,1), strides=(1,1), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
     # define model
     model1 = Model(old_model.input, out_image)
