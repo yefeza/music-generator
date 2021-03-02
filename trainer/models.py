@@ -338,7 +338,7 @@ def define_generator(n_blocks, latent_dim):
     model_list = list()
     # input
     ly0 = Input(shape=latent_dim)
-    featured = Dense(32)(ly0)
+    featured = Conv2D(1024, (1,5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(ly0)
     # bloque 1 deconvolusion
     g_1 = Conv2DTranspose(128, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
     g_1 = Conv2DTranspose(256, (1, 3), strides=(1, 3), padding='valid', kernel_initializer='he_normal')(g_1)
@@ -348,8 +348,8 @@ def define_generator(n_blocks, latent_dim):
     sumarized_blocks = UpSampling2D()(g_1)
     sumarized_blocks = UpSampling2D()(sumarized_blocks)
     sumarized_blocks = Conv2D(256, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(128, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(2, (1,1), strides=(1,1), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2D(256, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Dense(2)(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
