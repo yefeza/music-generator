@@ -321,7 +321,7 @@ def add_generator_block(old_model):
     g_1 = Conv2DTranspose(512, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(block_end)
     #sumarize
     sumarized_blocks = UpSampling2D()(g_1)
-    sumarized_blocks = UpSampling2D(size=(1,2))(g_1)
+    sumarized_blocks = UpSampling2D(size=(1,2))(sumarized_blocks)
     sumarized_blocks = Conv2D(256, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     for_sum_layer = Conv2D(2, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
