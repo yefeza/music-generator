@@ -249,8 +249,9 @@ def add_discriminator_block(old_model, n_input_layers=2):
     in_image = Input(shape=input_shape)
     featured_layer = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
     #convolusion block 1
-    d_1 = Conv2D(256, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured_layer)
-    d_1 = Conv2D(128, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(d_1)
+    d_1 = Conv2D(512, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured_layer)
+    d_1 = Conv2D(512, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(d_1)
+    d_1 = Dense(128)(d_1)
     d_1 = Dropout(0.2)(d_1)
     d_block = SoftRectifier(start_alpha=soft_alpha)(d_1)
     block_new = d_block
@@ -286,9 +287,10 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     # conv 1x1
     featured_block = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
     # convolusion block 1
-    d_1 = Conv2D(128, (1, 5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(featured_block)
-    d_1 = Conv2D(128, (1, 5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(d_1)
-    d_1 = Conv2D(128, (4, 1), strides=(4,1), padding='valid', kernel_initializer='he_normal')(d_1)
+    d_1 = Conv2D(512, (1, 5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(featured_block)
+    d_1 = Conv2D(512, (1, 5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(d_1)
+    d_1 = Conv2D(512, (4, 1), strides=(4,1), padding='valid', kernel_initializer='he_normal')(d_1)
+    d_1 = Dense(128)(d_1)
     d_1 = Dropout(0.2)(d_1)
     d_1 = SoftRectifier()(d_1)
     d = MinibatchStdDev()(d_1)
@@ -308,7 +310,6 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
         # store model
         model_list.append(models)
     return model_list
-
 # agregar bloque a generador para escalar las dimensiones
 
 def add_generator_block(old_model):
