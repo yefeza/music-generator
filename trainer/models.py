@@ -321,8 +321,9 @@ def add_generator_block(old_model):
     g_1 = Conv2DTranspose(512, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(block_end)
     #sumarize
     sumarized_blocks = UpSampling2D()(g_1)
+    sumarized_blocks = UpSampling2D(size=(1,2))(g_1)
     sumarized_blocks = Conv2D(256, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    for_sum_layer = Conv2D(2, (1,1), strides=(1,1), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    for_sum_layer = Conv2D(2, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
     # define model
     model1 = Model(old_model.input, out_image)
@@ -349,8 +350,7 @@ def define_generator(n_blocks, latent_dim):
     sumarized_blocks = UpSampling2D()(g_1)
     sumarized_blocks = UpSampling2D()(sumarized_blocks)
     sumarized_blocks = Conv2D(256, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(256, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Dense(2)(sumarized_blocks)
+    sumarized_blocks = Conv2D(2, (1,2), strides=(1,2), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
@@ -369,19 +369,18 @@ def define_generator(n_blocks, latent_dim):
 # which should be (fake_loss - real_loss).
 # We will add the gradient penalty later to this loss function.
 def discriminator_loss(fake_logits, real_logits):
-    ci=tf.reduce_mean(tf.math.tanh(real_logits))
-    cu=tf.reduce_mean(tf.math.tanh(fake_logits))
-    lamb=(cu-ci)
-    delta=tf.math.abs(lamb)
-    sign=tf.math.divide_no_nan(lamb, (delta+0.0001))+0.0001
-    sign_2=(tf.math.divide_no_nan(lamb, (delta+0.0001))+0.0000999)*-1.0
-    return (sign * real_logits) + (sign_2 * fake_logits)
+    lambda_1=(fake_logits-real_logits)
+    lambda_2=(real_logits-fake_logits)
+    delta=tf.math.abs(lambda_1)
+    return (-3+(delta/3))*(-((lambda_1*lambda_2)/1000))+(2*lambda_1)
 
 # Define the loss functions for the generator.
 def generator_loss(fake_logits, real_logits):
-    delta=tf.math.abs(fake_logits-real_logits)
-    theta=tf.math.abs(((fake_logits-real_logits)/500)*real_logits)
-    return delta + theta
+    lambda_1=(real_logits+fake_logits)
+    lambda_2=(fake_logits+real_logits)
+    delta_1=tf.math.abs((real_logits-fake_logits))
+    delta_2=tf.math.abs((real_logits+fake_logits))
+    return -(((-3+(delta_1/2))*(-((lambda_1*lambda_2)/1000)))+(3*delta_2))
 
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
