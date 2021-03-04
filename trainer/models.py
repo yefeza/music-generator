@@ -391,7 +391,7 @@ def generator_loss(fake_logits, real_logits):
     real_logits=tf.reduce_mean(real_logits)
     lamb=(fake_logits-real_logits)
     delta=tf.math.abs(lamb)
-    return (delta/0.2)+((lamb/100)*real_logits)-(2*tf.math.abs(fake_logits))
+    return (delta/0.2)-(2*tf.math.abs(fake_logits))
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
     delta=tf.math.abs(fake_logits-real_logits)
