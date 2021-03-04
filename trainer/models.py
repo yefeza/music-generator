@@ -314,7 +314,7 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
 
 def add_generator_block(old_model):
     out_shape = old_model.output_shape
-    mult=out_shape[0]/4
+    mult=out_shape[-3]/4
     # get the end of the last block
     block_end = old_model.layers[-2].output
     # upsample, and define new block
