@@ -349,10 +349,13 @@ def define_generator(n_blocks, latent_dim):
     #upsample para trabajar texturas en conjunto
     sumarized_blocks = UpSampling2D()(g_1)
     sumarized_blocks = UpSampling2D()(sumarized_blocks)
-    sumarized_blocks = Conv2D(256, (1,4), strides=(1,4), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(128, (1,4), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(64, (1,4), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(2, (1,4), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = UpSampling2D()(sumarized_blocks)
+    sumarized_blocks = UpSampling2D()(sumarized_blocks)
+    sumarized_blocks = Conv2D(256, (4,4), strides=(4,4), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2D(128, (4,4), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2D(64, (4,4), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2D(32, (4,4), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2D(2, (4,4), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
