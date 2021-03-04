@@ -340,11 +340,11 @@ def define_generator(n_blocks, latent_dim):
     model_list = list()
     # input
     ly0 = Input(shape=latent_dim)
-    featured = Conv2D(1024, (1,5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(ly0)
+    featured = Conv2D(256, (1,5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(ly0)
     # bloque 1 deconvolusion
-    g_1 = Conv2DTranspose(512, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
-    g_1 = Conv2DTranspose(512, (1, 3), strides=(1, 3), padding='valid', kernel_initializer='he_normal')(g_1)
-    g_1 = Conv2DTranspose(512, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(128, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
+    g_1 = Conv2DTranspose(128, (1, 3), strides=(1, 3), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(128, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(g_1)
     #unir 4 segundos
     #upsample para trabajar texturas en conjunto
     sumarized_blocks = UpSampling2D()(g_1)
