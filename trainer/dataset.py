@@ -190,7 +190,7 @@ def download_diension_dataset(path_dataset, bucket_name, files_format, dimension
         limit_songs=limit_songs_list[5]
     if dimension[0]==256:
         limit_songs=limit_songs_list[6]
-    for folder in range(3,4):
+    for folder in range(9):
         print("downloading from folder "+str(folder+1) + " and dimension " + str(dimension[0]) + "-" + str(dimension[1]))
         for song in range(limit_songs):
             try:
@@ -214,7 +214,7 @@ def read_dataset(dimension, files_format):
     data=[]
     y_evaluator=[]
     limit_songs=100
-    for folder in range(9):
+    for folder in range(3,4):
         continuos_error=0
         print("Leyendo dataset en folder "+str(folder+1))
         directory="local_ds/" + files_format + "/"+str(dimension[0])+"-"+str(dimension[1])+"/" + str(folder+1) + "/"
