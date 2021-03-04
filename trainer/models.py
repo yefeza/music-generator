@@ -4,7 +4,7 @@ from keras.optimizers import Adam, Adamax
 from keras.models import Sequential, Model
 from keras.layers.core import Dense, Activation, Dropout
 from keras.layers import Input, UpSampling2D, Layer
-from keras.layers.convolutional import Conv2D, Conv2DTranspose
+from keras.layers.convolutional import Conv2D, Conv2DTranspose, SeparableConv2D
 from keras.layers.convolutional import AveragePooling2D
 from keras.layers import Flatten
 from keras.layers import Reshape
@@ -353,9 +353,9 @@ def define_generator(n_blocks, latent_dim):
     sumarized_blocks = UpSampling2D()(sumarized_blocks)
     sumarized_blocks = UpSampling2D()(sumarized_blocks)
     sumarized_blocks = UpSampling2D()(sumarized_blocks)
-    sumarized_blocks = Conv2D(64, (4,4), strides=(4,4), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(64, (1,4), strides=(1,4), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(64, (4,150), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = SeparableConv2D(64, (4,4), strides=(4,4), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = SeparableConv2D(64, (1,4), strides=(1,4), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = SeparableConv2D(64, (4,150), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     sumarized_blocks = Conv2D(2, (4,150), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     model = Model(ly0, wls)
