@@ -214,7 +214,7 @@ def read_dataset(dimension, files_format):
     data=[]
     y_evaluator=[]
     limit_songs=100
-    for folder in range(3,4):
+    for folder in range(9):
         continuos_error=0
         print("Leyendo dataset en folder "+str(folder+1))
         directory="local_ds/" + files_format + "/"+str(dimension[0])+"-"+str(dimension[1])+"/" + str(folder+1) + "/"
