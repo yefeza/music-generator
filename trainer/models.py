@@ -313,7 +313,7 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
 # agregar bloque a generador para escalar las dimensiones
 
 def add_generator_block(old_model):
-    out_shape = list(old_model.output.shape)
+    out_shape = old_model.output_shape
     mult=out_shape[0]/4
     # get the end of the last block
     block_end = old_model.layers[-2].output
