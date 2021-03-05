@@ -356,7 +356,7 @@ def define_generator(n_blocks, latent_dim):
     g_1 = Dropout(0.2)(g_1)
     g_1 = Conv2DTranspose(64, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
     g_1 = Dropout(0.2)(g_1)
-    g_1 = Conv2D(32, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2D(32, (1, 15), padding='same', kernel_initializer='he_normal')(g_1)
     g_1 = Dropout(0.2)(g_1)
     g_1 = Conv2D(32, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
     g_1 = Dropout(0.2)(g_1)
