@@ -133,9 +133,9 @@ class WGAN(keras.Model):
             # Generate fake images using the generator
             generated_images = self.generator(random_latent_vectors, training=True)
             # Get the discriminator logits for fake images
-            gen_img_logits = self.discriminator(generated_images, training=False)
+            gen_img_logits = self.discriminator(generated_images, training=True)
             # Get the logits for the real images
-            real_logits = self.discriminator(real_images, training=False)
+            real_logits = self.discriminator(real_images, training=True)
             # Calculate the generator loss using the fake and real image logits
             g_loss = self.g_loss_fn(gen_img_logits, real_logits)
         # Get the gradients w.r.t the generator loss
@@ -329,10 +329,9 @@ def add_generator_block(old_model):
     sumarized_blocks = UpSampling2D()(g_1)
     sumarized_blocks = UpSampling2D()(sumarized_blocks)
     sumarized_blocks = Conv2D(64, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(64, (4, 15*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Dropout(0.2)(sumarized_blocks)
-    sumarized_blocks = Conv2D(16, (4, 150*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Dropout(0.2)(sumarized_blocks)
+    sumarized_blocks = Dropout(0.25)(sumarized_blocks)
+    sumarized_blocks = Conv2D(32, (4, 15*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2D(64, (4, 150*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     for_sum_layer = Conv2D(2, (4, 150*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
     # define model
@@ -353,9 +352,7 @@ def define_generator(n_blocks, latent_dim):
     featured = Conv2D(128, (1,5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(ly0)
     # bloque 1 deconvolusion
     g_1 = Conv2DTranspose(64, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
-    g_1 = Dropout(0.2)(g_1)
     g_1 = Conv2DTranspose(64, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
-    g_1 = Dropout(0.2)(g_1)
     g_1 = Conv2D(32, (1, 15), padding='same', kernel_initializer='he_normal')(g_1)
     g_1 = Dropout(0.2)(g_1)
     g_1 = Conv2D(32, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
@@ -368,10 +365,9 @@ def define_generator(n_blocks, latent_dim):
     sumarized_blocks = UpSampling2D()(sumarized_blocks)
     sumarized_blocks = Conv2D(64, (4,4), strides=(4,4), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     sumarized_blocks = Conv2D(64, (1,4), strides=(1,4), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(64, (4,15), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Dropout(0.2)(sumarized_blocks)
-    sumarized_blocks = Conv2D(32, (4,150), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Dropout(0.2)(sumarized_blocks)
+    sumarized_blocks = Dropout(0.25)(sumarized_blocks)
+    sumarized_blocks = Conv2D(32, (4,15), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2D(64, (4,150), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     sumarized_blocks = Conv2D(2, (4,150), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     model = Model(ly0, wls)
