@@ -361,9 +361,9 @@ def define_generator(n_blocks, latent_dim):
     sumarized_blocks = Conv2D(64, (1,4), strides=(1,4), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
     sumarized_blocks = Conv2D(64, (4,15), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     g_1 = Dropout(0.2)(g_1)
-    sumarized_blocks = Conv2D(32, (4,15), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2D(32, (4,50), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     g_1 = Dropout(0.2)(g_1)
-    sumarized_blocks = Conv2D(2, (4,15), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2D(2, (4,50), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
