@@ -321,12 +321,19 @@ def add_generator_block(old_model):
     upsampling = UpSampling2D()(block_end)
     # bloque 1 deconvolusion
     g_1 = Conv2DTranspose(128, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(block_end)
+    g_1 = Conv2D(32, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = Dropout(0.2)(g_1)
+    g_1 = Conv2D(32, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = Dropout(0.2)(g_1)
     #sumarize
     sumarized_blocks = UpSampling2D()(g_1)
     sumarized_blocks = UpSampling2D()(sumarized_blocks)
     sumarized_blocks = Conv2D(64, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(16, (4,150*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    for_sum_layer = Conv2D(2, (4,150*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
+    sumarized_blocks = Conv2D(64, (4, 15*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
+    g_1 = Dropout(0.2)(g_1)
+    sumarized_blocks = Conv2D(16, (4, 150*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
+    g_1 = Dropout(0.2)(g_1)
+    for_sum_layer = Conv2D(2, (4, 150*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
     # define model
     model1 = Model(old_model.input, out_image)
