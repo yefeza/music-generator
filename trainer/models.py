@@ -320,11 +320,11 @@ def add_generator_block(old_model):
     # upsample, and define new block
     upsampling = UpSampling2D()(block_end)
     # bloque 1 deconvolusion
-    g_1 = Conv2DTranspose(128, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(block_end)
+    g_1 = UpSampling2D(size=(1,2))(block_end)
+    g_1 = Conv2D(64, (1, 15), padding='same', kernel_initializer='he_normal')(g_1)
+    #g_1 = Dropout(0.2)(g_1)
     g_1 = Conv2D(64, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
-    g_1 = Dropout(0.2)(g_1)
-    g_1 = Conv2D(64, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
-    g_1 = Dropout(0.2)(g_1)
+    #g_1 = Dropout(0.2)(g_1)
     #sumarize
     sumarized_blocks = UpSampling2D()(g_1)
     sumarized_blocks = UpSampling2D()(sumarized_blocks)
@@ -352,9 +352,9 @@ def define_generator(n_blocks, latent_dim):
     # bloque 1 deconvolusion
     #g_1 = Conv2DTranspose(64, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(ly0)
     g_1 = UpSampling2D(size=(1,15))(ly0)
-    g_1 = Conv2D(32, (1, 15), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2D(64, (1, 15), padding='same', kernel_initializer='he_normal')(g_1)
     #g_1 = Dropout(0.2)(g_1)
-    g_1 = Conv2D(32, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2D(64, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
     #g_1 = Dropout(0.2)(g_1)
     #unir 4 segundos
     #upsample para trabajar texturas en conjunto
