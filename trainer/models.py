@@ -350,8 +350,10 @@ def define_generator(n_blocks, latent_dim):
     ly0 = Input(shape=latent_dim)
     #featured = Conv2D(128, (1,5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(ly0)
     # bloque 1 deconvolusion
-    #g_1 = Conv2DTranspose(64, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(ly0)
-    g_1 = UpSampling2D(size=(1,15))(ly0)
+    g_1 = Conv2DTranspose(16, (1, 101), padding='valid', kernel_initializer='he_normal')(ly0)
+    g_1 = Conv2DTranspose(16, (1, 151), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(16, (1, 451), padding='valid', kernel_initializer='he_normal')(g_1)
+    #g_1 = UpSampling2D(size=(1,15))(ly0)
     g_1 = Conv2D(64, (1, 15), padding='same', kernel_initializer='he_normal')(g_1)
     #g_1 = Dropout(0.2)(g_1)
     g_1 = Conv2D(64, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
