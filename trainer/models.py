@@ -315,12 +315,15 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
 def add_generator_block(old_model):
     out_shape = old_model.output_shape
     mult=int((out_shape[-3]*2)/4)
+    sr_out=int(out_shape[-2]*2)
+    k_size=int(sr_out-(out_shape[-2]-1))
     # get the end of the last block
     block_end = old_model.layers[-2].output
     # upsample, and define new block
     upsampling = UpSampling2D()(block_end)
     # bloque 1 deconvolusion
-    g_1 = UpSampling2D(size=(1,2))(block_end)
+    #g_1 = UpSampling2D(size=(1,2))(block_end)
+    g_1 = Conv2DTranspose(32, (1, k_size), padding='valid', kernel_initializer='he_normal')(block_end)
     g_1 = Conv2D(64, (1, 15), padding='same', kernel_initializer='he_normal')(g_1)
     #g_1 = Dropout(0.2)(g_1)
     g_1 = Conv2D(64, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
@@ -350,9 +353,9 @@ def define_generator(n_blocks, latent_dim):
     ly0 = Input(shape=latent_dim)
     #featured = Conv2D(128, (1,5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(ly0)
     # bloque 1 deconvolusion
-    g_1 = Conv2DTranspose(16, (1, 101), padding='valid', kernel_initializer='he_normal')(ly0)
-    g_1 = Conv2DTranspose(16, (1, 151), padding='valid', kernel_initializer='he_normal')(g_1)
-    g_1 = Conv2DTranspose(16, (1, 451), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(32, (1, 101), padding='valid', kernel_initializer='he_normal')(ly0)
+    g_1 = Conv2DTranspose(32, (1, 151), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(32, (1, 451), padding='valid', kernel_initializer='he_normal')(g_1)
     #g_1 = UpSampling2D(size=(1,15))(ly0)
     g_1 = Conv2D(64, (1, 15), padding='same', kernel_initializer='he_normal')(g_1)
     #g_1 = Dropout(0.2)(g_1)
