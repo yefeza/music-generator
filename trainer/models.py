@@ -133,9 +133,9 @@ class WGAN(keras.Model):
             # Generate fake images using the generator
             generated_images = self.generator(random_latent_vectors, training=True)
             # Get the discriminator logits for fake images
-            gen_img_logits = self.discriminator(generated_images, training=True)
+            gen_img_logits = self.discriminator(generated_images, training=False)
             # Get the logits for the real images
-            real_logits = self.discriminator(real_images, training=True)
+            real_logits = self.discriminator(real_images, training=False)
             # Calculate the generator loss using the fake and real image logits
             g_loss = self.g_loss_fn(gen_img_logits, real_logits)
         # Get the gradients w.r.t the generator loss
@@ -321,9 +321,9 @@ def add_generator_block(old_model):
     upsampling = UpSampling2D()(block_end)
     # bloque 1 deconvolusion
     g_1 = Conv2DTranspose(128, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(block_end)
-    g_1 = Conv2D(32, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2D(64, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
     g_1 = Dropout(0.2)(g_1)
-    g_1 = Conv2D(32, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2D(64, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
     g_1 = Dropout(0.2)(g_1)
     #sumarize
     sumarized_blocks = UpSampling2D()(g_1)
@@ -348,14 +348,14 @@ def define_generator(n_blocks, latent_dim):
     model_list = list()
     # input
     ly0 = Input(shape=latent_dim)
-    featured = Conv2D(128, (1,5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(ly0)
+    #featured = Conv2D(128, (1,5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(ly0)
     # bloque 1 deconvolusion
-    g_1 = Conv2DTranspose(64, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(featured)
-    g_1 = Conv2DTranspose(64, (1, 15), strides=(1, 15), padding='valid', kernel_initializer='he_normal')(g_1)
+    #g_1 = Conv2DTranspose(64, (1, 5), strides=(1, 5), padding='valid', kernel_initializer='he_normal')(ly0)
+    g_1 = UpSampling2D(size=(1,15))(ly0)
     g_1 = Conv2D(32, (1, 15), padding='same', kernel_initializer='he_normal')(g_1)
-    g_1 = Dropout(0.2)(g_1)
+    #g_1 = Dropout(0.2)(g_1)
     g_1 = Conv2D(32, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
-    g_1 = Dropout(0.2)(g_1)
+    #g_1 = Dropout(0.2)(g_1)
     #unir 4 segundos
     #upsample para trabajar texturas en conjunto
     sumarized_blocks = UpSampling2D()(g_1)
