@@ -335,12 +335,12 @@ def add_generator_block(old_model):
     sumarized_blocks = Conv2D(32, (4, 15*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     sumarized_blocks = Conv2D(64, (4, 150*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     for_sum_layer = Conv2D(2, (4, 150*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    out_image = LayerNormalization(axis=2)(for_sum_layer)
+    out_image = LayerNormalization(axis=[1,2])(for_sum_layer)
     # define model
     model1 = Model(old_model.input, out_image)
     # define new output image as the weighted sum of the old and new models
     merged = WeightedSum()([upsampling, for_sum_layer])
-    output_2 = LayerNormalization(axis=2)(merged)
+    output_2 = LayerNormalization(axis=[1,2])(merged)
     # define model
     model2 = Model(old_model.input, output_2)
     return [model1, model2]
@@ -362,7 +362,7 @@ def define_generator(n_blocks, latent_dim):
     #proyectar patron a los siguientes 4 segundos
     g_1 = Conv2DTranspose(4, (2, 1), padding='valid', kernel_initializer='he_normal')(g_1)
     sumarized_blocks = Conv2DTranspose(2, (3, 1), padding='valid', kernel_initializer='he_normal')(g_1)
-    wls = LayerNormalization(axis=2)(sumarized_blocks)
+    wls = LayerNormalization(axis=[1,2])(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
     model_list.append([model, model])
