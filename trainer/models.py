@@ -324,9 +324,9 @@ def add_generator_block(old_model):
     # bloque 1 deconvolusion
     #g_1 = UpSampling2D(size=(1,2))(block_end)
     g_1 = Conv2DTranspose(32, (1, k_size), padding='valid', kernel_initializer='he_normal')(block_end)
-    g_1 = Conv2D(64, (1, 15), padding='same', kernel_initializer='he_normal')(g_1)
+    #g_1 = Conv2D(64, (1, 15), padding='same', kernel_initializer='he_normal')(g_1)
     #g_1 = Dropout(0.2)(g_1)
-    g_1 = Conv2D(64, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2D(64, (1, 150), padding='same', kernel_initializer='he_normal')(g_1)
     #g_1 = Dropout(0.2)(g_1)
     #sumarize
     sumarized_blocks = UpSampling2D()(g_1)
@@ -335,12 +335,12 @@ def add_generator_block(old_model):
     sumarized_blocks = Conv2D(32, (4, 15*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     sumarized_blocks = Conv2D(64, (4, 150*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
     for_sum_layer = Conv2D(2, (4, 150*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    out_image = LayerNormalization(axis=[1, 2, 3])(for_sum_layer)
+    out_image = LayerNormalization(axis=2)(for_sum_layer)
     # define model
     model1 = Model(old_model.input, out_image)
     # define new output image as the weighted sum of the old and new models
     merged = WeightedSum()([upsampling, for_sum_layer])
-    output_2 = LayerNormalization(axis=[1, 2, 3])(merged)
+    output_2 = LayerNormalization(axis=2)(merged)
     # define model
     model2 = Model(old_model.input, output_2)
     return [model1, model2]
@@ -351,28 +351,18 @@ def define_generator(n_blocks, latent_dim):
     model_list = list()
     # input
     ly0 = Input(shape=latent_dim)
-    #featured = Conv2D(128, (1,5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(ly0)
-    # bloque 1 deconvolusion
-    g_1 = Conv2DTranspose(32, (1, 101), padding='valid', kernel_initializer='he_normal')(ly0)
-    g_1 = Conv2DTranspose(32, (1, 151), padding='valid', kernel_initializer='he_normal')(g_1)
-    g_1 = Conv2DTranspose(32, (1, 451), padding='valid', kernel_initializer='he_normal')(g_1)
-    #g_1 = UpSampling2D(size=(1,15))(ly0)
-    g_1 = Conv2D(64, (1, 15), padding='same', kernel_initializer='he_normal')(g_1)
-    #g_1 = Dropout(0.2)(g_1)
-    g_1 = Conv2D(64, (1, 50), padding='same', kernel_initializer='he_normal')(g_1)
-    #g_1 = Dropout(0.2)(g_1)
-    #unir 4 segundos
-    #upsample para trabajar texturas en conjunto
-    sumarized_blocks = UpSampling2D()(g_1)
-    sumarized_blocks = UpSampling2D()(sumarized_blocks)
-    sumarized_blocks = UpSampling2D()(sumarized_blocks)
-    sumarized_blocks = UpSampling2D()(sumarized_blocks)
-    sumarized_blocks = Conv2D(64, (4,4), strides=(4,4), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(64, (1,4), strides=(1,4), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(32, (4,15), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(64, (4,150), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(2, (4,150), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    wls = LayerNormalization(axis=[1, 2, 3])(sumarized_blocks)
+    featured = Conv2D(512, (1,36), padding='valid', kernel_initializer='he_normal')(ly0)
+    # deconvolusion segundo 1
+    g_1 = Conv2DTranspose(256, (1, 16), padding='valid', kernel_initializer='he_normal')(featured)
+    g_1 = Conv2DTranspose(128, (1, 31), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(64, (1, 61), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(32, (1, 121), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(16, (1, 241), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(8, (1, 271), padding='valid', kernel_initializer='he_normal')(g_1)
+    #proyectar patron a los siguientes 4 segundos
+    g_1 = Conv2DTranspose(4, (2, 1), padding='valid', kernel_initializer='he_normal')(g_1)
+    sumarized_blocks = Conv2DTranspose(2, (3, 1), padding='valid', kernel_initializer='he_normal')(g_1)
+    wls = LayerNormalization(axis=2)(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
     model_list.append([model, model])
@@ -442,7 +432,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, latent_dim):
-    resume_models=[True, False, False, False, False, False, False]
+    resume_models=[False, False, False, False, False, False, False]
     dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models
