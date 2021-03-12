@@ -287,9 +287,10 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     # conv 1x1
     featured_block = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
     # convolusion block 1
-    d_1 = Conv2D(512, (1, 5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(featured_block)
-    d_1 = Conv2D(512, (1, 5), strides=(1,5), padding='valid', kernel_initializer='he_normal')(d_1)
-    d_1 = Conv2D(512, (4, 1), strides=(4,1), padding='valid', kernel_initializer='he_normal')(d_1)
+    d_1 = Conv2D(128, (1, 151), padding='valid', kernel_initializer='he_normal')(featured_block)
+    d_1 = Conv2D(128, (1, 201), padding='valid', kernel_initializer='he_normal')(d_1)
+    d_1 = Conv2D(128, (1, 301), padding='valid', kernel_initializer='he_normal')(d_1)
+    d_1 = Conv2D(128, (4, 1), padding='valid', kernel_initializer='he_normal')(d_1)
     d_1 = Dense(128)(d_1)
     d_1 = Dropout(0.2)(d_1)
     d_1 = SoftRectifier()(d_1)
