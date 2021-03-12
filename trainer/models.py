@@ -354,12 +354,16 @@ def define_generator(n_blocks, latent_dim):
     featured = Conv2D(512, (1,36), padding='valid', kernel_initializer='he_normal')(ly0)
     # deconvolusion segundo 1
     g_1 = Conv2DTranspose(256, (1, 16), padding='valid', kernel_initializer='he_normal')(featured)
-    g_1 = Conv2DTranspose(64, (1, 31), padding='valid', kernel_initializer='he_normal')(g_1)
-    g_1 = Conv2DTranspose(32, (1, 61), padding='valid', kernel_initializer='he_normal')(g_1)
-    g_1 = Conv2DTranspose(8, (1, 121), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(128, (1, 31), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(64, (1, 61), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(32, (1, 121), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(16, (1, 241), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(8, (1, 271), padding='valid', kernel_initializer='he_normal')(g_1)
     #proyectar patron a los siguientes 4 segundos
-    g_1 = Conv2DTranspose(4, (2, 241), padding='valid', kernel_initializer='he_normal')(g_1)
-    sumarized_blocks = Conv2DTranspose(2, (3, 271), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(4, (2, 1), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(2, (3, 1), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2D(64, (1, 150), padding='same', kernel_initializer='he_normal')(g_1)
+    sumarized_blocks = Conv2D(2, (1, 150), padding='same', kernel_initializer='he_normal')(g_1)
     wls = LayerNormalization(axis=[1,2])(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
