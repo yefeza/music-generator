@@ -357,18 +357,19 @@ def define_generator(n_blocks, latent_dim):
     featured = Conv2DTranspose(128, (1, 31), padding='valid', kernel_initializer='he_normal')(featured)
     featured = Conv2DTranspose(128, (1, 61), padding='valid', kernel_initializer='he_normal')(featured)
     featured = Conv2DTranspose(128, (1, 121), padding='valid', kernel_initializer='he_normal')(featured)
+    featured = Conv2DTranspose(128, (1, 241), padding='valid', kernel_initializer='he_normal')(featured)
     # deconvolusion segundo 1
-    g_1 = Conv2DTranspose(128, (1, 241), padding='valid', kernel_initializer='he_normal')(featured)
-    g_1 = Conv2DTranspose(128, (1, 271), padding='valid', kernel_initializer='he_normal')(g_1)
+    #g_1 = Conv2DTranspose(128, (1, 241), padding='valid', kernel_initializer='he_normal')(featured)
+    g_1 = Conv2DTranspose(256, (1, 271), padding='valid', kernel_initializer='he_normal')(featured)
     # deconvolusion segundo 2
-    g_2 = Conv2DTranspose(128, (1, 241), padding='valid', kernel_initializer='he_normal')(featured)
-    g_2 = Conv2DTranspose(128, (1, 271), padding='valid', kernel_initializer='he_normal')(g_2)
+    #g_2 = Conv2DTranspose(128, (1, 241), padding='valid', kernel_initializer='he_normal')(featured)
+    g_2 = Conv2DTranspose(256, (1, 271), padding='valid', kernel_initializer='he_normal')(featured)
     # deconvolusion segundo 3
-    g_3 = Conv2DTranspose(128, (1, 241), padding='valid', kernel_initializer='he_normal')(featured)
-    g_3 = Conv2DTranspose(128, (1, 271), padding='valid', kernel_initializer='he_normal')(g_3)
+    #g_3 = Conv2DTranspose(128, (1, 241), padding='valid', kernel_initializer='he_normal')(featured)
+    g_3 = Conv2DTranspose(256, (1, 271), padding='valid', kernel_initializer='he_normal')(featured)
     # deconvolusion segundo 4
-    g_4 = Conv2DTranspose(128, (1, 241), padding='valid', kernel_initializer='he_normal')(featured)
-    g_4 = Conv2DTranspose(128, (1, 271), padding='valid', kernel_initializer='he_normal')(g_4)
+    #g_4 = Conv2DTranspose(128, (1, 241), padding='valid', kernel_initializer='he_normal')(featured)
+    g_4 = Conv2DTranspose(256, (1, 271), padding='valid', kernel_initializer='he_normal')(featured)
     #proyectar patron a los siguientes 4 segundos
     #g_1 = Conv2DTranspose(64, (2, 241), padding='valid', kernel_initializer='he_normal')(g_1)
     #g_1 = Conv2DTranspose(64, (3, 271), padding='valid', kernel_initializer='he_normal')(g_1)
