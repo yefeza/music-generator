@@ -363,8 +363,8 @@ def define_generator(n_blocks, latent_dim):
     #g_1 = Conv2D(64, (1, 150), padding='same', kernel_initializer='he_normal')(g_1)
     #g_1 = Conv2D(64, (1, 150), padding='same', kernel_initializer='he_normal')(g_1)
     #proyectar patron a los siguientes 4 segundos
-    g_1 = Conv2DTranspose(512, (2, 241), padding='valid', kernel_initializer='he_normal')(g_1)
-    g_1 = Conv2DTranspose(512, (3, 271), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(64, (2, 241), padding='valid', kernel_initializer='he_normal')(g_1)
+    g_1 = Conv2DTranspose(64, (3, 271), padding='valid', kernel_initializer='he_normal')(g_1)
     #g_1 = Conv2D(64, (4, 150), padding='same', kernel_initializer='he_normal')(g_1)
     sumarized_blocks = Dense(2)(g_1)
     wls = LayerNormalization(axis=[1,2])(sumarized_blocks)
