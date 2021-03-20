@@ -385,7 +385,7 @@ def define_generator(n_blocks, latent_dim):
     #g_1 = Conv2DTranspose(64, (2, 241), padding='valid', kernel_initializer='he_normal')(g_1)
     #g_1 = Conv2DTranspose(64, (3, 271), padding='valid', kernel_initializer='he_normal')(g_1)
     #g_1 = Conv2D(64, (4, 150), padding='same', kernel_initializer='he_normal')(g_1)
-    sumarized_blocks=Concatenate()([g_1,g_2,g_3,g_4])
+    sumarized_blocks=Concatenate(axis=1)([g_1,g_2,g_3,g_4])
     sumarized_blocks = Dense(2)(sumarized_blocks)
     wls = LayerNormalization(axis=[1,2])(sumarized_blocks)
     model = Model(ly0, wls)
