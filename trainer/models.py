@@ -287,16 +287,15 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     # conv 1x1
     featured_block = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
     # convolusion block 1
-    d_1 = Conv2D(32, (1, 151), padding='valid', kernel_initializer='he_normal')(featured_block)
-    d_1 = Conv2D(32, (1, 201), padding='valid', kernel_initializer='he_normal')(d_1)
-    d_1 = Conv2D(32, (1, 301), padding='valid', kernel_initializer='he_normal')(d_1)
-    d_1 = Conv2D(32, (4, 1), padding='valid', kernel_initializer='he_normal')(d_1)
-    #d_1 = Dense(128)(d_1)
-    d_1 = Dropout(0.2)(d_1)
+    d_1 = Conv2D(64, (1, 151), padding='valid', kernel_initializer='he_normal')(featured_block)
+    d_1 = Conv2D(64, (1, 201), padding='valid', kernel_initializer='he_normal')(d_1)
+    d_1 = Conv2D(64, (1, 301), padding='valid', kernel_initializer='he_normal')(d_1)
     d_1 = SoftRectifier()(d_1)
-    d = MinibatchStdDev()(d_1)
-    d = Flatten()(d)
-    d = Dense(1)(d)
+    d_1 = MinibatchStdDev()(d_1)
+    d_1 = Conv2D(64, (2, 16), padding='valid', kernel_initializer='he_normal')(d_1)
+    d_1 = Conv2D(64, (2, 36), padding='valid', kernel_initializer='he_normal')(d_1)
+    d_1 = Conv2D(64, (3, 50), padding='valid', kernel_initializer='he_normal')(d_1)
+    d = Dense(1)(d_1)
     out_class = StaticOptTanh()(d)
     # define model
     model_comp = Model(in_image, out_class)
@@ -352,29 +351,21 @@ def define_generator(n_blocks, latent_dim):
     model_list = list()
     # input
     ly0 = Input(shape=latent_dim)
-    featured = Conv2D(1024, (1,36), padding='valid', kernel_initializer='he_normal')(ly0)
-    featured = Conv2DTranspose(128, (1, 16), padding='valid', kernel_initializer='he_normal')(featured)
-    featured = Conv2DTranspose(128, (1, 31), padding='valid', kernel_initializer='he_normal')(featured)
-    featured = Conv2DTranspose(128, (1, 61), padding='valid', kernel_initializer='he_normal')(featured)
-    featured = Conv2DTranspose(128, (1, 121), padding='valid', kernel_initializer='he_normal')(featured)
-    featured = Conv2DTranspose(128, (1, 241), padding='valid', kernel_initializer='he_normal')(featured)
-    # deconvolusion segundo 1
-    #g_1 = Conv2DTranspose(128, (1, 241), padding='valid', kernel_initializer='he_normal')(featured)
-    g_1 = Conv2DTranspose(256, (1, 271), padding='valid', kernel_initializer='he_normal')(featured)
+    s_1 = Conv2DTranspose(128, (1, 51), padding='valid', kernel_initializer='he_normal')(ly0)
+    s_1 = Conv2DTranspose(128, (1, 101), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(128, (1, 201), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(128, (1, 351), padding='valid', kernel_initializer='he_normal')(s_1)
     # deconvolusion segundo 2
-    #g_2 = Conv2DTranspose(128, (1, 241), padding='valid', kernel_initializer='he_normal')(featured)
-    g_2 = Conv2DTranspose(256, (1, 271), padding='valid', kernel_initializer='he_normal')(featured)
+    s_2 = Conv2D(128, (1, 151), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_2 = Conv2DTranspose(128, (1, 151), padding='valid', kernel_initializer='he_normal')(s_2)
     # deconvolusion segundo 3
-    #g_3 = Conv2DTranspose(128, (1, 241), padding='valid', kernel_initializer='he_normal')(featured)
-    g_3 = Conv2DTranspose(256, (1, 271), padding='valid', kernel_initializer='he_normal')(featured)
+    s_3 = Conv2D(128, (1, 151), padding='valid', kernel_initializer='he_normal')(s_2)
+    s_3 = Conv2DTranspose(128, (1, 151), padding='valid', kernel_initializer='he_normal')(s_3)
     # deconvolusion segundo 4
-    #g_4 = Conv2DTranspose(128, (1, 241), padding='valid', kernel_initializer='he_normal')(featured)
-    g_4 = Conv2DTranspose(256, (1, 271), padding='valid', kernel_initializer='he_normal')(featured)
-    #proyectar patron a los siguientes 4 segundos
-    #g_1 = Conv2DTranspose(64, (2, 241), padding='valid', kernel_initializer='he_normal')(g_1)
-    #g_1 = Conv2DTranspose(64, (3, 271), padding='valid', kernel_initializer='he_normal')(g_1)
-    #g_1 = Conv2D(64, (4, 150), padding='same', kernel_initializer='he_normal')(g_1)
-    sumarized_blocks=Concatenate(axis=1)([g_1,g_2,g_3,g_4])
+    s_4 = Conv2D(128, (1, 151), padding='valid', kernel_initializer='he_normal')(s_3)
+    s_4 = Conv2DTranspose(128, (1, 151), padding='valid', kernel_initializer='he_normal')(s_4)
+    #unir segundos
+    sumarized_blocks=Concatenate(axis=1)([s_1,s_2,s_3,s_4])
     sumarized_blocks = Dense(2)(sumarized_blocks)
     wls = LayerNormalization(axis=[1,2])(sumarized_blocks)
     model = Model(ly0, wls)
@@ -446,7 +437,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, latent_dim):
-    resume_models=[True, False, False, False, False, False, False]
+    resume_models=[False, False, False, False, False, False, False]
     dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models
