@@ -374,6 +374,7 @@ def define_generator(n_blocks, latent_dim):
     s_4 = Conv2DTranspose(64, (1, 151), padding='valid', kernel_initializer='he_normal')(s_4)
     #unir segundos
     sumarized_blocks=Concatenate(axis=1)([s_1,s_2,s_3,s_4])
+    s_4 = Conv2D(128, (4, 50), padding='same', kernel_initializer='he_normal')(s_3)
     sumarized_blocks = Dense(2)(sumarized_blocks)
     wls = LayerNormalization(axis=[1,2])(sumarized_blocks)
     model = Model(ly0, wls)
