@@ -355,9 +355,9 @@ def define_generator(n_blocks, latent_dim):
     s_1 = Conv2DTranspose(256, (1, 51), padding='valid', kernel_initializer='he_normal')(featured)
     s_1 = Conv2DTranspose(256, (1, 101), padding='valid', kernel_initializer='he_normal')(s_1)
     s_1 = Conv2DTranspose(256, (1, 151), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(128, (2, 51), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(64, (2, 101), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(32, (2, 251), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(256, (2, 51), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(256, (2, 101), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(256, (2, 251), padding='valid', kernel_initializer='he_normal')(s_1)
     #unir segundos
     #sumarized_blocks=Concatenate(axis=1)([s_1,s_2,s_3,s_4])
     #sumarized_blocks = Conv2D(128, (4, 50), padding='same', kernel_initializer='he_normal')(s_1)
