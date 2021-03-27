@@ -355,9 +355,9 @@ def define_generator(n_blocks, latent_dim):
     s_1 = Conv2DTranspose(256, (1, 51), padding='valid', kernel_initializer='he_normal')(featured)
     s_1 = Conv2DTranspose(256, (1, 101), padding='valid', kernel_initializer='he_normal')(s_1)
     s_1 = Conv2DTranspose(256, (1, 151), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(256, (2, 51), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(256, (2, 101), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(256, (2, 251), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(256, (1, 201), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(256, (3, 101), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(256, (2, 151), padding='valid', kernel_initializer='he_normal')(s_1)
     #unir segundos
     #sumarized_blocks=Concatenate(axis=1)([s_1,s_2,s_3,s_4])
     #sumarized_blocks = Conv2D(128, (4, 50), padding='same', kernel_initializer='he_normal')(s_1)
@@ -432,7 +432,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, latent_dim):
-    resume_models=[True, False, False, False, False, False, False]
+    resume_models=[False, False, False, False, False, False, False]
     dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models
