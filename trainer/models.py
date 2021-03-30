@@ -136,8 +136,10 @@ class WGAN(keras.Model):
             gen_img_logits = self.discriminator(generated_images, training=False)
             # Get the logits for the real images
             real_logits = self.discriminator(real_images, training=False)
+            #get deliganlayer
+            deli_layer=self.generator.get_layer('delilayer')
             # Calculate the generator loss using the fake and real image logits
-            g_loss = self.g_loss_fn(gen_img_logits, real_logits)
+            g_loss = self.g_loss_fn(gen_img_logits, real_logits, deli_layer.rho)
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
         # Update the weights of the generator using the generator optimizer
@@ -217,6 +219,30 @@ class StaticOptTanh(Layer):
     def get_config(self):
         config = super(StaticOptTanh, self).get_config()
         config.update({"alpha": self.alpha})
+        return config
+
+#DeLiGAN Layer
+class DeliGanLayer(Layer):
+    def __init__(self, latent_dim, batch_size=16, **kwargs):
+        super(DeliGanLayer, self).__init__(**kwargs)
+        miu_init=tf.random_uniform_initializer(-1,1)
+        self.miu = tf.Variable(
+            initial_value=miu_init(shape=(batch_size, latent_dim[-3], latent_dim[-2], latent_dim[-1])), 
+            trainable=True,
+        )
+        rho_init=tf.constant_initializer(0.02)
+        self.rho = tf.Variable(
+            initial_value=rho_init(shape=(batch_size, latent_dim[-3], latent_dim[-2], latent_dim[-1])), 
+            trainable=True,
+        )
+
+    def call(self, inputs):
+        return tf.add(self.miu,tf.mul(inputs,self.rho))
+
+    def get_config(self):
+        config = super(DeliGanLayer, self).get_config()
+        config.update({"miu": self.miu})
+        config.update({"rho": self.rho})
         return config
 
 # agregar bloque a discriminador para escalar las dimensiones
@@ -351,15 +377,17 @@ def define_generator(n_blocks, latent_dim):
     model_list = list()
     # input
     ly0 = Input(shape=latent_dim)
-    featured = Conv2D(512, (1, 15), padding='same', kernel_initializer='he_normal')(ly0)
-    s_1 = Conv2DTranspose(512, (1, 16), padding='valid', kernel_initializer='he_normal')(featured)
-    s_1 = Conv2DTranspose(512, (1, 36), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(512, (1, 101), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(512, (1, 151), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(512, (1, 201), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(512, (1, 151), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(512, (3, 36), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(512, (2, 16), padding='valid', kernel_initializer='he_normal')(s_1)
+    #featured = Conv2D(512, (1, 15), padding='same', kernel_initializer='he_normal')(ly0)
+    featured=DeliGanLayer(latent_dim=latent_dim, name='delilayer')(ly0)
+    s_1 = Conv2DTranspose(128, (1, 16), padding='valid', kernel_initializer='he_normal')(featured)
+    s_1 = Conv2DTranspose(128, (1, 36), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(128, (1, 51), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(128, (1, 151), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(128, (1, 201), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(128, (1, 251), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = UpSampling2D()(s_1)
+    s_1 = UpSampling2D()(s_1)
+    s_1 = Conv2D(128, (1, 751), padding='valid', kernel_initializer='he_normal')(s_1)
     #unir segundos
     #sumarized_blocks=Concatenate(axis=1)([s_1,s_2,s_3,s_4])
     #sumarized_blocks = Conv2D(128, (4, 50), padding='same', kernel_initializer='he_normal')(s_1)
@@ -397,12 +425,13 @@ def generator_loss_fake(fake_logits, real_logits):
     delta_2=tf.math.abs((real_logits+fake_logits))
     return -(((-3+(delta_1/2))*(-((lambda_1*lambda_2)/1000)))+(3*delta_2))
 
-def generator_loss(fake_logits, real_logits):
+def generator_loss(fake_logits, real_logits, rho_values):
     fake_logits=tf.reduce_mean(fake_logits)
     real_logits=tf.reduce_mean(real_logits)
     lamb=(fake_logits-real_logits)
     delta=tf.math.abs(lamb)
-    return (delta/0.2)-(2*tf.math.abs(fake_logits))
+    l2=0.1*tf.reduce_mean(tf.square(1-rho_values))
+    return (delta/0.2)-(2*tf.math.abs(fake_logits))+l2
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
     delta=tf.math.abs(fake_logits-real_logits)
@@ -421,7 +450,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/d_model.h5"
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
-    d_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum})
+    d_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum, 'DeliGanLayer': DeliGanLayer})
     #cargar generador
     gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/g_model.h5"
     local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/g_model.h5"
