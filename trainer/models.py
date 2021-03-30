@@ -432,7 +432,8 @@ def generator_loss(fake_logits, real_logits, rho_values):
     real_logits=tf.reduce_mean(real_logits)
     lamb=(fake_logits-real_logits)
     delta=tf.math.abs(lamb)
-    l2=0.1*tf.reduce_mean(tf.square(1-rho_values))
+    l2=tf.keras.layers.Lambda(lambda x: 0.1*tf.reduce_mean(tf.square(1-x)))(rho_values)
+    #l2=0.1*tf.reduce_mean(tf.square(1-rho_values))
     return (delta/0.2)-(2*tf.math.abs(fake_logits))+l2
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
@@ -536,7 +537,7 @@ class GANMonitor(keras.callbacks.Callback):
                 pred_batch=generar_ejemplo(self.model.generator, "epoch-"+str(epoch+1)+"/" , i+1, None, self.bucket_name, self.latent_dim, self.evaluador, save)
                 pred+=list(pred_batch)
                 gen_shape = self.model.generator.output_shape
-                if ((epoch+1)%10)==0:
+                if ((epoch+1)%2)==0:
                     guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "g_")
                     guardar_checkpoint(self.model.discriminator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "d_")
             save_inception_score(self.model.generator, "epoch-"+str(epoch+1)+"/", self.bucket_name, np.array(pred))
