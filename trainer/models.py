@@ -137,9 +137,9 @@ class WGAN(keras.Model):
             # Get the logits for the real images
             real_logits = self.discriminator(real_images, training=False)
             #get deliganlayer
-            #deli_layer=self.generator.get_layer('delilayer')
+            deli_layer=self.generator.get_layer('delilayer')
             # Calculate the generator loss using the fake and real image logits
-            g_loss = self.g_loss_fn(gen_img_logits, real_logits)
+            g_loss = self.g_loss_fn(gen_img_logits, real_logits, deli_layer.rho)
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
         # Update the weights of the generator using the generator optimizer
@@ -237,7 +237,6 @@ class DeliGanLayer(Layer):
         )
 
     def call(self, inputs):
-        self.add_loss(tf.math.multiply(0.1, tf.reduce_mean(tf.square(tf.math.subtract(1.0,self.rho)))))
         return tf.add(self.miu,tf.math.multiply(inputs,self.rho))
 
     def get_config(self):
@@ -428,13 +427,13 @@ def generator_loss_fake(fake_logits, real_logits):
     delta_2=tf.math.abs((real_logits+fake_logits))
     return -(((-3+(delta_1/2))*(-((lambda_1*lambda_2)/1000)))+(3*delta_2))
 
-def generator_loss(fake_logits, real_logits):
+def generator_loss(fake_logits, real_logits, rho_values):
     fake_logits=tf.reduce_mean(fake_logits)
     real_logits=tf.reduce_mean(real_logits)
     lamb=(fake_logits-real_logits)
     delta=tf.math.abs(lamb)
-    #l2=0.1*tf.reduce_mean(tf.square(1-rho_values))
-    return (delta/0.2)-(2*tf.math.abs(fake_logits))
+    l2=tf.math.multiply(0.1, tf.reduce_mean(tf.square(tf.math.subtract(1.0,rho_values))))
+    return (delta/0.2)-(2*tf.math.abs(fake_logits))+l2
     
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
@@ -539,6 +538,7 @@ class GANMonitor(keras.callbacks.Callback):
                 pred+=list(pred_batch)
                 gen_shape = self.model.generator.output_shape
                 if ((epoch+1)%1)==0:
-                    guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "g_")
-                    guardar_checkpoint(self.model.discriminator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "d_")
+                    pass
+                    #guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "g_")
+                    #guardar_checkpoint(self.model.discriminator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "d_")
             save_inception_score(self.model.generator, "epoch-"+str(epoch+1)+"/", self.bucket_name, np.array(pred))
