@@ -237,7 +237,7 @@ class DeliGanLayer(Layer):
         )
 
     def call(self, inputs):
-        return tf.add(self.miu,tf.mul(inputs,self.rho))
+        return tf.add(self.miu,tf.math.multiply(inputs,self.rho))
 
     def get_config(self):
         config = super(DeliGanLayer, self).get_config()
