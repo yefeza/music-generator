@@ -237,7 +237,7 @@ class DeliGanLayer(Layer):
         )
 
     def call(self, inputs):
-        self.add_loss(tf.math.multiply(0.1, tf.reduce_mean(tf.square(1.0-self.rho))))
+        self.add_loss(lambda: tf.math.multiply(0.1, tf.reduce_mean(tf.square(1.0-self.rho))))
         return tf.add(self.miu,tf.math.multiply(inputs,self.rho))
 
     def get_config(self):
