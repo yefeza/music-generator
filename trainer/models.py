@@ -139,7 +139,7 @@ class WGAN(keras.Model):
             #get deliganlayer
             deli_layer=self.generator.get_layer('delilayer')
             # Calculate the generator loss using the fake and real image logits
-            g_loss = self.g_loss_fn(gen_img_logits, real_logits, deli_layer.rho)
+            g_loss = self.g_loss_fn(gen_img_logits, real_logits, deli_layer.rho.numpy())
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
         # Update the weights of the generator using the generator optimizer
@@ -387,7 +387,9 @@ def define_generator(n_blocks, latent_dim):
     s_1 = Conv2DTranspose(128, (1, 251), padding='valid', kernel_initializer='he_normal')(s_1)
     s_1 = UpSampling2D()(s_1)
     s_1 = UpSampling2D(size=(2,1))(s_1)
-    s_1 = Conv2D(128, (1, 751), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2D(32, (1, 451), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2D(64, (1, 251), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2D(128, (1, 51), padding='valid', kernel_initializer='he_normal')(s_1)
     #unir segundos
     #sumarized_blocks=Concatenate(axis=1)([s_1,s_2,s_3,s_4])
     #sumarized_blocks = Conv2D(128, (4, 50), padding='same', kernel_initializer='he_normal')(s_1)
@@ -534,7 +536,7 @@ class GANMonitor(keras.callbacks.Callback):
                 pred_batch=generar_ejemplo(self.model.generator, "epoch-"+str(epoch+1)+"/" , i+1, None, self.bucket_name, self.latent_dim, self.evaluador, save)
                 pred+=list(pred_batch)
                 gen_shape = self.model.generator.output_shape
-                if ((epoch+1)%50)==0:
+                if ((epoch+1)%10)==0:
                     guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "g_")
                     guardar_checkpoint(self.model.discriminator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "d_")
             save_inception_score(self.model.generator, "epoch-"+str(epoch+1)+"/", self.bucket_name, np.array(pred))
