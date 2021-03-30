@@ -432,9 +432,8 @@ def generator_loss(fake_logits, real_logits, rho_values):
     real_logits=tf.reduce_mean(real_logits)
     lamb=(fake_logits-real_logits)
     delta=tf.math.abs(lamb)
-    l2=tf.keras.layers.Lambda(lambda x: 0.1*tf.reduce_mean(tf.square(1-x)))(rho_values)
     #l2=0.1*tf.reduce_mean(tf.square(1-rho_values))
-    return (delta/0.2)-(2*tf.math.abs(fake_logits))+l2
+    return tf.keras.layers.Lambda(lambda x: (delta/0.2)-(2*tf.math.abs(fake_logits))+ (0.1*tf.reduce_mean(tf.square(1-x))))(rho_values)
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
     delta=tf.math.abs(fake_logits-real_logits)
