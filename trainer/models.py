@@ -241,8 +241,8 @@ class DeliGanLayer(Layer):
 
     def get_config(self):
         config = super(DeliGanLayer, self).get_config()
-        #config.update({"miu": self.miu})
-        #config.update({"rho": self.rho})
+        config.update({"miu": self.miu.numpy()})
+        config.update({"rho": self.rho.numpy()})
         return config
 
 # agregar bloque a discriminador para escalar las dimensiones
@@ -387,9 +387,10 @@ def define_generator(n_blocks, latent_dim):
     s_1 = Conv2DTranspose(128, (1, 251), padding='valid', kernel_initializer='he_normal')(s_1)
     s_1 = UpSampling2D()(s_1)
     s_1 = UpSampling2D(size=(2,1))(s_1)
+    s_1 = UpSampling2D(size=(2,1))(s_1)
     s_1 = Conv2D(32, (1, 451), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2D(64, (1, 251), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2D(128, (1, 51), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2D(64, (2, 251), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2D(128, (4, 51), padding='valid', kernel_initializer='he_normal')(s_1)
     #unir segundos
     #sumarized_blocks=Concatenate(axis=1)([s_1,s_2,s_3,s_4])
     #sumarized_blocks = Conv2D(128, (4, 50), padding='same', kernel_initializer='he_normal')(s_1)
