@@ -226,13 +226,15 @@ class DeliGanLayer(Layer):
     def __init__(self, latent_dim, batch_size=16, **kwargs):
         super(DeliGanLayer, self).__init__(**kwargs)
         miu_init=tf.random_uniform_initializer(-1,1)
-        self.miu = tf.Variable(
-            initial_value=miu_init(shape=(batch_size, latent_dim[-3], latent_dim[-2], latent_dim[-1])), 
+        self.miu = self.add_weight(
+            shape=(batch_size, latent_dim[-3], latent_dim[-2], latent_dim[-1]),
+            initializer=miu_init, 
             trainable=True,
         )
         rho_init=tf.constant_initializer(0.02)
-        self.rho = tf.Variable(
-            initial_value=rho_init(shape=(batch_size, latent_dim[-3], latent_dim[-2], latent_dim[-1])), 
+        self.rho = self.add_weight(
+            shape=(batch_size, latent_dim[-3], latent_dim[-2], latent_dim[-1]),
+            initializer=rho_init, 
             trainable=True,
         )
 
