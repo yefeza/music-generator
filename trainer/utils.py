@@ -37,7 +37,7 @@ def calculate_inception_score(p_yx, eps=1E-16):
 
 def generar_ejemplo(g_model, prefix, iter_num, job_dir, bucket_name, latent_dim, evaluador, save):
     gen_shape = g_model.output_shape
-    random_latent_vectors = tf.random.normal(shape=(10, latent_dim[0], latent_dim[1], latent_dim[2]))
+    random_latent_vectors = tf.random.normal(shape=(16, latent_dim[0], latent_dim[1], latent_dim[2]))
     gen_auds = g_model(random_latent_vectors, training=False)
     if save:
         signal_gen = gen_auds[random.randrange(0,9)].numpy()
