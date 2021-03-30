@@ -40,7 +40,7 @@ def generar_ejemplo(g_model, prefix, iter_num, job_dir, bucket_name, latent_dim,
     random_latent_vectors = tf.random.normal(shape=(16, latent_dim[0], latent_dim[1], latent_dim[2]))
     gen_auds = g_model(random_latent_vectors, training=False)
     if save:
-        signal_gen = gen_auds[random.randrange(0,9)].numpy()
+        signal_gen = gen_auds[random.randrange(0,15)].numpy()
         signal_gen = np.reshape(signal_gen, ((gen_shape[-3]*gen_shape[-2]), 2))
         signal_gen /= np.max(np.abs(signal_gen), axis=0)
         local_path = "local_gen/" + \
