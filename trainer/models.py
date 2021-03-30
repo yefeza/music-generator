@@ -139,7 +139,7 @@ class WGAN(keras.Model):
             #get deliganlayer
             deli_layer=self.generator.get_layer('delilayer')
             # Calculate the generator loss using the fake and real image logits
-            g_loss = self.g_loss_fn(gen_img_logits, real_logits, deli_layer.rho.numpy())
+            g_loss = self.g_loss_fn(gen_img_logits, real_logits, deli_layer.rho)
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
         # Update the weights of the generator using the generator optimizer
