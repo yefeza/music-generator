@@ -241,8 +241,8 @@ class DeliGanLayer(Layer):
 
     def get_config(self):
         config = super(DeliGanLayer, self).get_config()
-        config.update({"miu": self.miu})
-        config.update({"rho": self.rho})
+        #config.update({"miu": self.miu})
+        #config.update({"rho": self.rho})
         return config
 
 # agregar bloque a discriminador para escalar las dimensiones
@@ -538,7 +538,6 @@ class GANMonitor(keras.callbacks.Callback):
                 pred+=list(pred_batch)
                 gen_shape = self.model.generator.output_shape
                 if ((epoch+1)%1)==0:
-                    pass
-                    #guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "g_")
-                    #guardar_checkpoint(self.model.discriminator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "d_")
+                    guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "g_")
+                    guardar_checkpoint(self.model.discriminator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "d_")
             save_inception_score(self.model.generator, "epoch-"+str(epoch+1)+"/", self.bucket_name, np.array(pred))
