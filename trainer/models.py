@@ -384,18 +384,18 @@ def define_generator(n_blocks, latent_dim):
     ly0 = Input(shape=latent_dim)
     #featured = Conv2D(512, (1, 15), padding='same', kernel_initializer='he_normal')(ly0)
     featured=DeliGanLayer(latent_dim=latent_dim, name='delilayer')(ly0)
-    s_1 = Conv2DTranspose(128, (1, 16), padding='valid', kernel_initializer='he_normal')(featured)
-    s_1 = Conv2DTranspose(128, (1, 36), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(128, (1, 51), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(128, (1, 151), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(128, (1, 201), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(128, (1, 251), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(64, (1, 16), padding='valid', kernel_initializer='he_normal')(featured)
+    s_1 = Conv2DTranspose(64, (1, 36), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(64, (1, 51), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(64, (1, 151), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(64, (1, 201), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2DTranspose(64, (1, 251), padding='valid', kernel_initializer='he_normal')(s_1)
     s_1 = UpSampling2D()(s_1)
     s_1 = UpSampling2D(size=(2,1))(s_1)
     s_1 = UpSampling2D(size=(2,1))(s_1)
-    s_1 = Conv2D(32, (1, 451), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2D(64, (2, 251), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2D(128, (4, 51), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2D(16, (1, 451), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2D(32, (2, 251), padding='valid', kernel_initializer='he_normal')(s_1)
+    s_1 = Conv2D(64, (4, 51), padding='valid', kernel_initializer='he_normal')(s_1)
     #unir segundos
     #sumarized_blocks=Concatenate(axis=1)([s_1,s_2,s_3,s_4])
     #sumarized_blocks = Conv2D(128, (4, 50), padding='same', kernel_initializer='he_normal')(s_1)
@@ -472,7 +472,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, latent_dim):
-    resume_models=[True, False, False, False, False, False, False]
+    resume_models=[False, False, False, False, False, False, False]
     dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models
@@ -543,7 +543,7 @@ class GANMonitor(keras.callbacks.Callback):
                 pred_batch=generar_ejemplo(self.model.generator, "epoch-"+str(epoch+1)+"/" , i+1, None, self.bucket_name, self.latent_dim, self.evaluador, save)
                 pred+=list(pred_batch)
                 gen_shape = self.model.generator.output_shape
-            if ((epoch+1)%1)==0:
+            if ((epoch+1)%10)==0:
                 guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "g_")
                 guardar_checkpoint(self.model.discriminator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "d_")
             save_inception_score(self.model.generator, "epoch-"+str(epoch+1)+"/", self.bucket_name, np.array(pred))
