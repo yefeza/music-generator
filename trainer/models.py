@@ -465,7 +465,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
-    g_model=keras.models.load_model(local_file_name)
+    g_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum, 'DeliGanLayer': DeliGanLayer})
     return g_model, d_model
 
 # define composite models for training generators via discriminators
