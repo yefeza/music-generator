@@ -230,12 +230,14 @@ class DeliGanLayer(Layer):
             shape=(batch_size, latent_dim[-3], latent_dim[-2], latent_dim[-1]),
             initializer=miu_init, 
             trainable=True,
+            name="miu"
         )
         rho_init=tf.constant_initializer(0.02)
         self.rho = self.add_weight(
             shape=(batch_size, latent_dim[-3], latent_dim[-2], latent_dim[-1]),
             initializer=rho_init, 
             trainable=True,
+            name="rho"
         )
 
     def call(self, inputs):
@@ -243,8 +245,8 @@ class DeliGanLayer(Layer):
 
     def get_config(self):
         config = super(DeliGanLayer, self).get_config()
-        config.update({"miu": self.miu.numpy()})
-        config.update({"rho": self.rho.numpy()})
+        #config.update({"miu": self.miu.numpy()})
+        #config.update({"rho": self.rho.numpy()})
         return config
 
 # agregar bloque a discriminador para escalar las dimensiones
