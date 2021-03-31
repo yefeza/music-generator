@@ -223,18 +223,19 @@ class StaticOptTanh(Layer):
 
 #DeLiGAN Layer
 class DeliGanLayer(Layer):
-    def __init__(self, latent_dim, batch_size=16, **kwargs):
+    def __init__(self, latent_dim=(1,50,1), batch_size=16, **kwargs):
         super(DeliGanLayer, self).__init__(**kwargs)
+        self.latent_dim=latent_dim
         miu_init=tf.random_uniform_initializer(-1,1)
         self.miu = self.add_weight(
-            shape=(batch_size, latent_dim[-3], latent_dim[-2], latent_dim[-1]),
+            shape=(batch_size, self.latent_dim[-3], self.latent_dim[-2], self.latent_dim[-1]),
             initializer=miu_init, 
             trainable=True,
             name="miu"
         )
         rho_init=tf.constant_initializer(0.02)
         self.rho = self.add_weight(
-            shape=(batch_size, latent_dim[-3], latent_dim[-2], latent_dim[-1]),
+            shape=(batch_size, self.latent_dim[-3], self.latent_dim[-2], self.latent_dim[-1]),
             initializer=rho_init, 
             trainable=True,
             name="rho"
@@ -245,7 +246,7 @@ class DeliGanLayer(Layer):
 
     def get_config(self):
         config = super(DeliGanLayer, self).get_config()
-        #config.update({"miu": self.miu.numpy()})
+        config.update({"latent_dim": self.latent_dim})
         #config.update({"rho": self.rho.numpy()})
         return config
 
@@ -471,7 +472,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, latent_dim):
-    resume_models=[True, False, False, False, False, False, False]
+    resume_models=[False, False, False, False, False, False, False]
     dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models
