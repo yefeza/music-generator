@@ -264,7 +264,7 @@ class DecisionLayer(Layer):
         output_distribution=tf.reshape(output_distribution, shape=(shape_data[0], self.output_size, 1, 1, 1))
         input_data=inputs[0]
         input_data=tf.reshape(input_data, shape=(shape_data[0], 1, shape_data[1], shape_data[2], shape_data[3]))
-        input_data=tf.tile(input_data, shape=(1, self.output_size, 1, 1, 1))
+        input_data=tf.tile(input_data, [1, self.output_size, 1, 1, 1])
         return tf.math.multiply(input_data, output_distribution)
 
     def get_config(self):
