@@ -279,7 +279,7 @@ class SlicerLayer(Layer):
         self.index_work=index_work
 
     def call(self, inputs):
-        return inputs[:,self.index_work]
+        return inputs[0][:,self.index_work]
 
     def get_config(self):
         config = super(SlicerLayer, self).get_config()
