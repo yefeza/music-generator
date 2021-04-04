@@ -137,9 +137,9 @@ class WGAN(keras.Model):
             # Get the logits for the real images
             real_logits = self.discriminator(real_images, training=False)
             #get deliganlayer
-            deli_layer=self.generator.get_layer('delilayer')
+            #deli_layer=self.generator.get_layer('delilayer')
             # Calculate the generator loss using the fake and real image logits
-            g_loss = self.g_loss_fn(gen_img_logits, real_logits, deli_layer.rho)
+            g_loss = self.g_loss_fn(gen_img_logits, real_logits)
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
         # Update the weights of the generator using the generator optimizer
@@ -248,6 +248,42 @@ class DeliGanLayer(Layer):
         config = super(DeliGanLayer, self).get_config()
         config.update({"latent_dim": self.latent_dim})
         #config.update({"rho": self.rho.numpy()})
+        return config
+
+#Decision Layer
+class DecisionLayer(Layer):
+    def __init__(self, output_size=9, **kwargs):
+        super(DecisionLayer, self).__init__(**kwargs)
+        self.output_size=output_size
+
+    def call(self, inputs):
+        # only supports two inputs: values and index distribution of valid output
+        assert (len(inputs) == 2)
+        output_distribution=inputs[1]
+        shape_data=tf.shape(inputs[0])
+        output_distribution=tf.reshape(output_distribution, shape=(shape_data[0], self.output_size, 1, 1, 1))
+        input_data=inputs[0]
+        input_data=tf.reshape(input_data, shape=(shape_data[0], 1, shape_data[1], shape_data[2], shape_data[3]))
+        input_data=tf.tile(input_data, shape=(1, self.output_size, 1, 1, 1))
+        return tf.math.multiply(input_data, output_distribution)
+
+    def get_config(self):
+        config = super(DecisionLayer, self).get_config()
+        config.update({"output_size": self.output_size})
+        return config
+
+#Slicer Layer
+class SlicerLayer(Layer):
+    def __init__(self, index_work, **kwargs):
+        super(SlicerLayer, self).__init__(**kwargs)
+        self.index_work=index_work
+
+    def call(self, inputs):
+        return inputs[:,self.index_work]
+
+    def get_config(self):
+        config = super(SlicerLayer, self).get_config()
+        config.update({"index_work": self.index_work})
         return config
 
 # agregar bloque a discriminador para escalar las dimensiones
@@ -382,24 +418,71 @@ def define_generator(n_blocks, latent_dim):
     model_list = list()
     # input
     ly0 = Input(shape=latent_dim)
-    #featured = Conv2D(512, (1, 15), padding='same', kernel_initializer='he_normal')(ly0)
-    featured=DeliGanLayer(latent_dim=latent_dim, name='delilayer')(ly0)
-    s_1 = Conv2DTranspose(64, (1, 16), padding='valid', kernel_initializer='he_normal')(featured)
-    s_1 = Conv2DTranspose(64, (1, 36), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(64, (1, 51), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(64, (1, 151), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(64, (1, 201), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2DTranspose(64, (1, 251), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = UpSampling2D()(s_1)
-    s_1 = UpSampling2D(size=(2,1))(s_1)
-    s_1 = UpSampling2D(size=(2,1))(s_1)
-    s_1 = Conv2D(16, (1, 451), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2D(32, (2, 251), padding='valid', kernel_initializer='he_normal')(s_1)
-    s_1 = Conv2D(64, (4, 51), padding='valid', kernel_initializer='he_normal')(s_1)
-    #unir segundos
-    #sumarized_blocks=Concatenate(axis=1)([s_1,s_2,s_3,s_4])
-    #sumarized_blocks = Conv2D(128, (4, 50), padding='same', kernel_initializer='he_normal')(s_1)
-    sumarized_blocks = Dense(2)(s_1)
+    featured = Conv2D(512, (1, 15), padding='same', kernel_initializer='he_normal')(ly0)
+    #featured=DeliGanLayer(latent_dim=latent_dim, name='delilayer')(ly0)
+    g_init = Conv2DTranspose(32, (1, 16), padding='valid', kernel_initializer='he_normal')(featured)
+    g_init = Conv2DTranspose(32, (1, 36), padding='valid', kernel_initializer='he_normal')(g_init)
+    g_init = Conv2DTranspose(32, (1, 51), padding='valid', kernel_initializer='he_normal')(g_init)
+    g_init = Conv2DTranspose(32, (1, 101), padding='valid', kernel_initializer='he_normal')(g_init)
+    g_init = Conv2DTranspose(32, (1, 151), padding='valid', kernel_initializer='he_normal')(g_init)
+    #index selector block
+    i_sel=Conv2D(32, (1,11), padding='valid', kernel_initializer='he_normal')(g_init)
+    i_sel=Conv2D(32, (1,36), padding='valid', kernel_initializer='he_normal')(i_sel)
+    i_sel=Flatten()(i_sel)
+    i_sel=Dense(4, activation='sigmoid')(i_sel)
+    #decision layer
+    des_ly=DecisionLayer(output_size=4)([g_init, i_sel])
+    #rama 1
+    b_1 = SlicerLayer(index_work=0)(des_ly)
+    b_1 = Conv2DTranspose(16, (1, 201), padding='valid', kernel_initializer='he_normal')(b_1)
+    b_1 = Conv2DTranspose(16, (1, 251), padding='valid', kernel_initializer='he_normal')(b_1)
+    #rama 2
+    b_2 = SlicerLayer(index_work=1)(des_ly)
+    b_2 = Conv2DTranspose(16, (1, 201), padding='valid', kernel_initializer='he_normal')(b_2)
+    b_2 = Conv2DTranspose(16, (1, 251), padding='valid', kernel_initializer='he_normal')(b_2)
+    #rama 1
+    b_3 = SlicerLayer(index_work=2)(des_ly)
+    b_3 = Conv2DTranspose(16, (1, 201), padding='valid', kernel_initializer='he_normal')(b_3)
+    b_3 = Conv2DTranspose(16, (1, 251), padding='valid', kernel_initializer='he_normal')(b_3)
+    #rama 4
+    b_4 = SlicerLayer(index_work=3)(des_ly)
+    b_4 = Conv2DTranspose(16, (1, 201), padding='valid', kernel_initializer='he_normal')(b_4)
+    b_4 = Conv2DTranspose(16, (1, 251), padding='valid', kernel_initializer='he_normal')(b_4)
+    #sumar ramas
+    merged_layers=Add()([b_1, b_2, b_3, b_4])
+    #escalar en la otra direccion
+    upsampling = UpSampling2D()(merged_layers)
+    upsampling = UpSampling2D(size=(2,1))(upsampling)
+    upsampling = UpSampling2D(size=(2,1))(upsampling)
+    #index selector block 2
+    i_sel_2=Conv2D(16, (4,11), padding='valid', kernel_initializer='he_normal')(upsampling)
+    i_sel_2=Conv2D(16, (5,36), padding='valid', kernel_initializer='he_normal')(i_sel_2)
+    i_sel_2=Flatten()(i_sel_2)
+    i_sel_2=Dense(4, activation='sigmoid')(i_sel_2)
+    #decision layer
+    des2_ly=DecisionLayer(output_size=4)([upsampling, i_sel_2])
+    #rama 1
+    b2_1 = SlicerLayer(index_work=0)(des2_ly)
+    b2_1 = Conv2D(16, (2, 451), padding='valid', kernel_initializer='he_normal')(b2_1)
+    b2_1 = Conv2D(16, (4, 301), padding='valid', kernel_initializer='he_normal')(b2_1)
+    b2_1 = Dense(2)(b2_1)
+    #rama 2
+    b2_2 = SlicerLayer(index_work=1)(des2_ly)
+    b2_2 = Conv2D(16, (2, 451), padding='valid', kernel_initializer='he_normal')(b2_2)
+    b2_2 = Conv2D(16, (4, 301), padding='valid', kernel_initializer='he_normal')(b2_2)
+    b2_2 = Dense(2)(b2_2)
+    #rama 3
+    b2_3 = SlicerLayer(index_work=2)(des2_ly)
+    b2_3 = Conv2D(16, (2, 451), padding='valid', kernel_initializer='he_normal')(b2_3)
+    b2_3 = Conv2D(16, (4, 301), padding='valid', kernel_initializer='he_normal')(b2_3)
+    b2_3 = Dense(2)(b2_3)
+    #rama 4
+    b2_4 = SlicerLayer(index_work=3)(des2_ly)
+    b2_4 = Conv2D(16, (2, 451), padding='valid', kernel_initializer='he_normal')(b2_4)
+    b2_4 = Conv2D(16, (4, 301), padding='valid', kernel_initializer='he_normal')(b2_4)
+    b2_4 = Dense(2)(b2_4)
+    #unir ramas
+    sumarized_blocks=Add()([b2_1,b2_2,b2_3,b2_4])
     wls = LayerNormalization(axis=[1,2])(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
@@ -433,13 +516,13 @@ def generator_loss_fake(fake_logits, real_logits):
     delta_2=tf.math.abs((real_logits+fake_logits))
     return -(((-3+(delta_1/2))*(-((lambda_1*lambda_2)/1000)))+(3*delta_2))
 
-def generator_loss(fake_logits, real_logits, rho_values):
+def generator_loss(fake_logits, real_logits):
     fake_logits=tf.reduce_mean(fake_logits)
     real_logits=tf.reduce_mean(real_logits)
     lamb=(fake_logits-real_logits)
     delta=tf.math.abs(lamb)
-    l2=tf.math.multiply(0.1, tf.reduce_mean(tf.square(tf.math.subtract(1.0,rho_values))))
-    return (delta/0.2)-(2*tf.math.abs(fake_logits))+l2
+    #l2=tf.math.multiply(0.1, tf.reduce_mean(tf.square(tf.math.subtract(1.0,rho_values))))
+    return (delta/0.2)-(2*tf.math.abs(fake_logits))
     
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
@@ -466,7 +549,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
-    g_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum, 'DeliGanLayer': DeliGanLayer})
+    g_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum, 'DeliGanLayer': DeliGanLayer, 'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer})
     return g_model, d_model
 
 # define composite models for training generators via discriminators
