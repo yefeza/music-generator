@@ -267,6 +267,9 @@ class DecisionLayer(Layer):
         input_data=tf.tile(input_data, [1, self.output_size, 1, 1, 1])
         return tf.math.multiply(input_data, output_distribution)
 
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0], self.output_size, input_shape[1], input_shape[2], input_shape[3])
+
     def get_config(self):
         config = super(DecisionLayer, self).get_config()
         config.update({"output_size": self.output_size})
@@ -434,7 +437,6 @@ def define_generator(n_blocks, latent_dim):
     des_ly=DecisionLayer(output_size=4)([g_init, i_sel])
     #rama 1
     b_1 = SlicerLayer(index_work=0)(des_ly)
-    print(b_1.output)
     b_1 = Conv2DTranspose(16, (1, 201), padding='valid', kernel_initializer='he_normal')(b_1)
     b_1 = Conv2DTranspose(16, (1, 251), padding='valid', kernel_initializer='he_normal')(b_1)
     #rama 2
