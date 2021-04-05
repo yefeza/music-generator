@@ -260,10 +260,10 @@ class DecisionLayer(Layer):
         # only supports two inputs: values and index distribution of valid output
         assert (len(inputs) == 2)
         output_distribution=inputs[1]
-        shape_data=tf.shape(inputs[0])
-        output_distribution=tf.reshape(output_distribution, shape=(shape_data[0], self.output_size, 1, 1, 1))
+        shape_data=inputs[0].shape
+        output_distribution=tf.reshape(output_distribution, shape=[-1, self.output_size, 1, 1, 1])
         input_data=inputs[0]
-        input_data=tf.reshape(input_data, shape=(shape_data[0], 1, shape_data[1], shape_data[2], shape_data[3]))
+        input_data=tf.reshape(input_data, shape=[-1, 1, shape_data[1], shape_data[2], shape_data[3]])
         input_data=tf.tile(input_data, [1, self.output_size, 1, 1, 1])
         return tf.math.multiply(input_data, output_distribution)
 
