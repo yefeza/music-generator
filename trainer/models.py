@@ -437,19 +437,19 @@ def define_generator(n_blocks, latent_dim):
     des_ly=DecisionLayer(output_size=4)([g_init, i_sel])
     #rama 1
     b_1 = SlicerLayer(index_work=0)(des_ly)
-    b_1 = Conv2DTranspose(16, (1, 201), padding='valid', kernel_initializer='he_normal')(b_1)
+    b_1 = Conv2DTranspose(16, (1, 101), padding='valid', kernel_initializer='he_normal')(b_1)
     b_1 = Conv2DTranspose(16, (1, 251), padding='valid', kernel_initializer='he_normal')(b_1)
     #rama 2
     b_2 = SlicerLayer(index_work=1)(des_ly)
-    b_2 = Conv2DTranspose(16, (1, 201), padding='valid', kernel_initializer='he_normal')(b_2)
+    b_2 = Conv2DTranspose(16, (1, 101), padding='valid', kernel_initializer='he_normal')(b_2)
     b_2 = Conv2DTranspose(16, (1, 251), padding='valid', kernel_initializer='he_normal')(b_2)
     #rama 1
     b_3 = SlicerLayer(index_work=2)(des_ly)
-    b_3 = Conv2DTranspose(16, (1, 201), padding='valid', kernel_initializer='he_normal')(b_3)
+    b_3 = Conv2DTranspose(16, (1, 101), padding='valid', kernel_initializer='he_normal')(b_3)
     b_3 = Conv2DTranspose(16, (1, 251), padding='valid', kernel_initializer='he_normal')(b_3)
     #rama 4
     b_4 = SlicerLayer(index_work=3)(des_ly)
-    b_4 = Conv2DTranspose(16, (1, 201), padding='valid', kernel_initializer='he_normal')(b_4)
+    b_4 = Conv2DTranspose(16, (1, 101), padding='valid', kernel_initializer='he_normal')(b_4)
     b_4 = Conv2DTranspose(16, (1, 251), padding='valid', kernel_initializer='he_normal')(b_4)
     #sumar ramas
     merged_layers=Add()([b_1, b_2, b_3, b_4])
