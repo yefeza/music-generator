@@ -470,8 +470,8 @@ def define_generator(n_blocks, latent_dim):
     #escalar en la otra direccion
     upsampling = UpSampling2D(size=(4,1))(merged_layers)
     #index selector block 2
-    i_sel_2=Conv2D(16, (3,11), padding='valid', kernel_initializer='he_normal')(upsampling)
-    i_sel_2=Conv2D(16, (4,36), padding='valid', kernel_initializer='he_normal')(i_sel_2)
+    i_sel_2=Conv2D(16, (2,11), padding='valid', kernel_initializer='he_normal')(upsampling)
+    i_sel_2=Conv2D(16, (3,36), padding='valid', kernel_initializer='he_normal')(i_sel_2)
     i_sel_2=Flatten()(i_sel_2)
     i_sel_2=Dense(6, activation='sigmoid')(i_sel_2)
     #decision layer
