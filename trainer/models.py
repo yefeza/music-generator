@@ -435,8 +435,7 @@ def define_generator(n_blocks, latent_dim):
     #rama 2 bloque 0
     b0_r2 = SlicerLayer(index_work=1)(des_ly_0)
     b0_r2 = Conv2DTranspose(32, (1, 3), strides=(1,2), padding='valid', kernel_initializer='he_normal')(b0_r2)
-    b0_r2 = Conv2DTranspose(32, (1, 5), strides=(1,2), padding='valid', kernel_initializer='he_normal')(b0_r2)
-    b0_r2 = Conv2DTranspose(32, (1, 46), padding='valid', kernel_initializer='he_normal')(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (1, 81), padding='valid', kernel_initializer='he_normal')(b0_r2)
     #rama 3 bloque 0
     b0_r3 = SlicerLayer(index_work=2)(des_ly_0)
     b0_r3 = Conv2DTranspose(32, (1, 23), strides=(1,3), padding='valid', kernel_initializer='he_normal')(b0_r3)
