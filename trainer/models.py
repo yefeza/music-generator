@@ -152,7 +152,7 @@ class WGAN(keras.Model):
         dif=cu_1-ci_1
         delta_1=tf.math.abs(dif)
         self.actual_step+=1
-        return {"delta_1": delta_1, "cu_1": cu_1, "ci_1": ci_1}
+        return {"dif": dif, "delta_1": delta_1, "cu_1": cu_1, "ci_1": ci_1, "d_loss": d_loss, "g_loss": g_loss}
 
 # Minibatch Standard Deviation Layer
 
@@ -494,9 +494,9 @@ def define_generator(n_blocks, latent_dim):
     i_sel_2=Conv2D(16, (1,51), padding='valid', kernel_initializer='he_normal')(merger_b0)
     i_sel_2=Conv2D(16, (1,101), padding='valid', kernel_initializer='he_normal')(i_sel_2)
     i_sel_2=Flatten()(i_sel_2)
-    i_sel_2=Dense(8, activation='sigmoid')(i_sel_2)
+    i_sel_2=Dense(9, activation='sigmoid')(i_sel_2)
     #decision layer
-    des_ly_2=DecisionLayer(output_size=8)([merger_b1, i_sel_2])
+    des_ly_2=DecisionLayer(output_size=9)([merger_b1, i_sel_2])
     #bloque 1 salida (4,750,2)
     #rama 1
     b2_r1 = SlicerLayer(index_work=0)(des_ly_2)
@@ -538,12 +538,18 @@ def define_generator(n_blocks, latent_dim):
     b2_r8 = SlicerLayer(index_work=7)(des_ly_2)
     b2_r8 = UpSampling2D()(b2_r8)
     b2_r8 = UpSampling2D(size=(2,1))(b2_r8)
-    b2_r8 = Conv2D(8, (1, 201), padding='valid', kernel_initializer='he_normal')(b2_r8)
-    b2_r8 = Conv2D(8, (1, 251), padding='valid', kernel_initializer='he_normal')(b2_r8)
-    b2_r8 = Conv2D(8, (1, 301), padding='valid', kernel_initializer='he_normal')(b2_r8)
+    b2_r8 = Conv2D(16, (1, 201), padding='valid', kernel_initializer='he_normal')(b2_r8)
+    b2_r8 = Conv2D(16, (1, 251), padding='valid', kernel_initializer='he_normal')(b2_r8)
+    b2_r8 = Conv2D(16, (1, 301), padding='valid', kernel_initializer='he_normal')(b2_r8)
     b2_r8 = Conv2D(2, (1,1), padding='valid', kernel_initializer='he_normal')(b2_r8)
+    #rama 9
+    b2_r9 = SlicerLayer(index_work=8)(des_ly_2)
+    b2_r9 = UpSampling2D(size=(2,1))(b2_r9)
+    b2_r9 = UpSampling2D(size=(2,1))(b2_r9)
+    b2_r9 = Conv2D(32, (4, 150), padding='same', kernel_initializer='he_normal')(b2_r9)
+    b2_r9 = Conv2D(2, (1,1), padding='valid', kernel_initializer='he_normal')(b2_r9)
     #unir ramas
-    sumarized_blocks=Add()([b2_r1, b2_r2, b2_r3, b2_r4, b2_r5, b2_r6, b2_r7, b2_r8])
+    sumarized_blocks=Add()([b2_r1, b2_r2, b2_r3, b2_r4, b2_r5, b2_r6, b2_r7, b2_r8, b2_r9])
     wls = LayerNormalization(axis=[1,2])(sumarized_blocks)
     model = Model(ly0, wls)
     # store model
