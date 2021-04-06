@@ -479,6 +479,7 @@ def define_generator(n_blocks, latent_dim):
     b1_r5 = Conv2DTranspose(16, (1, 36), padding='valid', kernel_initializer='he_normal')(b1_r5)
     b1_r5 = Conv2DTranspose(16, (1, 51), padding='valid', kernel_initializer='he_normal')(b1_r5)
     b1_r5 = Conv2DTranspose(16, (1, 76), padding='valid', kernel_initializer='he_normal')(b1_r5)
+    b1_r5 = Conv2DTranspose(8, (1, 101), padding='valid', kernel_initializer='he_normal')(b1_r5)
     b1_r5 = Conv2DTranspose(8, (1, 151), padding='valid', kernel_initializer='he_normal')(b1_r5)
     b1_r5 = Conv2DTranspose(32, (1, 76), padding='valid', kernel_initializer='he_normal')(b1_r5)
     #rama 6
