@@ -491,7 +491,7 @@ def define_generator(n_blocks, latent_dim):
     #sumar ramas
     merger_b1=Add()([b1_r1, b1_r2, b1_r3, b1_r4, b1_r5, b1_r6])
     #index selector block 2
-    i_sel_2=Conv2D(16, (1,51), padding='valid', kernel_initializer='he_normal')(merger_b0)
+    i_sel_2=Conv2D(16, (1,51), padding='valid', kernel_initializer='he_normal')(merger_b1)
     i_sel_2=Conv2D(16, (1,101), padding='valid', kernel_initializer='he_normal')(i_sel_2)
     i_sel_2=Conv2D(16, (1,301), padding='valid', kernel_initializer='he_normal')(i_sel_2)
     i_sel_2=Flatten()(i_sel_2)
