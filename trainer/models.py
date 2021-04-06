@@ -466,7 +466,7 @@ def define_generator(n_blocks, latent_dim):
     #rama 3
     b1_r3 = SlicerLayer(index_work=2)(des_ly_1)
     b1_r3 = Conv2DTranspose(16, (1, 36), padding='valid', kernel_initializer='he_normal')(b1_r3)
-    b1_r3 = Conv2DTranspose(8, (1, 142), strides=(1,2), padding='valid', kernel_initializer='he_normal')(b1_r3)
+    b1_r3 = Conv2DTranspose(8, (1, 132), strides=(1,2), padding='valid', kernel_initializer='he_normal')(b1_r3)
     b1_r3 = Conv2DTranspose(32, (1, 51), padding='valid', kernel_initializer='he_normal')(b1_r3)
     #rama 4
     b1_r4 = SlicerLayer(index_work=3)(des_ly_1)
@@ -479,8 +479,8 @@ def define_generator(n_blocks, latent_dim):
     b1_r5 = Conv2DTranspose(16, (1, 36), padding='valid', kernel_initializer='he_normal')(b1_r5)
     b1_r5 = Conv2DTranspose(16, (1, 51), padding='valid', kernel_initializer='he_normal')(b1_r5)
     b1_r5 = Conv2DTranspose(16, (1, 76), padding='valid', kernel_initializer='he_normal')(b1_r5)
-    b1_r5 = Conv2DTranspose(16, (1, 101), padding='valid', kernel_initializer='he_normal')(b1_r5)
-    b1_r5 = Conv2DTranspose(32, (1, 71), padding='valid', kernel_initializer='he_normal')(b1_r5)
+    b1_r5 = Conv2DTranspose(8, (1, 151), padding='valid', kernel_initializer='he_normal')(b1_r5)
+    b1_r5 = Conv2DTranspose(32, (1, 76), padding='valid', kernel_initializer='he_normal')(b1_r5)
     #rama 6
     b1_r6 = SlicerLayer(index_work=5)(des_ly_1)
     b1_r6 = Conv2DTranspose(32, (1, 16), padding='valid', kernel_initializer='he_normal')(b1_r6)
