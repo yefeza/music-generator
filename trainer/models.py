@@ -493,6 +493,7 @@ def define_generator(n_blocks, latent_dim):
     #index selector block 2
     i_sel_2=Conv2D(16, (1,51), padding='valid', kernel_initializer='he_normal')(merger_b0)
     i_sel_2=Conv2D(16, (1,101), padding='valid', kernel_initializer='he_normal')(i_sel_2)
+    i_sel_2=Conv2D(16, (1,301), padding='valid', kernel_initializer='he_normal')(i_sel_2)
     i_sel_2=Flatten()(i_sel_2)
     i_sel_2=Dense(9, activation='sigmoid')(i_sel_2)
     #decision layer
