@@ -424,6 +424,7 @@ def define_generator(n_blocks, latent_dim):
     #selector de incice 0
     i_sel_0=Conv2D(64, (1,6), padding='valid')(ly0)
     i_sel_0=Conv2D(64, (1,16), padding='valid')(i_sel_0)
+    i_sel_0=Dropout(0.5)(i_sel_0)
     i_sel_0=Flatten()(i_sel_0)
     i_sel_0=Dense(4, activation='sigmoid')(i_sel_0)
     #decision layer 0
@@ -451,6 +452,7 @@ def define_generator(n_blocks, latent_dim):
     #index selector block 1
     i_sel_1=Conv2D(128, (1,51), padding='valid')(merger_b0)
     i_sel_1=Conv2D(128, (1,101), padding='valid')(i_sel_1)
+    i_sel_1=Dropout(0.5)(i_sel_1)
     i_sel_1=Flatten()(i_sel_1)
     i_sel_1=Dense(6, activation='sigmoid')(i_sel_1)
     #decision layer
@@ -494,6 +496,7 @@ def define_generator(n_blocks, latent_dim):
     i_sel_2=Conv2D(16, (1,51), padding='valid')(merger_b1)
     i_sel_2=Conv2D(16, (1,101), padding='valid')(i_sel_2)
     i_sel_2=Conv2D(16, (1,301), padding='valid')(i_sel_2)
+    i_sel_2=Dropout(0.5)(i_sel_2)
     i_sel_2=Flatten()(i_sel_2)
     i_sel_2=Dense(12, activation='sigmoid')(i_sel_2)
     #decision layer
