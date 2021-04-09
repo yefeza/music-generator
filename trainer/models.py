@@ -134,7 +134,7 @@ class WGAN(keras.Model):
         # Train the generator
         # Get the latent vector
         #random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=True) as tape:
             #get noise from encoder
             random_latent_vectors=self.encoder(real_images, training=False)
             # Generate fake images using the generator
