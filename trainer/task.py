@@ -79,6 +79,7 @@ if __name__ == '__main__':
     #with strategy.scope():
 
     discriminators = define_discriminator(7)
+    encoders = define_encoder(7)
 
     # define generator
 
@@ -86,7 +87,7 @@ if __name__ == '__main__':
 
     # define composite models
 
-    composite = define_composite(discriminators, generators, latent_dim)
+    composite = define_composite(discriminators, generators, encoders, latent_dim)
 
     def plot_losses(history, dimension):
         plt.clf()

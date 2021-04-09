@@ -45,6 +45,7 @@ class WGAN(keras.Model):
     def __init__(
         self,
         discriminator,
+        encoder,
         generator,
         latent_dim,
         fade_in=False,
@@ -53,6 +54,7 @@ class WGAN(keras.Model):
     ):
         super(WGAN, self).__init__()
         self.discriminator = discriminator
+        self.encoder = encoder
         self.generator = generator
         self.latent_dim = latent_dim
         self.d_steps = discriminator_extra_steps
@@ -61,9 +63,10 @@ class WGAN(keras.Model):
         self.total_steps = 0
         self.fade_in=fade_in
 
-    def compile(self, d_optimizer, g_optimizer, d_loss_fn, g_loss_fn, g_loss_fn_extra, was_loaded=False):
+    def compile(self, d_optimizer, enc_optimizer, g_optimizer, d_loss_fn, g_loss_fn, g_loss_fn_extra, was_loaded=False):
         super(WGAN, self).compile()
         self.d_optimizer = d_optimizer
+        self.enc_optimizer = enc_optimizer
         self.g_optimizer = g_optimizer
         self.d_loss_fn = d_loss_fn
         self.g_loss_fn = g_loss_fn
@@ -108,9 +111,11 @@ class WGAN(keras.Model):
         # as compared to 5 to reduce the training time.
         # Get the latent vector
         for i in range(self.d_steps):
+            '''
             random_latent_vectors = tf.random.normal(
                 shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2])
-            )
+            )'''
+            random_latent_vectors=self.encoder(real_images, training=False)
             with tf.GradientTape() as tape:
                 # Generate fake images from the latent vector
                 fake_images = self.generator(random_latent_vectors, training=True)
@@ -128,8 +133,10 @@ class WGAN(keras.Model):
             )
         # Train the generator
         # Get the latent vector
-        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
+        #random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
         with tf.GradientTape() as tape:
+            #get noise from encoder
+            random_latent_vectors=self.encoder(real_images, training=False)
             # Generate fake images using the generator
             generated_images = self.generator(random_latent_vectors, training=True)
             # Get the discriminator logits for fake images
@@ -140,6 +147,12 @@ class WGAN(keras.Model):
             #deli_layer=self.generator.get_layer('delilayer')
             # Calculate the generator loss using the fake and real image logits
             g_loss = self.g_loss_fn(gen_img_logits, real_logits)
+        # Get the gradients w.r.t the encoder with generator loss
+        enc_gradient = tape.gradient(g_loss, self.encoder.trainable_variables)
+        # Update the weights of the generator using the generator optimizer
+        self.enc_optimizer.apply_gradients(
+            zip(enc_gradient, self.encoder.trainable_variables)
+        )
         # Get the gradients w.r.t the generator loss
         gen_gradient = tape.gradient(g_loss, self.generator.trainable_variables)
         # Update the weights of the generator using the generator optimizer
@@ -381,6 +394,95 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
         # store model
         model_list.append(models)
     return model_list
+
+# agregar bloque al encoder para escalar las dimensiones
+
+def add_encoder_block(old_model, n_input_layers=2):
+    # getshapeofexistingmodel
+    in_shape = list(old_model.input[0].shape)
+    alpha=400.0
+    soft_alpha=600.0
+    if in_shape[-3]==8:
+        alpha=600.0
+        soft_alpha=800.0
+    if in_shape[-3]==16:
+        alpha=800.0
+        soft_alpha=1000.0
+    if in_shape[-3]==32:
+        alpha=1000.0
+        soft_alpha=1200.0
+    if in_shape[-3]==64:
+        alpha=1200.0
+        soft_alpha=1400.0
+    if in_shape[-3]==128:
+        alpha=1400.0
+        soft_alpha=1600.0
+    if in_shape[-3]==256:
+        alpha=1600.0
+        soft_alpha=1800.0
+    # definenewinputshapeasdoublethesize
+    input_shape = (in_shape[-3]*2, in_shape[-2]*2, in_shape[-1])
+    in_image = Input(shape=input_shape)
+    featured_layer = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
+    #convolusion block 1
+    d_1 = Conv2D(512, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured_layer)
+    d_1 = Conv2D(512, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(d_1)
+    d_1 = Dense(128)(d_1)
+    d_1 = Dropout(0.2)(d_1)
+    d_block = SoftRectifier(start_alpha=soft_alpha)(d_1)
+    block_new = d_block
+    # skiptheinput,1x1andactivationfortheoldmodel
+    for i in range(n_input_layers, len(old_model.layers)):
+        if isinstance(old_model.layers[i], Dense):
+            final_layer = old_model.layers[i](d_block)
+        else:
+            d_block = old_model.layers[i](d_block)
+    # model 1 without multiple inputs for composite
+    model1_comp = Model(in_image, final_layer)
+    # downsamplethenewlargerimage
+    downsample = AveragePooling2D()(in_image)
+    # connectoldinputprocessingtodownsamplednewinput
+    block_old = old_model.layers[1](downsample)
+    # fadeinoutputofoldmodelinputlayerwithnewinput
+    d = WeightedSum()([block_old, block_new])
+    # skiptheinput,1x1andactivationfortheoldmodel
+    for i in range(n_input_layers, len(old_model.layers)):
+        if isinstance(old_model.layers[i], Dense):
+            final_layer = old_model.layers[i](d)
+        else:
+            d = old_model.layers[i](d)
+    model2_comp = Model(in_image, final_layer)
+    return[model1_comp, model2_comp]
+
+# definir los discriminadores
+
+def define_encoder(n_blocks, input_shape=(4, 750, 2)):
+    model_list = list()
+    # base model input
+    in_image = Input(shape=input_shape)
+    # conv 1x1
+    featured_block = Conv2D(128, (1, 51), padding='valid')(in_image)
+    # convolusion block 1
+    d_1 = Conv2D(64, (1, 101), padding='valid')(featured_block)
+    d_1 = Conv2D(64, (1, 151), padding='valid')(d_1)
+    d_1 = Conv2D(64, (1, 251), padding='valid')(d_1)
+    d_1 = Conv2D(64, (2, 151), padding='valid')(d_1)
+    out_class = Dense(1)(d_1)
+    # define model
+    model_comp = Model(in_image, out_class)
+    # store model
+    model_list.append([model_comp, model_comp])
+    # create submodels
+    for i in range(1, n_blocks):
+        # get prior model without the fade-on
+        old_model = model_list[i - 1][0]
+        # create new model for next resolution
+        models = add_encoder_block(old_model)
+        # store model
+        model_list.append(models)
+    return model_list
+
+
 # agregar bloque a generador para escalar las dimensiones
 
 def add_generator_block(old_model):
@@ -469,12 +571,12 @@ def define_generator(n_blocks, latent_dim):
     #rama 3
     b1_r3 = SlicerLayer(index_work=2)(des_ly_1)
     b1_r3 = Conv2DTranspose(16, (1, 36), padding='valid')(b1_r3)
-    b1_r3 = Conv2DTranspose(32, (1, 132), strides=(1,2), padding='valid')(b1_r3)
+    b1_r3 = Conv2DTranspose(16, (1, 132), strides=(1,2), padding='valid')(b1_r3)
     b1_r3 = Conv2DTranspose(64, (1, 51), padding='valid')(b1_r3)
     #rama 4
     b1_r4 = SlicerLayer(index_work=3)(des_ly_1)
-    b1_r4 = Conv2DTranspose(32, (1, 101), padding='valid')(b1_r4)
-    b1_r4 = Conv2DTranspose(32, (1, 351), padding='valid')(b1_r4)
+    b1_r4 = Conv2DTranspose(16, (1, 101), padding='valid')(b1_r4)
+    b1_r4 = Conv2DTranspose(16, (1, 351), padding='valid')(b1_r4)
     b1_r4 = Conv2DTranspose(64, (1, 51), padding='valid')(b1_r4)
     #rama 5
     b1_r5 = SlicerLayer(index_work=4)(des_ly_1)
@@ -489,7 +591,7 @@ def define_generator(n_blocks, latent_dim):
     b1_r6 = SlicerLayer(index_work=5)(des_ly_1)
     b1_r6 = Conv2DTranspose(64, (1, 16), padding='valid')(b1_r6)
     b1_r6 = Conv2DTranspose(64, (1, 36), padding='valid')(b1_r6)
-    b1_r6 = Conv2DTranspose(32, (1, 301), padding='valid')(b1_r6)
+    b1_r6 = Conv2DTranspose(16, (1, 301), padding='valid')(b1_r6)
     b1_r6 = Conv2DTranspose(64, (1, 151), padding='valid')(b1_r6)
     #sumar ramas
     merger_b1=Add()([b1_r1, b1_r2, b1_r3, b1_r4, b1_r5, b1_r6])
@@ -551,27 +653,27 @@ def define_generator(n_blocks, latent_dim):
     b2_r9 = SlicerLayer(index_work=8)(des_ly_2)
     b2_r9 = UpSampling2D(size=(2,1))(b2_r9)
     b2_r9 = UpSampling2D(size=(2,1))(b2_r9)
-    b2_r9 = Conv2D(32, (4, 150), padding='same')(b2_r9)
+    b2_r9 = Conv2D(16, (4, 150), padding='same')(b2_r9)
     b2_r9 = Conv2D(2, (1,1), padding='valid')(b2_r9)
     #rama 10
     b2_r10 = SlicerLayer(index_work=9)(des_ly_2)
     b2_r10 = UpSampling2D(size=(2,1))(b2_r10)
     b2_r10 = UpSampling2D(size=(2,1))(b2_r10)
-    b2_r10 = Conv2D(32, (2, 150), padding='same')(b2_r10)
-    b2_r10 = Conv2D(32, (2, 150), padding='same')(b2_r10)
+    b2_r10 = Conv2D(16, (2, 150), padding='same')(b2_r10)
+    b2_r10 = Conv2D(16, (2, 150), padding='same')(b2_r10)
     b2_r10 = Conv2D(2, (1,1), padding='valid')(b2_r10)
     #rama 11
     b2_r11 = SlicerLayer(index_work=10)(des_ly_2)
     b2_r11 = UpSampling2D(size=(2,1))(b2_r11)
     b2_r11 = UpSampling2D(size=(2,1))(b2_r11)
-    b2_r11 = Conv2D(32, (4, 150), padding='same')(b2_r11)
+    b2_r11 = Conv2D(16, (4, 150), padding='same')(b2_r11)
     b2_r11 = Dense(2)(b2_r11)
     #rama 12
     b2_r12 = SlicerLayer(index_work=11)(des_ly_2)
     b2_r12 = UpSampling2D(size=(2,1))(b2_r12)
     b2_r12 = UpSampling2D(size=(2,1))(b2_r12)
-    b2_r12 = Conv2D(32, (2, 150), padding='same')(b2_r12)
-    b2_r12 = Conv2D(32, (2, 150), padding='same')(b2_r12)
+    b2_r12 = Conv2D(16, (2, 150), padding='same')(b2_r12)
+    b2_r12 = Conv2D(16, (2, 150), padding='same')(b2_r12)
     b2_r12 = Dense(2)(b2_r12)
     #unir ramas
     sumarized_blocks=Add()([b2_r1, b2_r2, b2_r3, b2_r4, b2_r5, b2_r6, b2_r7, b2_r8, b2_r9, b2_r10, b2_r11, b2_r12])
@@ -646,13 +748,13 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
 
 # define composite models for training generators via discriminators
 
-def define_composite(discriminators, generators, latent_dim):
+def define_composite(discriminators, generators, encoders, latent_dim):
     resume_models=[False, False, False, False, False, False, False]
     dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models
     for i in range(len(discriminators)):
-        g_models, d_models = generators[i], discriminators[i]
+        g_models, d_models, enc_models = generators[i], discriminators[i], encoders[i]
         #precargar pesos previos de un checkpoint
         if resume_models[i]:
             prev_g_model, prev_d_model=get_saved_model(dimension=dimensions[i])
@@ -664,12 +766,14 @@ def define_composite(discriminators, generators, latent_dim):
         #d_models[2].trainable = False
         wgan1 = WGAN(
             discriminator=d_models[0],
+            encoder=enc_models[0],
             generator=g_models[0],
             latent_dim=latent_dim,
             discriminator_extra_steps=1,
         )
         wgan1.compile(
             d_optimizer=Adamax(),
+            enc_optimizer=Adamax(learning_rate=0.0005),
             g_optimizer=Adamax(learning_rate=0.0005),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
@@ -680,6 +784,7 @@ def define_composite(discriminators, generators, latent_dim):
         #d_models[3].trainable = False
         wgan2 = WGAN(
             discriminator=d_models[1],
+            encoder=enc_models[0],
             generator=g_models[1],
             latent_dim=latent_dim,
             fade_in=True,
@@ -687,6 +792,7 @@ def define_composite(discriminators, generators, latent_dim):
         )
         wgan2.compile(
             d_optimizer=Adamax(),
+            enc_optimizer=Adamax(learning_rate=0.0005),
             g_optimizer=Adamax(learning_rate=0.0005),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
