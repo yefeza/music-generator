@@ -464,9 +464,9 @@ def define_encoder(n_blocks, input_shape=(4, 750, 2)):
     featured_block = Conv2D(128, (1, 51), padding='same')(in_image)
     # convolusion block 1
     d_1 = Conv2D(64, (1, 101), padding='valid')(featured_block)
-    d_1 = Conv2D(64, (1, 151), padding='valid')(d_1)
-    d_1 = Conv2D(64, (1, 251), padding='valid')(d_1)
     d_1 = Conv2D(64, (2, 151), padding='valid')(d_1)
+    d_1 = Conv2D(64, (2, 251), padding='valid')(d_1)
+    d_1 = Conv2D(64, (2, 251), padding='valid')(d_1)
     out_class = Dense(1)(d_1)
     # define model
     model_comp = Model(in_image, out_class)
