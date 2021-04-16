@@ -16,6 +16,7 @@ from keras import backend
 import tensorflow as tf
 from keras.losses import categorical_crossentropy
 import numpy as np
+from .dataset import *
 from .utils import *
 from google.cloud import storage
 import os
@@ -74,6 +75,7 @@ class WGAN(keras.Model):
         if not was_loaded:
             self.generator.compile(optimizer=g_optimizer)
             self.discriminator.compile(optimizer=d_optimizer)
+            self.encoder.compile(optimizer=enc_optimizer)
 
     def set_train_steps(self, size):
         self.train_steps=size
@@ -150,7 +152,7 @@ class WGAN(keras.Model):
         # Get the gradients w.r.t the encoder with generator loss
         enc_gradient = tape.gradient(g_loss, self.encoder.trainable_variables)
         # Update the weights of the generator using the generator optimizer
-        self.enc_optimizer.apply_gradients(
+        self.encoder.optimizer.apply_gradients(
             zip(enc_gradient, self.encoder.trainable_variables)
         )
         # Get the gradients w.r.t the generator loss
@@ -744,7 +746,14 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
     g_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum, 'DeliGanLayer': DeliGanLayer, 'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer})
-    return g_model, d_model
+    #cargar generador
+    gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/e_model.h5"
+    local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/e_model.h5"
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(gcloud_file_name)
+    blob.download_to_filename(local_file_name)
+    e_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum, 'DeliGanLayer': DeliGanLayer, 'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer})
+    return g_model, d_model, e_model
 
 # define composite models for training generators via discriminators
 
@@ -757,11 +766,13 @@ def define_composite(discriminators, generators, encoders, latent_dim):
         g_models, d_models, enc_models = generators[i], discriminators[i], encoders[i]
         #precargar pesos previos de un checkpoint
         if resume_models[i]:
-            prev_g_model, prev_d_model=get_saved_model(dimension=dimensions[i])
+            prev_g_model, prev_d_model, prev_e_model=get_saved_model(dimension=dimensions[i])
             d_models[i].set_weights(prev_d_model.get_weights())
             g_models[i].set_weights(prev_g_model.get_weights())
+            enc_models[i].set_weights(prev_e_model.get_weights())
             d_models[i].compile(optimizer=prev_d_model.optimizer)
             g_models[i].compile(optimizer=prev_g_model.optimizer)
+            enc_models[i].compile(optimizer=prev_e_model.optimizer)
         # straight-through model
         #d_models[2].trainable = False
         wgan1 = WGAN(
@@ -815,16 +826,21 @@ class GANMonitor(keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         iters_gen=self.num_examples
         pred=[]
+        gen_shape = self.model.generator.output_shape
         if not self.model.fade_in:
             for i in range(iters_gen):
                 if ((epoch+1)%10)==0:
                     save=True
                 else:
                     save=False
-                pred_batch=generar_ejemplo(self.model.generator, "epoch-"+str(epoch+1)+"/" , i+1, None, self.bucket_name, self.latent_dim, self.evaluador, save)
+                if i>=15:
+                    random_real_data=get_random_real_data((gen_shape[-3], gen_shape[-2]))
+                else:
+                    random_real_data=[]
+                pred_batch=generar_ejemplo(self.model.generator, self.model.encoder, gen_shape, random_real_data, "epoch-"+str(epoch+1)+"/" , i+1, None, self.bucket_name, self.latent_dim, self.evaluador, save)
                 pred+=list(pred_batch)
-                gen_shape = self.model.generator.output_shape
             if ((epoch+1)%10)==0:
                 guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "g_")
                 guardar_checkpoint(self.model.discriminator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "d_")
+                guardar_checkpoint(self.model.encoder, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "e_")
             save_inception_score(self.model.generator, "epoch-"+str(epoch+1)+"/", self.bucket_name, np.array(pred))

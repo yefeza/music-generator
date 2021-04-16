@@ -238,6 +238,21 @@ def read_dataset(dimension, files_format):
     categorical_y=tf.constant(categorical_y)
     return np.array(data), categorical_y.numpy()
 
+#read random data by dimension
+
+def get_random_real_data(dimension, files_format='mp3'):
+    data=[]
+    rnd_folders=random.sample(range(1, 9), 5)
+    for folder in rnd_folders:
+        directory="local_ds/" + files_format + "/"+str(dimension[0])+"-"+str(dimension[1])+"/" + str(folder+1) + "/"
+        ls_dir_folder=os.listdir(directory)
+        rnd_selected_song=ls_dir_folder[random.randrange(0,len(ls_dir_folder))]
+        signal, sampling_rate = af.read(directory+rnd_selected_song)
+        song_reshaped = np.reshape(
+                signal, newshape=(dimension[0], dimension[1], 2))
+        data.append(song_reshaped)
+    return np.array(data)
+
 
 # resamplear y recortar audios
 
