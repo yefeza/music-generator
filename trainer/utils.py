@@ -37,7 +37,7 @@ def calculate_inception_score(p_yx, eps=1E-16):
 
 
 def generar_ejemplo(g_model, enc_model, gen_shape, random_real_data, prefix, iter_num, job_dir, bucket_name, latent_dim, evaluador, save):
-    if iter_num<=5:
+    if iter_num<=7:
         random_latent_vectors = tf.random.normal(shape=(10, latent_dim[0], latent_dim[1], latent_dim[2]))
     else:
         if iter_num<=15:
