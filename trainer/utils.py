@@ -46,7 +46,7 @@ def generar_ejemplo(g_model, enc_model, gen_shape, random_real_data, prefix, ite
         random_latent_vectors = enc_model(random_real_data)
     gen_auds = g_model(random_latent_vectors, training=False)
     if save:
-        signal_gen = gen_auds[random.randrange(0,15)].numpy()
+        signal_gen = gen_auds[random.randrange(0,len(gen_auds))].numpy()
         signal_gen = np.reshape(signal_gen, ((gen_shape[-3]*gen_shape[-2]), 2))
         signal_gen /= np.max(np.abs(signal_gen), axis=0)
         local_path = "local_gen/" + \
