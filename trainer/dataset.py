@@ -247,10 +247,21 @@ def get_random_real_data(dimension, files_format='mp3'):
         directory="local_ds/" + files_format + "/"+str(dimension[0])+"-"+str(dimension[1])+"/" + str(folder+1) + "/"
         ls_dir_folder=os.listdir(directory)
         rnd_selected_song=ls_dir_folder[random.randrange(0,len(ls_dir_folder))]
-        signal, sampling_rate = af.read(directory+rnd_selected_song)
-        song_reshaped = np.reshape(
-                signal, newshape=(dimension[0], dimension[1], 2))
-        data.append(song_reshaped)
+        try:
+            signal, sampling_rate = af.read(directory+rnd_selected_song)
+            song_reshaped = np.reshape(
+                    signal, newshape=(dimension[0], dimension[1], 2))
+            data.append(song_reshaped)
+        except:
+            if folder==0:
+                folder=1
+            directory="local_ds/" + files_format + "/"+str(dimension[0])+"-"+str(dimension[1])+"/" + str(folder) + "/"
+            ls_dir_folder=os.listdir(directory)
+            rnd_selected_song=ls_dir_folder[random.randrange(0,len(ls_dir_folder))]
+            signal, sampling_rate = af.read(directory+rnd_selected_song)
+            song_reshaped = np.reshape(
+                    signal, newshape=(dimension[0], dimension[1], 2))
+            data.append(song_reshaped)
     return np.array(data)
 
 
