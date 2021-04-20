@@ -497,8 +497,8 @@ def add_generator_block(old_model):
     # upsample, and define new block
     upsampling = UpSampling2D()(block_end)
     #selector de incice 0
-    i_sel_0=Conv2D(64, (1,16), padding='valid')(block_end)
-    i_sel_0=Conv2D(64, (1,51), padding='valid')(i_sel_0)
+    i_sel_0=Conv2D(32, (1,16), padding='valid')(block_end)
+    i_sel_0=Conv2D(32, (1,51), padding='valid')(i_sel_0)
     i_sel_0=Dropout(0.5)(i_sel_0)
     i_sel_0=Flatten()(i_sel_0)
     i_sel_0=Dense(3, activation='softmax')(i_sel_0)
@@ -523,9 +523,9 @@ def add_generator_block(old_model):
     #sumar ramas bloque 0
     merger_b0=Add()([b0_r1, b0_r2, b0_r3])
     #index selector block 1
-    i_sel_1=Conv2D(128, (1,15), padding='valid')(merger_b0)
-    i_sel_1=Conv2D(128, (1,51), padding='valid')(i_sel_1)
-    i_sel_1=Dropout(0.6)(i_sel_1)
+    i_sel_1=Conv2D(32, (1,15), padding='valid')(merger_b0)
+    i_sel_1=Conv2D(32, (1,51), padding='valid')(i_sel_1)
+    i_sel_1=Dropout(0.5)(i_sel_1)
     i_sel_1=Flatten()(i_sel_1)
     i_sel_1=Dense(3, activation='softmax')(i_sel_1)
     #decision layer
@@ -535,7 +535,7 @@ def add_generator_block(old_model):
     b1_r1 = UpSampling2D()(b1_r1)
     b1_r1 = UpSampling2D()(b1_r1)
     b1_r1 = Conv2D(64, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(b1_r1)
-    b1_r1 = Conv2D(16, (4, 15*mult), padding='same', kernel_initializer='he_normal')(b1_r1)
+    b1_r1 = Conv2D(16, (4, 15), padding='same', kernel_initializer='he_normal')(b1_r1)
     b1_r1 = Conv2D(16, (4, 150), padding='same', kernel_initializer='he_normal')(b1_r1)
     b1_r1 = Conv2D(2, (4, 150), padding='same', kernel_initializer='he_normal')(b1_r1)
     #rama 2
@@ -543,7 +543,7 @@ def add_generator_block(old_model):
     b1_r2 = UpSampling2D()(b1_r2)
     b1_r2 = UpSampling2D()(b1_r2)
     b1_r2 = Conv2D(64, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(b1_r2)
-    b1_r2 = Conv2D(32, (4, 15*mult), padding='same', kernel_initializer='he_normal')(b1_r2)
+    b1_r2 = Conv2D(32, (4, 15), padding='same', kernel_initializer='he_normal')(b1_r2)
     b1_r2 = Conv2D(64, (4, 35), padding='same', kernel_initializer='he_normal')(b1_r2)
     b1_r2 = Conv2D(2, (4, 50), padding='same', kernel_initializer='he_normal')(b1_r2)
     #rama 3
@@ -551,7 +551,7 @@ def add_generator_block(old_model):
     b1_r3 = UpSampling2D()(b1_r3)
     b1_r3 = UpSampling2D()(b1_r3)
     b1_r3 = Conv2D(64, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(b1_r3)
-    b1_r3 = Conv2D(32, (4, 15*mult), padding='same', kernel_initializer='he_normal')(b1_r3)
+    b1_r3 = Conv2D(32, (4, 15), padding='same', kernel_initializer='he_normal')(b1_r3)
     b1_r3 = Conv2D(16, (4, 105), padding='same', kernel_initializer='he_normal')(b1_r3)
     b1_r3 = Dense(2)(b1_r3)
     #sumar ramas
@@ -575,7 +575,7 @@ def define_generator(n_blocks, latent_dim):
     #selector de incice 0
     i_sel_0=Conv2D(64, (1,6), padding='valid')(ly0)
     i_sel_0=Conv2D(64, (1,16), padding='valid')(i_sel_0)
-    i_sel_0=Dropout(0.6)(i_sel_0)
+    i_sel_0=Dropout(0.5)(i_sel_0)
     i_sel_0=Flatten()(i_sel_0)
     i_sel_0=Dense(4, activation='softmax')(i_sel_0)
     #decision layer 0
@@ -603,7 +603,7 @@ def define_generator(n_blocks, latent_dim):
     #index selector block 1
     i_sel_1=Conv2D(128, (1,51), padding='valid')(merger_b0)
     i_sel_1=Conv2D(128, (1,101), padding='valid')(i_sel_1)
-    i_sel_1=Dropout(0.6)(i_sel_1)
+    i_sel_1=Dropout(0.5)(i_sel_1)
     i_sel_1=Flatten()(i_sel_1)
     i_sel_1=Dense(6, activation='softmax')(i_sel_1)
     #decision layer
@@ -647,7 +647,7 @@ def define_generator(n_blocks, latent_dim):
     i_sel_2=Conv2D(32, (1,51), padding='valid')(merger_b1)
     i_sel_2=Conv2D(32, (1,101), padding='valid')(i_sel_2)
     i_sel_2=Conv2D(32, (1,301), padding='valid')(i_sel_2)
-    i_sel_2=Dropout(0.6)(i_sel_2)
+    i_sel_2=Dropout(0.5)(i_sel_2)
     i_sel_2=Flatten()(i_sel_2)
     i_sel_2=Dense(12, activation='softmax')(i_sel_2)
     #decision layer
