@@ -169,7 +169,7 @@ if __name__ == '__main__':
     batch_sizes=[16,8,4,2,2,2,2]
     epochs_norm=[10,20,350,400,450,500,550]
     #epochs_norm=[50,60,70,80,90,100,110]
-    epochs_fade=[10,15,32,25,30,35,40]
+    epochs_fade=[5,5,32,25,30,35,40]
     start_from_growing=0
     # train model
     train(composite, latent_dim, epochs_norm, epochs_fade, batch_sizes, JOB_DIR, bucket_name, files_format, path_dataset, download_data, epochs_evaluadores, start_from_growing)
