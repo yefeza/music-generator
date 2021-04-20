@@ -229,7 +229,7 @@ class StaticOptTanh(Layer):
         self.alpha=alpha
 
     def call(self, inputs):
-        return tf.math.tanh(inputs) + tf.math.divide_no_nan(inputs,self.alpha)
+        return tf.cast((tf.math.tanh(inputs) + tf.math.divide_no_nan(inputs,self.alpha)), dtype=tf.float32)
 
     def get_config(self):
         config = super(StaticOptTanh, self).get_config()
@@ -496,25 +496,71 @@ def add_generator_block(old_model):
     block_end = old_model.layers[-2].output
     # upsample, and define new block
     upsampling = UpSampling2D()(block_end)
-    # bloque 1 deconvolusion
-    #g_1 = UpSampling2D(size=(1,2))(block_end)
-    g_1 = Conv2DTranspose(32, (1, k_size), padding='valid')(block_end)
-    #g_1 = Conv2D(64, (1, 15), padding='same', kernel_initializer='he_normal')(g_1)
-    #g_1 = Dropout(0.2)(g_1)
-    g_1 = Conv2D(64, (1, 150), padding='same', kernel_initializer='he_normal')(g_1)
-    #g_1 = Dropout(0.2)(g_1)
-    #sumarize
-    sumarized_blocks = UpSampling2D()(g_1)
-    sumarized_blocks = UpSampling2D()(sumarized_blocks)
-    sumarized_blocks = Conv2D(64, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(32, (4, 15*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    sumarized_blocks = Conv2D(64, (4, 150*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    for_sum_layer = Conv2D(2, (4, 150*mult), padding='same', kernel_initializer='he_normal')(sumarized_blocks)
-    out_image = LayerNormalization(axis=[1,2])(for_sum_layer)
+    #selector de incice 0
+    i_sel_0=Conv2D(64, (1,16), padding='valid')(block_end)
+    i_sel_0=Conv2D(64, (1,51), padding='valid')(i_sel_0)
+    i_sel_0=Dropout(0.5)(i_sel_0)
+    i_sel_0=Flatten()(i_sel_0)
+    i_sel_0=Dense(3, activation='softmax')(i_sel_0)
+    #decision layer 0
+    des_ly_0=DecisionLayer(output_size=3)([block_end, i_sel_0])
+    #rama 1 bloque 0
+    b0_r1 = SlicerLayer(index_work=0)(des_ly_0)
+    b0_r1 = Conv2DTranspose(32, (1, k_size), padding='valid')(b0_r1)
+    b0_r1 = Conv2D(32, (1, 15), padding='same', kernel_initializer='he_normal')(b0_r1)
+    b0_r1 = Conv2D(32, (1, 35), padding='same', kernel_initializer='he_normal')(b0_r1)
+    b0_r1 = Conv2D(16, (1, 50), padding='same', kernel_initializer='he_normal')(b0_r1)
+    #rama 2 bloque 0
+    b0_r2 = SlicerLayer(index_work=1)(des_ly_0)
+    b0_r2 = Conv2DTranspose(32, (1, k_size), padding='valid')(b0_r2)
+    b0_r2 = Conv2D(16, (1, 75), padding='same', kernel_initializer='he_normal')(b0_r2)
+    b0_r2 = Conv2D(16, (1, 105), padding='same', kernel_initializer='he_normal')(b0_r2)
+    #rama 3 bloque 0
+    b0_r3 = SlicerLayer(index_work=2)(des_ly_0)
+    b0_r3 = Conv2DTranspose(32, (1, k_size), padding='valid')(b0_r3)
+    b0_r3 = Conv2D(64, (1, 15), padding='same', kernel_initializer='he_normal')(b0_r3)
+    b0_r3 = Conv2D(16, (1, 150), padding='same', kernel_initializer='he_normal')(b0_r3)
+    #sumar ramas bloque 0
+    merger_b0=Add()([b0_r1, b0_r2, b0_r3])
+    #index selector block 1
+    i_sel_1=Conv2D(128, (1,15), padding='valid')(merger_b0)
+    i_sel_1=Conv2D(128, (1,51), padding='valid')(i_sel_1)
+    i_sel_1=Dropout(0.6)(i_sel_1)
+    i_sel_1=Flatten()(i_sel_1)
+    i_sel_1=Dense(3, activation='softmax')(i_sel_1)
+    #decision layer
+    des_ly_1=DecisionLayer(output_size=3)([merger_b0, i_sel_1])
+    #rama 1
+    b1_r1 = SlicerLayer(index_work=0)(des_ly_1)
+    b1_r1 = UpSampling2D()(b1_r1)
+    b1_r1 = UpSampling2D()(b1_r1)
+    b1_r1 = Conv2D(64, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(b1_r1)
+    b1_r1 = Conv2D(16, (4, 15*mult), padding='same', kernel_initializer='he_normal')(b1_r1)
+    b1_r1 = Conv2D(16, (4, 150*mult), padding='same', kernel_initializer='he_normal')(b1_r1)
+    b1_r1 = Conv2D(2, (4, 150*mult), padding='same', kernel_initializer='he_normal')(b1_r1)
+    #rama 2
+    b1_r2 = SlicerLayer(index_work=1)(des_ly_1)
+    b1_r2 = UpSampling2D()(b1_r2)
+    b1_r2 = UpSampling2D()(b1_r2)
+    b1_r2 = Conv2D(64, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(b1_r2)
+    b1_r2 = Conv2D(32, (4, 15*mult), padding='same', kernel_initializer='he_normal')(b1_r2)
+    b1_r2 = Conv2D(64, (4, 35*mult), padding='same', kernel_initializer='he_normal')(b1_r2)
+    b1_r2 = Conv2D(2, (4, 50*mult), padding='same', kernel_initializer='he_normal')(b1_r2)
+    #rama 3
+    b1_r3 = SlicerLayer(index_work=2)(des_ly_1)
+    b1_r3 = UpSampling2D()(b1_r3)
+    b1_r3 = UpSampling2D()(b1_r3)
+    b1_r3 = Conv2D(64, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(b1_r3)
+    b1_r3 = Conv2D(32, (4, 15*mult), padding='same', kernel_initializer='he_normal')(b1_r3)
+    b1_r3 = Conv2D(16, (4, 105*mult), padding='same', kernel_initializer='he_normal')(b1_r3)
+    b1_r3 = Dense(2)(b1_r3)
+    #sumar ramas
+    merger_b1=Add()([b1_r1, b1_r2, b1_r3])
+    out_image = LayerNormalization(axis=[1,2])(merger_b1)
     # define model
     model1 = Model(old_model.input, out_image)
     # define new output image as the weighted sum of the old and new models
-    merged = WeightedSum()([upsampling, for_sum_layer])
+    merged = WeightedSum()([upsampling, merger_b1])
     output_2 = LayerNormalization(axis=[1,2])(merged)
     # define model
     model2 = Model(old_model.input, output_2)
@@ -713,8 +759,8 @@ def generator_loss_fake(fake_logits, real_logits):
     return -(((-3+(delta_1/2))*(-((lambda_1*lambda_2)/1000)))+(3*delta_2))
 
 def generator_loss(fake_logits, real_logits):
-    fake_logits=tf.reduce_mean(fake_logits)
-    real_logits=tf.reduce_mean(real_logits)
+    #fake_logits=tf.reduce_mean(fake_logits)
+    #real_logits=tf.reduce_mean(real_logits)
     lamb=(fake_logits-real_logits)
     delta=tf.math.abs(lamb)
     #l2=tf.math.multiply(0.1, tf.reduce_mean(tf.square(tf.math.subtract(1.0,rho_values))))
