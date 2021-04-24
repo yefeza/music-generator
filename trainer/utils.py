@@ -42,9 +42,9 @@ def generar_ejemplo(g_model, enc_model, gen_shape, random_real_data, prefix, ite
     else:
         if iter_num<=15:
             random_encoder_input = tf.random.normal(shape=(10, gen_shape[-3], gen_shape[-2], gen_shape[-1]))
-            random_latent_vectors = enc_model(random_encoder_input)
+            random_latent_vectors = enc_model(random_encoder_input, training=False)
         else:
-            random_latent_vectors = enc_model(random_real_data)
+            random_latent_vectors = enc_model(random_real_data, training=False)
     gen_auds = g_model(random_latent_vectors, training=False)
     if save:
         signal_gen = gen_auds[random.randrange(0,len(gen_auds))].numpy()
