@@ -113,11 +113,11 @@ class WGAN(keras.Model):
         # as compared to 5 to reduce the training time.
         # Get the latent vector
         for i in range(self.d_steps):
-            '''
-            random_latent_vectors = tf.random.normal(
+            random_noise = tf.random.normal(
                 shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2])
-            )'''
-            random_latent_vectors=self.encoder(real_images, training=False)
+            )
+            random_encoded=self.encoder(real_images, training=False)
+            random_latent_vectors=random_noise+random_encoded
             with tf.GradientTape() as tape:
                 # Generate fake images from the latent vector
                 fake_images = self.generator(random_latent_vectors, training=True)
@@ -138,7 +138,11 @@ class WGAN(keras.Model):
         #random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
         with tf.GradientTape(persistent=True) as tape:
             #get noise from encoder
-            random_latent_vectors=self.encoder(real_images, training=True)
+            random_noise = tf.random.normal(
+                shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2])
+            )
+            random_encoded=self.encoder(real_images, training=True)
+            random_latent_vectors=random_noise+random_encoded
             # Generate fake images using the generator
             generated_images = self.generator(random_latent_vectors, training=True)
             # Get the discriminator logits for fake images
@@ -467,10 +471,9 @@ def define_encoder(n_blocks, input_shape=(4, 750, 2)):
     # convolusion block 1
     d_1 = Conv2D(64, (1, 101), padding='valid')(featured_block)
     d_1 = Conv2D(64, (2, 151), padding='valid')(d_1)
-    d_1 = Dropout(0.2)(d_1)
     d_1 = Conv2D(64, (2, 251), padding='valid')(d_1)
     d_1 = Conv2D(64, (2, 201), padding='valid')(d_1)
-    d_1 = Dropout(0.5)(d_1)
+    d_1 = Dropout(0.2)(d_1)
     out_class = Dense(1)(d_1)
     # define model
     model_comp = Model(in_image, out_class)
@@ -806,7 +809,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, encoders, latent_dim):
-    resume_models=[True, False, False, False, False, False, False]
+    resume_models=[False, False, False, False, False, False, False]
     dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models

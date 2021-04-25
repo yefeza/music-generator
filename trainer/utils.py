@@ -37,14 +37,20 @@ def calculate_inception_score(p_yx, eps=1E-16):
 
 
 def generar_ejemplo(g_model, enc_model, gen_shape, random_real_data, prefix, iter_num, job_dir, bucket_name, latent_dim, evaluador, save):
-    if iter_num<=7:
+    if iter_num<=5:
         random_latent_vectors = tf.random.normal(shape=(10, latent_dim[0], latent_dim[1], latent_dim[2]))
     else:
-        if iter_num<=15:
+        if iter_num<=10:
             random_encoder_input = tf.random.normal(shape=(10, gen_shape[-3], gen_shape[-2], gen_shape[-1]))
             random_latent_vectors = enc_model(random_encoder_input, training=False)
         else:
-            random_latent_vectors = enc_model(random_real_data, training=False)
+            if iter_num<=15:
+                random_encoder_input = tf.random.normal(shape=(10, gen_shape[-3], gen_shape[-2], gen_shape[-1]))
+                random_ecoded = enc_model(random_encoder_input, training=False)
+                random_noise = tf.random.normal(shape=(10, latent_dim[0], latent_dim[1], latent_dim[2]))
+                random_latent_vectors=random_noise+random_ecoded
+            else:
+                random_latent_vectors = enc_model(random_real_data, training=False)
     gen_auds = g_model(random_latent_vectors, training=False)
     if save:
         signal_gen = gen_auds[random.randrange(0,len(gen_auds))].numpy()
