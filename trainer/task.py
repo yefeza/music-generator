@@ -78,12 +78,12 @@ if __name__ == '__main__':
 
     #with strategy.scope():
 
-    discriminators = define_discriminator(7)
-    encoders = define_encoder(7)
+    discriminators = define_discriminator(4)
+    encoders = define_encoder(4)
 
     # define generator
 
-    generators = define_generator(7, latent_dim)
+    generators = define_generator(4, latent_dim)
 
     # define composite models
 
