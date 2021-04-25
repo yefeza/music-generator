@@ -591,22 +591,22 @@ def define_generator(n_blocks, latent_dim):
     b0_r1 = Conv2DTranspose(128, (1, 5), strides=(1,5), padding='valid')(b0_r1)
     #rama 2 bloque 0
     b0_r2 = SlicerLayer(index_work=1)(des_ly_0)
-    b0_r2 = Conv2DTranspose(128, (1, 3), strides=(1,2), padding='valid')(b0_r2)
-    b0_r2 = Conv2DTranspose(128, (1, 5), strides=(1,2), padding='valid')(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (1, 3), strides=(1,2), padding='valid')(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (1, 5), strides=(1,2), padding='valid')(b0_r2)
     b0_r2 = Conv2DTranspose(128, (1, 46), padding='valid')(b0_r2)
     #rama 3 bloque 0
     b0_r3 = SlicerLayer(index_work=2)(des_ly_0)
-    b0_r3 = Conv2DTranspose(128, (1, 23), strides=(1,3), padding='valid')(b0_r3)
+    b0_r3 = Conv2DTranspose(32, (1, 23), strides=(1,3), padding='valid')(b0_r3)
     b0_r3 = Conv2DTranspose(128, (1, 81), padding='valid')(b0_r3)
     #rama 4 bloque 0
     b0_r4 = SlicerLayer(index_work=3)(des_ly_0)
-    b0_r4 = Conv2DTranspose(128, (1, 51), padding='valid')(b0_r4)
-    b0_r4 = Conv2DTranspose(128, (1, 101), padding='valid')(b0_r4)
+    b0_r4 = Conv2DTranspose(32, (1, 51), padding='valid')(b0_r4)
+    b0_r4 = Conv2DTranspose(32, (1, 101), padding='valid')(b0_r4)
     b0_r4 = Conv2DTranspose(128, (1, 51), padding='valid')(b0_r4)
     #sumar ramas bloque 0
     merger_b0=Add()([b0_r1, b0_r2, b0_r3, b0_r4])
     #index selector block 1
-    i_sel_1=Conv2D(128, (1,51), padding='valid')(merger_b0)
+    i_sel_1=Conv2D(32, (1,51), padding='valid')(merger_b0)
     i_sel_1=Conv2D(128, (1,101), padding='valid')(i_sel_1)
     i_sel_1=Dropout(0.5)(i_sel_1)
     i_sel_1=Flatten()(i_sel_1)
@@ -660,17 +660,17 @@ def define_generator(n_blocks, latent_dim):
     #bloque 1 salida (4,750,2)
     #rama 1
     b2_r1 = SlicerLayer(index_work=0)(des_ly_2)
-    b2_r1 = Conv2DTranspose(128, (2, 1), strides=(2,1), padding='valid')(b2_r1)
-    b2_r1 = Conv2DTranspose(128, (2, 1), strides=(2,1), padding='valid')(b2_r1)
+    b2_r1 = Conv2DTranspose(64, (2, 1), strides=(2,1), padding='valid')(b2_r1)
+    b2_r1 = Conv2DTranspose(64, (2, 1), strides=(2,1), padding='valid')(b2_r1)
     b2_r1 = Conv2DTranspose(2, (1, 1), padding='valid')(b2_r1)
     #rama 2
     b2_r2 = SlicerLayer(index_work=1)(des_ly_2)
-    b2_r2 = Conv2DTranspose(128, (4, 1), strides=(4,1), padding='valid')(b2_r2)
+    b2_r2 = Conv2DTranspose(64, (4, 1), strides=(4,1), padding='valid')(b2_r2)
     b2_r2 = Conv2DTranspose(2, (1, 1), padding='valid')(b2_r2)
     #rama 3
     b2_r3 = SlicerLayer(index_work=2)(des_ly_2)
-    b2_r3 = Conv2DTranspose(128, (2, 1), strides=(2,1), padding='valid')(b2_r3)
-    b2_r3 = Conv2DTranspose(128, (2, 1), strides=(2,1), padding='valid')(b2_r3)
+    b2_r3 = Conv2DTranspose(64, (2, 1), strides=(2,1), padding='valid')(b2_r3)
+    b2_r3 = Conv2DTranspose(64, (2, 1), strides=(2,1), padding='valid')(b2_r3)
     b2_r3 = Dense(2)(b2_r3)
     #rama 4
     b2_r4 = SlicerLayer(index_work=3)(des_ly_2)
@@ -678,13 +678,13 @@ def define_generator(n_blocks, latent_dim):
     b2_r4 = Dense(2)(b2_r4)
     #rama 5
     b2_r5 = SlicerLayer(index_work=4)(des_ly_2)
-    b2_r5 = Conv2DTranspose(128, (3, 1), strides=(2,1), padding='valid')(b2_r5)
-    b2_r5 = Conv2DTranspose(128, (2, 1), padding='valid')(b2_r5)
+    b2_r5 = Conv2DTranspose(64, (3, 1), strides=(2,1), padding='valid')(b2_r5)
+    b2_r5 = Conv2DTranspose(64, (2, 1), padding='valid')(b2_r5)
     b2_r5 = Conv2DTranspose(2, (1, 1), padding='valid')(b2_r5)
     #rama 6
     b2_r6 = SlicerLayer(index_work=5)(des_ly_2)
-    b2_r6 = Conv2DTranspose(128, (3, 1), strides=(2,1), padding='valid')(b2_r6)
-    b2_r6 = Conv2DTranspose(128, (2, 1), padding='valid')(b2_r6)
+    b2_r6 = Conv2DTranspose(64, (3, 1), strides=(2,1), padding='valid')(b2_r6)
+    b2_r6 = Conv2DTranspose(64, (2, 1), padding='valid')(b2_r6)
     b2_r6 = Dense(2)(b2_r6)
     #rama 7
     b2_r7 = SlicerLayer(index_work=6)(des_ly_2)
