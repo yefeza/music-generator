@@ -48,7 +48,7 @@ class DefaultNetwork(keras.Model):
         default_vars=[]
         for i in range(0, len(self.layers)):
             if self.layers[i].name[:5]=="defly":
-                default_vars.append(self.layers[i].trainable_weights)
+                default_vars+=self.layers[i].trainable_weights
         return default_vars
 
 class WGAN(keras.Model):
