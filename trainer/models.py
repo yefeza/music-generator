@@ -110,8 +110,9 @@ class WGAN(keras.Model):
 
         # Run on default network
         for i in range(5):
-            random_encoder_input = tf.random.normal(shape=(batch_size, gen_shape[-3], gen_shape[-2], gen_shape[-1]))
-            random_encoded_real=self.encoder(real_images, training=False)
+            mini_bsize=int(batch_size/2)
+            random_encoder_input = tf.random.normal(shape=(mini_bsize, gen_shape[-3], gen_shape[-2], gen_shape[-1]))
+            random_encoded_real=self.encoder(real_images[:mini_bsize], training=False)
             random_encoded_random=self.encoder(random_encoder_input, training=False)
             random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
             with tf.GradientTape() as tape:
@@ -132,8 +133,9 @@ class WGAN(keras.Model):
 
         # Train discriminator
         for i in range(self.d_steps):
-            random_encoder_input = tf.random.normal(shape=(batch_size, gen_shape[-3], gen_shape[-2], gen_shape[-1]))
-            random_encoded_real=self.encoder(real_images, training=False)
+            mini_bsize=int(batch_size/2)
+            random_encoder_input = tf.random.normal(shape=(mini_bsize, gen_shape[-3], gen_shape[-2], gen_shape[-1]))
+            random_encoded_real=self.encoder(real_images[:mini_bsize], training=False)
             random_encoded_random=self.encoder(random_encoder_input, training=False)
             random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
             with tf.GradientTape() as tape:
@@ -156,10 +158,12 @@ class WGAN(keras.Model):
         #random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
         with tf.GradientTape(persistent=True) as tape:
             #get noise from encoder
-            random_encoder_input = tf.random.normal(shape=(batch_size, gen_shape[-3], gen_shape[-2], gen_shape[-1]))
-            random_encoded_real=self.encoder(real_images, training=True)
+            mini_bsize=int(batch_size/2)
+            random_encoder_input = tf.random.normal(shape=(mini_bsize, gen_shape[-3], gen_shape[-2], gen_shape[-1]))
+            random_encoded_real=self.encoder(real_images[:mini_bsize], training=True)
             random_encoded_random=self.encoder(random_encoder_input, training=True)
             random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
+
             # Generate fake images using the generator
             generated_images = self.generator(random_latent_vectors, training=True)
             # Get the discriminator logits for fake images
