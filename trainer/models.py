@@ -105,7 +105,8 @@ class WGAN(keras.Model):
             real_images = real_images[0]
 
         # Get the batch size
-        batch_size = tf.shape(real_images)[0]
+        batch_size = tf.shape(real_images)
+        batch_size = batch_size.numpy()[0]
         gen_shape = self.generator.output_shape
 
         # Run on default network
