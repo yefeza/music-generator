@@ -593,7 +593,7 @@ def add_generator_block(old_model, counter):
     i_sel_1=Flatten()(i_sel_1)
     i_sel_1=Dense(6, activation='softmax', name="defly_"+counter.get_next())(i_sel_1)
     #decision layer
-    des_ly_1=DecisionLayer(output_size=3)([merger_b0, i_sel_1])
+    des_ly_1=DecisionLayer(output_size=6)([merger_b0, i_sel_1])
     #rama 1
     b1_r1 = SlicerLayer(index_work=0)(des_ly_1)
     b1_r1 = UpSampling2D()(b1_r1)
