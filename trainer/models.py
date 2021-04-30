@@ -529,70 +529,141 @@ def add_generator_block(old_model, counter):
     # upsample, and define new block
     upsampling = UpSampling2D()(block_end)
     #selector de incice 0
-    i_sel_0=Conv2D(32, (1,16), padding='valid', name="defly_"+counter.get_next())(block_end)
-    i_sel_0=Conv2D(32, (1,51), padding='valid', name="defly_"+counter.get_next())(i_sel_0)
-    i_sel_0=Dropout(0.5)(i_sel_0)
+    i_sel_0=Conv2D(32, (1,6), padding='valid', name="defly_"+counter.get_next())(block_end)
+    i_sel_0=Conv2D(32, (1,11), padding='valid', name="defly_"+counter.get_next())(i_sel_0)
+    i_sel_0=Dropout(0.3)(i_sel_0)
     i_sel_0=Flatten()(i_sel_0)
-    i_sel_0=Dense(3, activation='softmax', name="defly_"+counter.get_next())(i_sel_0)
+    i_sel_0=Dense(9, activation='softmax', name="defly_"+counter.get_next())(i_sel_0)
     #decision layer 0
-    des_ly_0=DecisionLayer(output_size=3)([block_end, i_sel_0])
+    des_ly_0=DecisionLayer(output_size=9)([block_end, i_sel_0])
     #rama 1 bloque 0
     b0_r1 = SlicerLayer(index_work=0)(des_ly_0)
-    b0_r1 = Conv2DTranspose(32, (1, k_size), padding='valid')(b0_r1)
-    b0_r1 = Conv2D(32, (1, 15), padding='same', kernel_initializer='he_normal')(b0_r1)
-    b0_r1 = Conv2D(32, (1, 35), padding='same', kernel_initializer='he_normal')(b0_r1)
-    b0_r1 = Conv2D(16, (1, 50), padding='same', kernel_initializer='he_normal')(b0_r1)
+    b0_r1 = Conv2DTranspose(8, (1, k_size), padding='valid')(b0_r1)
+    b0_r1 = Conv2D(8, (1, 15), padding='same', kernel_initializer='he_normal')(b0_r1)
+    b0_r1 = Conv2D(8, (1, 35), padding='same', kernel_initializer='he_normal')(b0_r1)
+    b0_r1 = Conv2D(8, (1, 20), padding='same', kernel_initializer='he_normal')(b0_r1)
     #rama 2 bloque 0
     b0_r2 = SlicerLayer(index_work=1)(des_ly_0)
-    b0_r2 = Conv2DTranspose(32, (1, k_size), padding='valid')(b0_r2)
-    b0_r2 = Conv2D(16, (1, 75), padding='same', kernel_initializer='he_normal')(b0_r2)
-    b0_r2 = Conv2D(16, (1, 105), padding='same', kernel_initializer='he_normal')(b0_r2)
+    b0_r2 = Conv2DTranspose(8, (1, k_size), padding='valid')(b0_r2)
+    b0_r2 = Conv2D(8, (1, 25), padding='same', kernel_initializer='he_normal')(b0_r2)
+    b0_r2 = Conv2D(8, (1, 12), padding='same', kernel_initializer='he_normal')(b0_r2)
     #rama 3 bloque 0
     b0_r3 = SlicerLayer(index_work=2)(des_ly_0)
-    b0_r3 = Conv2DTranspose(32, (1, k_size), padding='valid')(b0_r3)
-    b0_r3 = Conv2D(64, (1, 15), padding='same', kernel_initializer='he_normal')(b0_r3)
-    b0_r3 = Conv2D(16, (1, 150), padding='same', kernel_initializer='he_normal')(b0_r3)
+    b0_r3 = Conv2DTranspose(8, (1, k_size), padding='valid')(b0_r3)
+    b0_r3 = Conv2D(8, (1, 15), padding='same', kernel_initializer='he_normal')(b0_r3)
+    b0_r3 = Conv2D(8, (1, 7), padding='same', kernel_initializer='he_normal')(b0_r3)
+    #rama 4 bloque 0
+    b0_r4 = SlicerLayer(index_work=3)(des_ly_0)
+    b0_r4 = Conv2DTranspose(8, (1, k_size), padding='valid')(b0_r4)
+    b0_r4 = Conv2D(8, (1, 15), padding='same', kernel_initializer='he_normal')(b0_r4)
+    b0_r4 = Conv2D(8, (1, 20), padding='same', kernel_initializer='he_normal')(b0_r4)
+    b0_r4 = Conv2D(8, (1, 25), padding='same', kernel_initializer='he_normal')(b0_r4)
+    #rama 5 bloque 0
+    b0_r5 = SlicerLayer(index_work=4)(des_ly_0)
+    b0_r5 = Conv2DTranspose(8, (1, k_size), padding='valid')(b0_r5)
+    b0_r5 = Conv2D(8, (1, 16), padding='same', kernel_initializer='he_normal')(b0_r5)
+    b0_r5 = Conv2D(8, (1, 26), padding='same', kernel_initializer='he_normal')(b0_r5)
+    #rama 6 bloque 0
+    b0_r6 = SlicerLayer(index_work=5)(des_ly_0)
+    b0_r6 = Conv2DTranspose(8, (1, k_size), padding='valid')(b0_r6)
+    b0_r6 = Conv2D(8, (1, 15), padding='same', kernel_initializer='he_normal')(b0_r6)
+    b0_r6 = Conv2D(8, (1, 25), padding='same', kernel_initializer='he_normal')(b0_r6)
+    #rama 7 bloque 0
+    b0_r7 = SlicerLayer(index_work=6)(des_ly_0)
+    b0_r7 = Conv2DTranspose(8, (1, k_size), padding='valid')(b0_r7)
+    b0_r7 = Conv2D(8, (1, 15), padding='same', kernel_initializer='he_normal')(b0_r7)
+    b0_r7 = Conv2D(8, (1, 35), padding='same', kernel_initializer='he_normal')(b0_r7)
+    b0_r7 = Conv2D(8, (1, 11), padding='same', kernel_initializer='he_normal')(b0_r7)
+    #rama 8 bloque 0
+    b0_r8 = SlicerLayer(index_work=7)(des_ly_0)
+    b0_r8 = Conv2DTranspose(8, (1, k_size), padding='valid')(b0_r8)
+    b0_r8 = Conv2D(8, (1, 35), padding='same', kernel_initializer='he_normal')(b0_r8)
+    b0_r8 = Conv2D(8, (1, 15), padding='same', kernel_initializer='he_normal')(b0_r8)
+    #rama 9 bloque 0
+    b0_r9 = SlicerLayer(index_work=8)(des_ly_0)
+    b0_r9 = Conv2DTranspose(8, (1, k_size), padding='valid')(b0_r9)
+    b0_r9 = Conv2D(8, (1, 11), padding='same', kernel_initializer='he_normal')(b0_r9)
+    b0_r9 = Conv2D(8, (1, 25), padding='same', kernel_initializer='he_normal')(b0_r9)
     #sumar ramas bloque 0
-    merger_b0=Add()([b0_r1, b0_r2, b0_r3])
+    merger_b0=Add()([b0_r1, b0_r2, b0_r3, b0_r4, b0_r5, b0_r6, b0_r7, b0_r8, b0_r9])
     #index selector block 1
     i_sel_1=Conv2D(32, (1,15), padding='valid', name="defly_"+counter.get_next())(merger_b0)
     i_sel_1=Conv2D(32, (1,51), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
-    i_sel_1=Dropout(0.5)(i_sel_1)
+    i_sel_1=Dropout(0.3)(i_sel_1)
     i_sel_1=Flatten()(i_sel_1)
-    i_sel_1=Dense(3, activation='softmax', name="defly_"+counter.get_next())(i_sel_1)
+    i_sel_1=Dense(6, activation='softmax', name="defly_"+counter.get_next())(i_sel_1)
     #decision layer
     des_ly_1=DecisionLayer(output_size=3)([merger_b0, i_sel_1])
     #rama 1
     b1_r1 = SlicerLayer(index_work=0)(des_ly_1)
     b1_r1 = UpSampling2D()(b1_r1)
     b1_r1 = UpSampling2D()(b1_r1)
-    b1_r1 = Conv2D(64, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(b1_r1)
+    b1_r1 = Conv2D(16, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(b1_r1)
     b1_r1 = Conv2D(16, (4, 15), padding='same', kernel_initializer='he_normal')(b1_r1)
-    b1_r1 = Conv2D(16, (4, 150), padding='same', kernel_initializer='he_normal')(b1_r1)
-    b1_r1 = Conv2D(2, (4, 150), padding='same', kernel_initializer='he_normal')(b1_r1)
+    b1_r1 = Conv2D(16, (4, 20), padding='same', kernel_initializer='he_normal')(b1_r1)
     #rama 2
     b1_r2 = SlicerLayer(index_work=1)(des_ly_1)
     b1_r2 = UpSampling2D()(b1_r2)
     b1_r2 = UpSampling2D()(b1_r2)
-    b1_r2 = Conv2D(64, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(b1_r2)
-    b1_r2 = Conv2D(32, (4, 15), padding='same', kernel_initializer='he_normal')(b1_r2)
-    b1_r2 = Conv2D(64, (4, 35), padding='same', kernel_initializer='he_normal')(b1_r2)
-    b1_r2 = Conv2D(2, (4, 50), padding='same', kernel_initializer='he_normal')(b1_r2)
+    b1_r2 = Conv2D(16, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(b1_r2)
+    b1_r2 = Conv2D(16, (4, 15), padding='same', kernel_initializer='he_normal')(b1_r2)
+    b1_r2 = Conv2D(16, (4, 35), padding='same', kernel_initializer='he_normal')(b1_r2)
     #rama 3
     b1_r3 = SlicerLayer(index_work=2)(des_ly_1)
     b1_r3 = UpSampling2D()(b1_r3)
     b1_r3 = UpSampling2D()(b1_r3)
-    b1_r3 = Conv2D(64, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(b1_r3)
-    b1_r3 = Conv2D(32, (4, 15), padding='same', kernel_initializer='he_normal')(b1_r3)
-    b1_r3 = Conv2D(16, (4, 105), padding='same', kernel_initializer='he_normal')(b1_r3)
-    b1_r3 = Dense(2)(b1_r3)
+    b1_r3 = Conv2D(16, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(b1_r3)
+    b1_r3 = Conv2D(16, (4, 20), padding='same', kernel_initializer='he_normal')(b1_r3)
+    b1_r3 = Conv2D(16, (4, 15), padding='same', kernel_initializer='he_normal')(b1_r3)
+    #rama 4
+    b1_r4 = SlicerLayer(index_work=3)(des_ly_1)
+    b1_r4 = UpSampling2D()(b1_r4)
+    b1_r4 = UpSampling2D()(b1_r4)
+    b1_r4 = Conv2D(16, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(b1_r4)
+    b1_r4 = Conv2D(16, (4, 15), padding='same', kernel_initializer='he_normal')(b1_r4)
+    b1_r4 = Conv2D(16, (4, 20), padding='same', kernel_initializer='he_normal')(b1_r4)
+    #rama 5
+    b1_r5 = SlicerLayer(index_work=4)(des_ly_1)
+    b1_r5 = UpSampling2D()(b1_r5)
+    b1_r5 = UpSampling2D()(b1_r5)
+    b1_r5 = Conv2D(16, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(b1_r5)
+    b1_r5 = Conv2D(16, (4, 15), padding='same', kernel_initializer='he_normal')(b1_r5)
+    b1_r5 = Conv2D(16, (4, 35), padding='same', kernel_initializer='he_normal')(b1_r5)
+    #rama 6
+    b1_r6 = SlicerLayer(index_work=5)(des_ly_1)
+    b1_r6 = UpSampling2D()(b1_r6)
+    b1_r6 = UpSampling2D()(b1_r6)
+    b1_r6 = Conv2D(16, (2,4), strides=(2,4), padding='valid', kernel_initializer='he_normal')(b1_r6)
+    b1_r6 = Conv2D(16, (4, 20), padding='same', kernel_initializer='he_normal')(b1_r6)
+    b1_r6 = Conv2D(16, (4, 15), padding='same', kernel_initializer='he_normal')(b1_r6)
     #sumar ramas
-    merger_b1=Add()([b1_r1, b1_r2, b1_r3])
-    out_image = LayerNormalization(axis=[1,2])(merger_b1)
+    merger_b1=Add()([b1_r1, b1_r2, b1_r3, b1_r4, b1_r5, b1_r6])
+    #index selector block 3
+    i_sel_2=Conv2D(8, (1,26), padding='valid', name="defly_"+counter.get_next())(merger_b1)
+    i_sel_2=Conv2D(16, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
+    i_sel_2=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
+    i_sel_2=Dropout(0.3)(i_sel_2)
+    i_sel_2=Flatten()(i_sel_2)
+    i_sel_2=Dense(32, activation='softmax', name="defly_"+counter.get_next())(i_sel_2)
+    #decision layer block 3
+    des_ly_3=DecisionLayer(output_size=32)([merger_b1, i_sel_2])
+    outputs_list=[]
+    #Convolutional outputs
+    for i in range(16):
+        new_output_block = SlicerLayer(index_work=i)(des_ly_3)
+        new_output_block = Conv2D(2, (1,1), padding='valid')(new_output_block)
+        outputs_list.append(new_output_block)
+    #Dense outputs
+    for i in range(16):
+        new_output_block = SlicerLayer(index_work=(16+i))(des_ly_3)
+        new_output_block = Dense(2)(new_output_block)
+        outputs_list.append(new_output_block)
+    merger_b2=Add()(outputs_list)
+    out_image = LayerNormalization(axis=[1,2])(merger_b2)
     # define model
     model1 = DefaultNetwork(old_model.input, out_image)
     # define new output image as the weighted sum of the old and new models
-    merged = WeightedSum()([upsampling, merger_b1])
+    merged = WeightedSum()([upsampling, merger_b2])
     output_2 = LayerNormalization(axis=[1,2])(merged)
     # define model
     model2 = DefaultNetwork(old_model.input, output_2)
@@ -912,7 +983,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, encoders, latent_dim):
-    resume_models=[False, False, False, False, False, False, False]
+    resume_models=[True, False, False, False, False, False, False]
     dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models
