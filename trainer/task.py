@@ -166,12 +166,12 @@ if __name__ == '__main__':
             history = gan_models[i][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
             plot_losses(history, (gen_shape[-3], gen_shape[-2]))
 
-    batch_sizes=[8,4,2,2,2,2,2]
+    batch_sizes=[4,4,2,2,2,2,2]
     epochs_norm=[10,10,350,400,450,500,550]
     #epochs_norm=[10,5,400,450,500,550]
     #epochs_norm=[50,60,70,
     # 80,90,100,110]
     epochs_fade=[5,5,32,25,30,35,40]
-    start_from_growing=0
+    start_from_growing=1
     # train model
     train(composite, latent_dim, epochs_norm, epochs_fade, batch_sizes, JOB_DIR, bucket_name, files_format, path_dataset, download_data, epochs_evaluadores, start_from_growing)

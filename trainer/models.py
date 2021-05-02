@@ -983,7 +983,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, encoders, latent_dim):
-    resume_models=[True, False, False, False, False, False, False]
+    resume_models=[True, True, False, False, False, False, False]
     dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models
@@ -992,12 +992,12 @@ def define_composite(discriminators, generators, encoders, latent_dim):
         #precargar pesos previos de un checkpoint
         if resume_models[i]:
             prev_g_model, prev_d_model, prev_e_model=get_saved_model(dimension=dimensions[i])
-            d_models[i].set_weights(prev_d_model.get_weights())
-            g_models[i].set_weights(prev_g_model.get_weights())
-            enc_models[i].set_weights(prev_e_model.get_weights())
-            d_models[i].compile(optimizer=prev_d_model.optimizer)
-            g_models[i].compile(optimizer=prev_g_model.optimizer)
-            enc_models[i].compile(optimizer=prev_e_model.optimizer)
+            d_models[0].set_weights(prev_d_model.get_weights())
+            g_models[0].set_weights(prev_g_model.get_weights())
+            enc_models[0].set_weights(prev_e_model.get_weights())
+            d_models[0].compile(optimizer=prev_d_model.optimizer)
+            g_models[0].compile(optimizer=prev_g_model.optimizer)
+            enc_models[0].compile(optimizer=prev_e_model.optimizer)
         # straight-through model
         #d_models[2].trainable = False
         wgan1 = WGAN(
