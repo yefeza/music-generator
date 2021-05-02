@@ -127,10 +127,10 @@ if __name__ == '__main__':
         n_steps=int((scaled_data.shape[0]/n_batch))*e_norm
         scaled_data=scaled_data[:limit]
         print('Scaled Data', scaled_data.shape)
-        gan_models[0][0].set_train_steps(n_steps)
+        gan_models[start_from_growing][0].set_train_steps(n_steps)
         cbk=GANMonitor(job_dir=job_dir, evaluador=evaluador, latent_dim=latent_dim)
         np.random.shuffle(scaled_data)
-        history = gan_models[0][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
+        history = gan_models[start_from_growing][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
         plot_losses(history, (gen_shape[-3], gen_shape[-2]))
         # process each level of growth
         for i in range((start_from_growing+1), len(gan_models)):
