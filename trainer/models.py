@@ -951,7 +951,7 @@ def generator_loss_extra(fake_logits, real_logits):
     theta=tf.math.abs((fake_logits/500)*real_logits)
     return -delta + theta
     
-def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoint=5):
+def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoint=10):
     storage_client = storage.Client(project='ia-devs')
     bucket = storage_client.bucket(bucket_name)
     #crear carpeta local si no existe
@@ -983,7 +983,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, encoders, latent_dim):
-    resume_models=[True, True, False, False, False, False, False]
+    resume_models=[False, True, False, False, False, False, False]
     dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models
