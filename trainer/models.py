@@ -963,6 +963,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/d_model.h5"
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
+    print("Loading discriminator")
     d_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum, 'DeliGanLayer': DeliGanLayer, 'DefaultNetwork': DefaultNetwork})
     #cargar generador
     gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/g_model.h5"
@@ -970,6 +971,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
+    print("Loading generator")
     g_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum, 'DeliGanLayer': DeliGanLayer, 'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer, 'DefaultNetwork': DefaultNetwork})
     #cargar generador
     gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/e_model.h5"
@@ -977,6 +979,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
+    print("Loading encoder")
     e_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum, 'DeliGanLayer': DeliGanLayer, 'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer, 'DefaultNetwork': DefaultNetwork})
     return g_model, d_model, e_model
 
