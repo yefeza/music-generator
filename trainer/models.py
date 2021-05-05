@@ -127,7 +127,7 @@ class WGAN(keras.Model):
             # Get the gradients w.r.t the discriminator loss
             def_gradient = tape.gradient(def_loss, self.generator.trainable_default_network)
             # Update the weights of the discriminator using the discriminator optimizer
-            self.generator.optimizer.apply_gradients(
+            self.g_optimizer.apply_gradients(
                 zip(def_gradient, self.generator.trainable_default_network)
             )
 
