@@ -1012,8 +1012,8 @@ def define_composite(discriminators, generators, encoders, latent_dim):
         )
         wgan1.compile(
             d_optimizer=Adamax(learning_rate=0.0005),
-            enc_optimizer=Adamax(learning_rate=0.0001),
-            g_optimizer=Adamax(learning_rate=0.0001),
+            enc_optimizer=Adamax(learning_rate=0.0005),
+            g_optimizer=Adamax(learning_rate=0.0005),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss,
@@ -1031,8 +1031,8 @@ def define_composite(discriminators, generators, encoders, latent_dim):
         )
         wgan2.compile(
             d_optimizer=Adamax(learning_rate=0.0005),
-            enc_optimizer=Adamax(learning_rate=0.0001),
-            g_optimizer=Adamax(learning_rate=0.0001),
+            enc_optimizer=Adamax(learning_rate=0.0005),
+            g_optimizer=Adamax(learning_rate=0.0005),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
