@@ -983,7 +983,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, encoders, latent_dim):
-    resume_models=[False, True, False, False, False, False, False]
+    resume_models=[False, False, False, False, False, False, False]
     dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models
@@ -1008,9 +1008,9 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             discriminator_extra_steps=1,
         )
         wgan1.compile(
-            d_optimizer=Adamax(learning_rate=0.0005),
-            enc_optimizer=Adamax(learning_rate=0.0005),
-            g_optimizer=Adamax(learning_rate=0.0005),
+            d_optimizer=Adam(learning_rate=0.001),
+            enc_optimizer=Adam(learning_rate=0.0005),
+            g_optimizer=Adam(learning_rate=0.0005),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss,
@@ -1027,9 +1027,9 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             discriminator_extra_steps=1,
         )
         wgan2.compile(
-            d_optimizer=Adamax(learning_rate=0.0005),
-            enc_optimizer=Adamax(learning_rate=0.0005),
-            g_optimizer=Adamax(learning_rate=0.0005),
+            d_optimizer=Adam(learning_rate=0.001),
+            enc_optimizer=Adam(learning_rate=0.0005),
+            g_optimizer=Adam(learning_rate=0.0005),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
