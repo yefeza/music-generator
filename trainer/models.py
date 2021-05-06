@@ -57,6 +57,7 @@ class WGAN(keras.Model):
         discriminator,
         encoder,
         generator,
+        generator_default,
         latent_dim,
         fade_in=False,
         discriminator_extra_steps=3,
@@ -66,6 +67,7 @@ class WGAN(keras.Model):
         self.discriminator = discriminator
         self.encoder = encoder
         self.generator = generator
+        self.generator_default = generator_default
         self.latent_dim = latent_dim
         self.d_steps = discriminator_extra_steps
         self.gp_weight = gp_weight
@@ -73,16 +75,18 @@ class WGAN(keras.Model):
         self.total_steps = 0
         self.fade_in=fade_in
 
-    def compile(self, d_optimizer, enc_optimizer, g_optimizer, d_loss_fn, g_loss_fn, g_loss_fn_extra, was_loaded=False):
+    def compile(self, d_optimizer, enc_optimizer, g_optimizer, df_optimizer, d_loss_fn, g_loss_fn, g_loss_fn_extra, was_loaded=False):
         super(WGAN, self).compile()
         self.d_optimizer = d_optimizer
         self.enc_optimizer = enc_optimizer
         self.g_optimizer = g_optimizer
+        self.df_optimizer = df_optimizer
         self.d_loss_fn = d_loss_fn
         self.g_loss_fn = g_loss_fn
         self.g_loss_fn_extra = g_loss_fn_extra
         if not was_loaded:
             self.generator.compile(optimizer=g_optimizer)
+            self.generator_default.compile(optimizer=df_optimizer)
             self.discriminator.compile(optimizer=d_optimizer)
             self.encoder.compile(optimizer=enc_optimizer)
 
@@ -115,9 +119,10 @@ class WGAN(keras.Model):
             random_encoded_real=self.encoder(real_images[:mini_bsize], training=False)
             random_encoded_random=self.encoder(random_encoder_input, training=False)
             random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
+            random_latent_vectors = tf.random.shuffle(random_latent_vectors)
             with tf.GradientTape() as tape:
                 # Generate fake images from the latent vector
-                fake_images = self.generator(random_latent_vectors, training=True)
+                fake_images = self.generator_default(random_latent_vectors, training=True)
                 # Get the logits for the fake images
                 fake_logits = self.discriminator(fake_images, training=False)
                 # Get the logits for the real images
@@ -125,10 +130,10 @@ class WGAN(keras.Model):
                 # Calculate the discriminator loss using the fake and real image logits
                 def_loss = self.g_loss_fn(fake_logits, real_logits)
             # Get the gradients w.r.t the discriminator loss
-            def_gradient = tape.gradient(def_loss, self.generator.trainable_default_network)
+            def_gradient = tape.gradient(def_loss, self.generator_default.trainable_default_network)
             # Update the weights of the discriminator using the discriminator optimizer
-            self.g_optimizer.apply_gradients(
-                zip(def_gradient, self.generator.trainable_default_network)
+            self.generator_default.optimizer.apply_gradients(
+                zip(def_gradient, self.generator_default.trainable_default_network)
             )
 
         # Train discriminator
@@ -661,13 +666,15 @@ def add_generator_block(old_model, counter):
     merger_b2=Add()(outputs_list)
     out_image = LayerNormalization(axis=[1,2])(merger_b2)
     # define model
-    model1 = DefaultNetwork(old_model.input, out_image)
+    model1_normal = Model(old_model.input, out_image)
+    model1_default = DefaultNetwork(old_model.input, out_image)
     # define new output image as the weighted sum of the old and new models
     merged = WeightedSum()([upsampling, merger_b2])
     output_2 = LayerNormalization(axis=[1,2])(merged)
     # define model
-    model2 = DefaultNetwork(old_model.input, output_2)
-    return [model1, model2]
+    model2_normal = Model(old_model.input, output_2)
+    model2_default = DefaultNetwork(old_model.input, output_2)
+    return [model1_normal, model1_default, model2_normal, model2_default]
 
 # definir los generadores
 
@@ -905,10 +912,11 @@ def define_generator(n_blocks, latent_dim):
         outputs_list.append(new_output_block)
     merger_b3=Add()(outputs_list)
     wls = LayerNormalization(axis=[1,2])(merger_b3)
-    model = DefaultNetwork(ly0, wls)
+    model_normal = Model(ly0, wls)
+    model_default = DefaultNetwork(ly0, wls)
     # store model
-    model_list.append([model, model])
-    # create submodels
+    model_list.append([model_normal, model_default, model_normal, model_default])
+    # create submodels 
     for i in range(1, n_blocks):
         # get prior model without the fade-on
         old_model = model_list[i - 1][0]
@@ -973,6 +981,14 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     blob.download_to_filename(local_file_name)
     print("Loading generator")
     g_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum, 'DeliGanLayer': DeliGanLayer, 'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer, 'DefaultNetwork': DefaultNetwork})
+    #cargar generador default
+    gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/df_model.h5"
+    local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/df_model.h5"
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(gcloud_file_name)
+    blob.download_to_filename(local_file_name)
+    print("Loading generator default")
+    df_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum, 'DeliGanLayer': DeliGanLayer, 'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer, 'DefaultNetwork': DefaultNetwork})
     #cargar generador
     gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/e_model.h5"
     local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/e_model.h5"
@@ -981,7 +997,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     blob.download_to_filename(local_file_name)
     print("Loading encoder")
     e_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum, 'DeliGanLayer': DeliGanLayer, 'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer, 'DefaultNetwork': DefaultNetwork})
-    return g_model, d_model, e_model
+    return g_model, df_model, d_model, e_model
 
 # define composite models for training generators via discriminators
 
@@ -994,12 +1010,13 @@ def define_composite(discriminators, generators, encoders, latent_dim):
         g_models, d_models, enc_models = generators[i], discriminators[i], encoders[i]
         #precargar pesos previos de un checkpoint
         if resume_models[i]:
-            prev_g_model, prev_d_model, prev_e_model=get_saved_model(dimension=dimensions[i])
+            prev_g_model, prev_df_model, prev_d_model, prev_e_model=get_saved_model(dimension=dimensions[i])
             d_models[0].set_weights(prev_d_model.get_weights())
             g_models[0].set_weights(prev_g_model.get_weights())
             enc_models[0].set_weights(prev_e_model.get_weights())
             d_models[0].compile(optimizer=prev_d_model.optimizer)
             g_models[0].compile(optimizer=prev_g_model.optimizer)
+            g_models[1].compile(optimizer=prev_df_model.optimizer)
             enc_models[0].compile(optimizer=prev_e_model.optimizer)
         # straight-through model
         #d_models[2].trainable = False
@@ -1007,6 +1024,7 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             discriminator=d_models[0],
             encoder=enc_models[0],
             generator=g_models[0],
+            generator_default=g_models[1],
             latent_dim=latent_dim,
             discriminator_extra_steps=1,
         )
@@ -1014,6 +1032,7 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             d_optimizer=Adamax(learning_rate=0.0005),
             enc_optimizer=Adamax(learning_rate=0.0005),
             g_optimizer=Adamax(learning_rate=0.0005),
+            df_optimizer=Adamax(learning_rate=0.0005),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss,
@@ -1023,8 +1042,9 @@ def define_composite(discriminators, generators, encoders, latent_dim):
         #d_models[3].trainable = False
         wgan2 = WGAN(
             discriminator=d_models[1],
-            encoder=enc_models[0],
-            generator=g_models[1],
+            encoder=enc_models[1],
+            generator=g_models[2],
+            generator_default=g_models[3],
             latent_dim=latent_dim,
             fade_in=True,
             discriminator_extra_steps=1,
@@ -1033,6 +1053,7 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             d_optimizer=Adamax(learning_rate=0.0005),
             enc_optimizer=Adamax(learning_rate=0.0005),
             g_optimizer=Adamax(learning_rate=0.0005),
+            df_optimizer=Adamax(learning_rate=0.0005),
             g_loss_fn=generator_loss,
             g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
@@ -1069,6 +1090,7 @@ class GANMonitor(keras.callbacks.Callback):
                 pred+=list(pred_batch)
             if ((epoch+1)%5)==0:
                 guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "g_")
+                guardar_checkpoint(self.model.generator_default, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "df_")
                 guardar_checkpoint(self.model.discriminator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "d_")
                 guardar_checkpoint(self.model.encoder, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "e_")
             save_inception_score(self.model.generator, "epoch-"+str(epoch+1)+"/", self.bucket_name, np.array(pred))
