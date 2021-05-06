@@ -85,8 +85,8 @@ class WGAN(keras.Model):
         self.g_loss_fn = g_loss_fn
         self.g_loss_fn_extra = g_loss_fn_extra
         if not was_loaded:
-            self.generator.compile(optimizer=g_optimizer)
-            self.generator_default.compile(optimizer=df_optimizer)
+            #self.generator.compile(optimizer=g_optimizer)
+            #self.generator_default.compile(optimizer=df_optimizer)
             self.discriminator.compile(optimizer=d_optimizer)
             self.encoder.compile(optimizer=enc_optimizer)
 
@@ -667,13 +667,30 @@ def add_generator_block(old_model, counter):
     out_image = LayerNormalization(axis=[1,2])(merger_b2)
     # define model
     model1_normal = Model(old_model.input, out_image)
-    model1_default = DefaultNetwork(old_model.input, out_image)
+    model1_normal.compile(optimizer=Adamax(learning_rate=0.0005))
+    #define default
+    model1_default = Model(old_model.input, out_image)
+    for i in range(0, len(model1_default.layers)):
+        if model1_default.layers[i].name[:5]=="defly":
+            model1_default.layers[i].trainable=False
+    model1_default.compile(optimizer=Adamax(learning_rate=0.0005))
+    #return to trainable dflayers for fadein
+    model2_normal = Model(old_model.input, out_image)
+    for i in range(0, len(model2_normal.layers)):
+        if model2_normal.layers[i].name[:5]=="defly":
+            model2_normal.layers[i].trainable=True
     # define new output image as the weighted sum of the old and new models
     merged = WeightedSum()([upsampling, merger_b2])
     output_2 = LayerNormalization(axis=[1,2])(merged)
     # define model
     model2_normal = Model(old_model.input, output_2)
-    model2_default = DefaultNetwork(old_model.input, output_2)
+    model2_normal.compile(optimizer=Adamax(learning_rate=0.0005))
+    #define default
+    model2_default = Model(old_model.input, output_2)
+    for i in range(0, len(model2_default.layers)):
+        if model2_default.layers[i].name[:5]=="defly":
+            model2_default.layers[i].trainable=False
+    model2_default.compile(optimizer=Adamax(learning_rate=0.0005))
     return [model1_normal, model1_default, model2_normal, model2_default]
 
 # definir los generadores
@@ -913,7 +930,13 @@ def define_generator(n_blocks, latent_dim):
     merger_b3=Add()(outputs_list)
     wls = LayerNormalization(axis=[1,2])(merger_b3)
     model_normal = Model(ly0, wls)
-    model_default = DefaultNetwork(ly0, wls)
+    model_normal.compile(optimizer=Adamax(learning_rate=0.0005))
+    #define default
+    model_default = Model(ly0, wls)
+    for i in range(0, len(model_default.layers)):
+        if model_default.layers[i].name[:5]=="defly":
+            model_default.layers[i].trainable=False
+    model_default.compile(optimizer=Adamax(learning_rate=0.0005))
     # store model
     model_list.append([model_normal, model_default, model_normal, model_default])
     # create submodels 
@@ -1002,7 +1025,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, encoders, latent_dim):
-    resume_models=[True, False, False, False, False, False, False]
+    resume_models=[False, False, False, False, False, False, False]
     dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models
@@ -1015,8 +1038,8 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             g_models[0].set_weights(prev_g_model.get_weights())
             enc_models[0].set_weights(prev_e_model.get_weights())
             d_models[0].compile(optimizer=prev_d_model.optimizer)
-            g_models[0].compile(optimizer=prev_g_model.optimizer)
-            g_models[1].compile(optimizer=prev_df_model.optimizer)
+            g_models[0].optimizer.set_weights(prev_g_model.optimizer.get_weights())
+            g_models[1].optimizer.set_weights(prev_df_model.optimizer.get_weights())
             enc_models[0].compile(optimizer=prev_e_model.optimizer)
         # straight-through model
         #d_models[2].trainable = False
