@@ -1038,9 +1038,9 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             g_models[0].set_weights(prev_g_model.get_weights())
             enc_models[0].set_weights(prev_e_model.get_weights())
             d_models[0].compile(optimizer=prev_d_model.optimizer)
-            g_models[0]._make_train_function()
+            g_models[0].optimizer._create_all_weights(g_models[0].trainable_variables)
             g_models[0].optimizer.set_weights(prev_g_model.optimizer.get_weights())
-            g_models[1]._make_train_function()
+            g_models[1].optimizer._create_all_weights(g_models[1].trainable_variables)
             g_models[1].optimizer.set_weights(prev_df_model.optimizer.get_weights())
             enc_models[0].compile(optimizer=prev_e_model.optimizer)
         # straight-through model
