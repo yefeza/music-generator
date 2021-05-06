@@ -130,10 +130,10 @@ class WGAN(keras.Model):
                 # Calculate the discriminator loss using the fake and real image logits
                 def_loss = self.g_loss_fn(fake_logits, real_logits)
             # Get the gradients w.r.t the discriminator loss
-            def_gradient = tape.gradient(def_loss, self.generator_default.trainable_default_network)
+            def_gradient = tape.gradient(def_loss, self.generator_default.trainable_variables)
             # Update the weights of the discriminator using the discriminator optimizer
             self.generator_default.optimizer.apply_gradients(
-                zip(def_gradient, self.generator_default.trainable_default_network)
+                zip(def_gradient, self.generator_default.trainable_variables)
             )
 
         # Train discriminator
@@ -671,13 +671,13 @@ def add_generator_block(old_model, counter):
     #define default
     model1_default = Model(old_model.input, out_image)
     for i in range(0, len(model1_default.layers)):
-        if model1_default.layers[i].name[:5]=="defly":
+        if model1_default.layers[i].name[:5]!="defly":
             model1_default.layers[i].trainable=False
     model1_default.compile(optimizer=Adamax(learning_rate=0.0005))
     #return to trainable dflayers for fadein
     model2_normal = Model(old_model.input, out_image)
     for i in range(0, len(model2_normal.layers)):
-        if model2_normal.layers[i].name[:5]=="defly":
+        if model2_normal.layers[i].name[:5]!="defly":
             model2_normal.layers[i].trainable=True
     # define new output image as the weighted sum of the old and new models
     merged = WeightedSum()([upsampling, merger_b2])
@@ -688,7 +688,7 @@ def add_generator_block(old_model, counter):
     #define default
     model2_default = Model(old_model.input, output_2)
     for i in range(0, len(model2_default.layers)):
-        if model2_default.layers[i].name[:5]=="defly":
+        if model2_default.layers[i].name[:5]!="defly":
             model2_default.layers[i].trainable=False
     model2_default.compile(optimizer=Adamax(learning_rate=0.0005))
     return [model1_normal, model1_default, model2_normal, model2_default]
@@ -934,7 +934,7 @@ def define_generator(n_blocks, latent_dim):
     #define default
     model_default = Model(ly0, wls)
     for i in range(0, len(model_default.layers)):
-        if model_default.layers[i].name[:5]=="defly":
+        if model_default.layers[i].name[:5]!="defly":
             model_default.layers[i].trainable=False
     model_default.compile(optimizer=Adamax(learning_rate=0.0005))
     # store model
