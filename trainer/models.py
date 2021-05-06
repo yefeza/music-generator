@@ -169,7 +169,7 @@ class WGAN(keras.Model):
             random_encoded_real=self.encoder(real_images[:mini_bsize], training=True)
             random_encoded_random=self.encoder(random_encoder_input, training=True)
             random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
-            random_latent_vectors = tf.random.shuffle(random_latent_vectors)
+            #random_latent_vectors = tf.random.shuffle(random_latent_vectors)
             # Generate fake images using the generator
             generated_images = self.generator(random_latent_vectors, training=True)
             # Get the discriminator logits for fake images
