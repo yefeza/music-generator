@@ -954,11 +954,16 @@ def define_generator(n_blocks, latent_dim):
 # Define the loss functions for the discriminator,
 # which should be (fake_loss - real_loss).
 # We will add the gradient penalty later to this loss function.
-def discriminator_loss(fake_logits, real_logits):
+'''def discriminator_loss(fake_logits, real_logits):
     lambda_1=(fake_logits-real_logits)
     lambda_2=(real_logits-fake_logits)
     delta=tf.math.abs(lambda_1)
-    return (-10+(delta/1000))*(-((lambda_1*lambda_2)/1000))+(lambda_1/0.5)
+    return (-10+(delta/1000))*(-((lambda_1*lambda_2)/1000))+(lambda_1/0.5)'''
+
+def discriminator_loss(fake_logits, real_logits):
+    lambda_1=(fake_logits-real_logits)
+    delta=tf.math.abs(lambda_1)
+    return (fake_logits*real_logits)*((delta+1000)/1000)
 
 # Define the loss functions for the generator.
 def generator_loss_fake(fake_logits, real_logits):
@@ -970,13 +975,13 @@ def generator_loss_fake(fake_logits, real_logits):
     delta_2=tf.math.abs((real_logits+fake_logits))
     return -(((-3+(delta_1/2))*(-((lambda_1*lambda_2)/1000)))+(3*delta_2))
 
-def generator_loss(fake_logits, real_logits):
-    #fake_logits=tf.reduce_mean(fake_logits)
-    #real_logits=tf.reduce_mean(real_logits)
+'''def generator_loss(fake_logits, real_logits):
     lamb=(fake_logits-real_logits)
     delta=tf.math.abs(lamb)
-    #l2=tf.math.multiply(0.1, tf.reduce_mean(tf.square(tf.math.subtract(1.0,rho_values))))
-    return (delta/0.2)-(2*tf.math.abs(fake_logits))
+    return (delta/0.2)-(2*tf.math.abs(fake_logits))'''
+
+def generator_loss(fake_logits, real_logits):
+    return tf.math.square(fake_logits-real_logits)
     
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
@@ -1027,7 +1032,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, encoders, latent_dim):
-    resume_models=[True, False, False, False, False, False, False]
+    resume_models=[False, False, False, False, False, False, False]
     dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models
