@@ -976,7 +976,7 @@ def generator_loss_fake(fake_logits, real_logits):
     return -(((-3+(delta_1/2))*(-((lambda_1*lambda_2)/1000)))+(3*delta_2))
 
 def generator_loss(fake_logits, real_logits):
-    lamb_2=(fake_logits+real_logits)
+    lamb_2=(fake_logits-real_logits)
     delta=tf.math.abs(lamb_2)
     return (delta/0.1)-(2*tf.math.abs(fake_logits))
 
