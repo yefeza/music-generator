@@ -961,9 +961,8 @@ def define_generator(n_blocks, latent_dim):
     return (-10+(delta/1000))*(-((lambda_1*lambda_2)/1000))+(lambda_1/0.5)'''
 
 def discriminator_loss(fake_logits, real_logits):
-    lambda_1=(fake_logits-real_logits)
-    delta=tf.math.abs(lambda_1)
-    return (fake_logits*(real_logits/100))*((delta+1000)/1000)
+    m=(fake_logits*real_logits)/2
+    return tf.math.sin(m)
 
 # Define the loss functions for the generator.
 def generator_loss_fake(fake_logits, real_logits):
@@ -978,7 +977,7 @@ def generator_loss_fake(fake_logits, real_logits):
 def generator_loss(fake_logits, real_logits):
     lamb_2=(fake_logits-real_logits)
     delta=tf.math.abs(lamb_2)
-    return (delta/0.1)-(2*tf.math.abs(fake_logits))
+    return (delta/0.1)-(5*tf.math.abs(fake_logits))
 
     
 # Define the loss functions for the generator.
