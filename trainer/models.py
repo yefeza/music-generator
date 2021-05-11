@@ -961,7 +961,7 @@ def define_generator(n_blocks, latent_dim):
     return (-10+(delta/1000))*(-((lambda_1*lambda_2)/1000))+(lambda_1/0.5)'''
 
 def discriminator_loss(fake_logits, real_logits):
-    m=(fake_logits*real_logits)/10
+    m=(fake_logits*real_logits)/9
     return 2*tf.math.sin(m)
 
 # Define the loss functions for the generator.
