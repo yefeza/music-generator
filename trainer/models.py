@@ -980,7 +980,7 @@ def generator_loss_fake(fake_logits, real_logits):
     return (delta/0.1)-(5*tf.math.abs(fake_logits))'''
 
 def generator_loss(fake_logits, real_logits):
-    m=(fake_logits*real_logits)/10
+    m=(fake_logits*real_logits)/15
     return 2*tf.math.sin(-m)
     
 # Define the loss functions for the generator.
