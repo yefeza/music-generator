@@ -340,7 +340,7 @@ class FFT2d(Layer):
         super(FFT2d, self).__init__(**kwargs)
 
     def call(self, inputs):
-        shape_data=inputs[0].shape
+        shape_data=inputs.shape
         reshaped=tf.reshape(inputs, shape=[-1, shape_data[1]*shape_data[2], shape_data[3]])
         reshaped=tf.cast(reshaped, dtype=tf.complex64)
         fft = tf.signal.fft2d(reshaped)
@@ -358,7 +358,7 @@ class iFFT2d(Layer):
         super(iFFT2d, self).__init__(**kwargs)
 
     def call(self, inputs):
-        shape_data=inputs[0].shape
+        shape_data=inputs.shape
         reshaped=tf.reshape(inputs, shape=[-1, shape_data[1]*shape_data[2], shape_data[3]])
         reshaped=tf.cast(reshaped, dtype=tf.complex64)
         ifft = tf.signal.ifft2d(reshaped)
