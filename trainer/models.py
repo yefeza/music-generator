@@ -113,7 +113,7 @@ class WGAN(keras.Model):
         gen_shape = self.generator.output_shape
 
         # Run on default network
-        for i in range(3):
+        for i in range(4):
             mini_bsize=int(batch_size/2)
             random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-3], gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
             random_encoded_real=self.encoder(real_images[:mini_bsize], training=False)
@@ -743,7 +743,9 @@ def define_generator(n_blocks, latent_dim):
     # input
     ly0 = Input(shape=latent_dim)
     #selector de incice 0
-    i_sel_0=Conv2D(32, (1,6), padding='valid', name="defly_"+counter.get_next())(ly0)
+    i_sel_0=FFT2d(name="defly_"+counter.get_next())(ly0)
+    i_sel_0=Conv2D(32, (1,6), padding='valid', name="defly_"+counter.get_next())(i_sel_0)
+    i_sel_0=iFFT2d(name="defly_"+counter.get_next())(i_sel_0)
     i_sel_0=Conv2D(32, (1,11), padding='valid', name="defly_"+counter.get_next())(i_sel_0)
     i_sel_0=Dropout(0.3)(i_sel_0)
     i_sel_0=Flatten()(i_sel_0)
@@ -754,34 +756,28 @@ def define_generator(n_blocks, latent_dim):
     #rama 1 bloque 0
     b0_r1 = SlicerLayer(index_work=0)(des_ly_0)
     b0_r1 = Conv2DTranspose(16, (1, 5), strides=(1,5), padding='valid')(b0_r1)
-    b0_r1 = FFT2d()(b0_r1)
     #rama 2 bloque 0
     b0_r2 = SlicerLayer(index_work=1)(des_ly_0)
     b0_r2 = Conv2DTranspose(8, (1, 3), strides=(1,2), padding='valid')(b0_r2)
     b0_r2 = Conv2DTranspose(8, (1, 5), strides=(1,2), padding='valid')(b0_r2)
     b0_r2 = Conv2DTranspose(16, (1, 46), padding='valid')(b0_r2)
-    b0_r2 = FFT2d()(b0_r2)
     #rama 3 bloque 0
     b0_r3 = SlicerLayer(index_work=2)(des_ly_0)
     b0_r3 = Conv2DTranspose(8, (1, 23), strides=(1,3), padding='valid')(b0_r3)
     b0_r3 = Conv2DTranspose(16, (1, 81), padding='valid')(b0_r3)
-    b0_r3 = FFT2d()(b0_r3)
     #rama 4 bloque 0
     b0_r4 = SlicerLayer(index_work=3)(des_ly_0)
     b0_r4 = Conv2DTranspose(8, (1, 51), padding='valid')(b0_r4)
     b0_r4 = Conv2DTranspose(8, (1, 101), padding='valid')(b0_r4)
     b0_r4 = Conv2DTranspose(16, (1, 51), padding='valid')(b0_r4)
-    b0_r4 = FFT2d()(b0_r4)
     #rama 5 bloque 0
     b0_r5 = SlicerLayer(index_work=4)(des_ly_0)
     b0_r5 = Conv2DTranspose(16, (1, 5), strides=(1,5), padding='valid')(b0_r5)
-    b0_r5 = FFT2d()(b0_r5)
     #rama 6 bloque 0
     b0_r6 = SlicerLayer(index_work=5)(des_ly_0)
     b0_r6 = Conv2DTranspose(8, (1, 3), strides=(1,2), padding='valid')(b0_r6)
     b0_r6 = Conv2DTranspose(8, (1, 5), strides=(1,2), padding='valid')(b0_r6)
     b0_r6 = Conv2DTranspose(16, (1, 46), padding='valid')(b0_r6)
-    b0_r6 = FFT2d()(b0_r6)
     #rama 7 bloque 0
     b0_r7 = SlicerLayer(index_work=6)(des_ly_0)
     b0_r7 = Conv2DTranspose(8, (1, 23), strides=(1,3), padding='valid')(b0_r7)
@@ -815,12 +811,11 @@ def define_generator(n_blocks, latent_dim):
     b0_r12 = Conv2DTranspose(16, (1, 51), padding='valid')(b0_r12)
     b0_r12 = iFFT2d()(b0_r12)
     #sumar ramas bloque 0
-    merger_fd_0=Add()([b0_r1, b0_r2, b0_r3, b0_r4, b0_r5, b0_r6])
-    merger_fd_0=iFFT2d()(merger_fd_0)
-    merger_td_0=Add()([b0_r7, b0_r8, b0_r9, b0_r10, b0_r11, b0_r12])
-    merger_b0=Add()([merger_fd_0, merger_td_0])
+    merger_b0=Add()([b0_r1, b0_r2, b0_r3, b0_r4, b0_r5, b0_r6, b0_r7, b0_r8, b0_r9, b0_r10, b0_r11, b0_r12])
     #index selector block 1
-    i_sel_1=Conv2D(32, (1,16), padding='valid', name="defly_"+counter.get_next())(merger_b0)
+    i_sel_1=FFT2d(name="defly_"+counter.get_next())(merger_b0)
+    i_sel_1=Conv2D(32, (1,16), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
+    i_sel_1=iFFT2d(name="defly_"+counter.get_next())(i_sel_1)
     i_sel_1=Conv2D(32, (1,16), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
     i_sel_1=Dropout(0.3)(i_sel_1)
     i_sel_1=Flatten()(i_sel_1)
@@ -907,8 +902,10 @@ def define_generator(n_blocks, latent_dim):
     #sumar ramas
     merger_b1=Add()([b1_r1, b1_r2, b1_r3, b1_r4, b1_r5, b1_r6, b1_r7, b1_r8, b1_r9, b1_r10, b1_r11, b1_r12])
     #index selector block 2
+    i_sel_2=FFT2d(name="defly_"+counter.get_next())(merger_b1)
     i_sel_2=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(merger_b1)
     i_sel_2=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
+    i_sel_2=iFFT2d(name="defly_"+counter.get_next())(i_sel_2)
     i_sel_2=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
     i_sel_2=Dropout(0.3)(i_sel_2)
     i_sel_2=Flatten()(i_sel_2)
@@ -989,8 +986,10 @@ def define_generator(n_blocks, latent_dim):
     #unir ramas
     merger_b2=Add()([b2_r1, b2_r2, b2_r3, b2_r4, b2_r5, b2_r6, b2_r7, b2_r8, b2_r9, b2_r10, b2_r11, b2_r12])
     #index selector block 3
-    i_sel_3=Conv2D(16, (1,26), padding='valid', name="defly_"+counter.get_next())(merger_b2)
+    i_sel_3=FFT2d(name="defly_"+counter.get_next())(merger_b2)
+    i_sel_3=Conv2D(16, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
     i_sel_3=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
+    i_sel_3=iFFT2d(name="defly_"+counter.get_next())(i_sel_3)
     i_sel_3=Conv2D(64, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
     i_sel_3=Dropout(0.3)(i_sel_3)
     i_sel_3=Flatten()(i_sel_3)
@@ -1040,6 +1039,8 @@ def define_generator(n_blocks, latent_dim):
     return (-10+(delta/1000))*(-((lambda_1*lambda_2)/1000))+(lambda_1/0.5)'''
 
 def discriminator_loss(fake_logits, real_logits):
+    fake_logits=tf.reduce_mean(fake_logits)
+    real_logits=tf.reduce_mean(real_logits)
     m=(fake_logits*real_logits)/9
     return 2*tf.math.sin(m)
 
@@ -1059,8 +1060,10 @@ def generator_loss_fake(fake_logits, real_logits):
     return (delta/0.1)-(5*tf.math.abs(fake_logits))'''
 
 def generator_loss(fake_logits, real_logits):
+    fake_logits=tf.reduce_mean(fake_logits)
+    real_logits=tf.reduce_mean(real_logits)
     m=(fake_logits*real_logits)/10
-    return 2*tf.math.sin(-m)
+    return 3*tf.math.sin(-m)
     
 # Define the loss functions for the generator.
 def generator_loss_extra(fake_logits, real_logits):
