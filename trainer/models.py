@@ -444,7 +444,7 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     # conv 1x1
     featured_block = Conv2D(128, (1, 1), padding='same')(in_image)
     # convolusion block 1
-    d_1 = Conv2D(32, (1, 151), padding='valid')(featured_block)
+    d_1 = Conv2D(32, (1, 151), padding='same')(featured_block)
     d_1 = FFT2d()(featured_block)
     d_1 = Conv2D(32, (1, 201), padding='valid')(d_1)
     d_1 = Conv2D(32, (1, 301), padding='valid')(d_1)
