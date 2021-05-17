@@ -366,7 +366,7 @@ class iFFT2d(Layer):
         imag_values=reshaped[:,:,int(shape_data[3]/2):]
         converted=tf.complex(real_values, imag_values)
         ifft = tf.signal.ifft2d(converted)
-        orig_shape = tf.reshape(ifft, shape=[-1, shape_data[1], shape_data[2], shape_data[3]])
+        orig_shape = tf.reshape(ifft, shape=[-1, shape_data[1], shape_data[2], int(shape_data[3]/2)])
         orig_shape=tf.cast(orig_shape, dtype=tf.float32)
         return orig_shape
 
