@@ -362,8 +362,8 @@ class iFFT2d(Layer):
     def call(self, inputs):
         shape_data=inputs.shape
         reshaped=tf.reshape(inputs, shape=[-1, shape_data[1]*shape_data[2], shape_data[3]])
-        real_values=reshaped[:,:,:,:int(shape_data[3]/2)]
-        imag_values=reshaped[:,:,:,int(shape_data[3]/2):]
+        real_values=reshaped[:,:,:int(shape_data[3]/2)]
+        imag_values=reshaped[:,:,int(shape_data[3]/2):]
         converted=tf.complex(real_values, imag_values)
         ifft = tf.signal.ifft2d(converted)
         orig_shape = tf.reshape(ifft, shape=[-1, shape_data[1], shape_data[2], shape_data[3]])
@@ -444,8 +444,8 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     # conv 1x1
     featured_block = Conv2D(128, (1, 1), padding='same')(in_image)
     # convolusion block 1
-    d_1 = Conv2D(32, (1, 151), padding='same')(featured_block)
-    d_1 = FFT2d()(d_1)
+    #d_1 = Conv2D(32, (1, 151), padding='same')(featured_block)
+    d_1 = FFT2d()(featured_block)
     d_1 = Conv2D(32, (1, 201), padding='valid')(d_1)
     d_1 = Conv2D(32, (1, 301), padding='valid')(d_1)
     d_1 = iFFT2d()(d_1)
