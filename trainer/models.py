@@ -811,7 +811,7 @@ def define_generator(n_blocks, latent_dim):
     b0_r11 = SlicerLayer(index_work=10)(des_ly_0)
     b0_r11 = FFT2d()(b0_r11)
     b0_r11 = Conv2DTranspose(8, (1, 23), strides=(1,3), padding='valid')(b0_r11)
-    b0_r11 = Conv2DTranspose(16, (1, 81), padding='valid')(b0_r11)
+    b0_r11 = Conv2DTranspose(32, (1, 81), padding='valid')(b0_r11)
     b0_r11 = iFFT2d()(b0_r11)
     #rama 12 bloque 0
     b0_r12 = SlicerLayer(index_work=11)(des_ly_0)
