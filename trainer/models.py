@@ -20,7 +20,7 @@ from .dataset import *
 from .utils import *
 from google.cloud import storage
 import os
-from tf.keras.layers import Conv1DTranspose
+from tensorflow.keras.layers import Conv1DTranspose
 # Weighted Sum Layer para el proceso de fade-in
 
 class WeightedSum(Add):
