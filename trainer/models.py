@@ -4,7 +4,7 @@ from keras.optimizers import Adam, Adamax
 from keras.models import Sequential, Model
 from keras.layers.core import Dense, Activation, Dropout
 from keras.layers import Input, UpSampling2D, Layer
-from keras.layers.convolutional import Conv2D, Conv2DTranspose, SeparableConv2D
+from keras.layers.convolutional import Conv1D, Conv2D, Conv2DTranspose, SeparableConv2D, Conv1DTranspose
 from keras.layers.convolutional import AveragePooling2D
 from keras.layers import Flatten
 from keras.layers import Reshape
@@ -333,6 +333,69 @@ class SlicerLayer(Layer):
         config = super(SlicerLayer, self).get_config()
         config.update({"index_work": self.index_work})
         return config
+#Slicer Layer
+class SlicerRealLayer(Layer):
+    def __init__(self, **kwargs):
+        super(SlicerRealLayer, self).__init__(**kwargs)
+
+    def call(self, inputs):
+        return tf.math.real(inputs)
+
+    def get_config(self):
+        config = super(SlicerRealLayer, self).get_config()
+        return config
+
+#Slicer Layer
+class SlicerImagLayer(Layer):
+    def __init__(self, **kwargs):
+        super(SlicerImagLayer, self).__init__(**kwargs)
+
+    def call(self, inputs):
+        return tf.math.imag(inputs)
+
+    def get_config(self):
+        config = super(SlicerImagLayer, self).get_config()
+        return config
+
+#Merge Complex Layer
+class MergeComplexLayer(Layer):
+    def __init__(self, **kwargs):
+        super(MergeComplexLayer, self).__init__(**kwargs)
+
+    def call(self, inputs):
+        return tf.complex(inputs[0], inputs[1])
+
+    def get_config(self):
+        config = super(MergeComplexLayer, self).get_config()
+        return config
+
+#Complex concatenated
+class ConcatComplexComponents(Layer):
+    def __init__(self, **kwargs):
+        super(ConcatComplexComponents, self).__init__(**kwargs)
+
+    def call(self, inputs):
+        real=tf.math.real(inputs)
+        imag=tf.math.imag(inputs)
+        return tf.concat([real, imag], -1)
+
+    def get_config(self):
+        config = super(ConcatComplexComponents, self).get_config()
+        return config
+
+#Complex concatenated
+class ComponentsToComplex(Layer):
+    def __init__(self, **kwargs):
+        super(ComponentsToComplex, self).__init__(**kwargs)
+
+    def call(self, inputs):
+        real=inputs[:,:,:1]
+        imag=inputs[:,:,1:]
+        return tf.complex(real, imag)
+
+    def get_config(self):
+        config = super(ComponentsToComplex, self).get_config()
+        return config
 
 #FFT 2d Layer
 class FFT2d(Layer):
@@ -340,15 +403,10 @@ class FFT2d(Layer):
         super(FFT2d, self).__init__(**kwargs)
 
     def call(self, inputs):
-        shape_data=inputs.shape
-        reshaped=tf.reshape(inputs, shape=[-1, shape_data[1]*shape_data[2], shape_data[3]])
-        reshaped=tf.cast(reshaped, dtype=tf.complex64)
-        fft = tf.signal.fft2d(reshaped)
-        orig_shape = tf.reshape(fft, shape=[-1, shape_data[1], shape_data[2], shape_data[3]])
-        real_values = tf.math.real(orig_shape)
-        imag_values = tf.math.imag(orig_shape)
-        concat_values=tf.concat([real_values, imag_values], -1)
-        return concat_values
+        flat_ly=Flatten()
+        reshaped=flat_ly(inputs)
+        fft = tf.signal.rfft(reshaped)
+        return fft
 
     def get_config(self):
         config = super(FFT2d, self).get_config()
@@ -360,15 +418,8 @@ class iFFT2d(Layer):
         super(iFFT2d, self).__init__(**kwargs)
 
     def call(self, inputs):
-        shape_data=inputs.shape
-        reshaped=tf.reshape(inputs, shape=[-1, shape_data[1]*shape_data[2], shape_data[3]])
-        real_values=reshaped[:,:,:int(shape_data[3]/2)]
-        imag_values=reshaped[:,:,int(shape_data[3]/2):]
-        converted=tf.complex(real_values, imag_values)
-        ifft = tf.signal.ifft2d(converted)
-        orig_shape = tf.reshape(ifft, shape=[-1, shape_data[1], shape_data[2], int(shape_data[3]/2)])
-        orig_shape=tf.cast(orig_shape, dtype=tf.float32)
-        return orig_shape
+        ifft = tf.signal.irfft(inputs)
+        return ifft
 
     def get_config(self):
         config = super(iFFT2d, self).get_config()
@@ -446,9 +497,15 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     # convolusion block 1
     #d_1 = Conv2D(32, (1, 151), padding='same')(featured_block)
     d_1 = FFT2d()(featured_block)
+    d_1 = ConcatComplexComponents()(d_1)
+    d_1 = Conv1D(32, 16, padding='same')(d_1)
+    d_1 = Conv1DTranspose(32, 16, padding='same')(d_1)
+    d_1 = Dense(2)(d_1)
+    d_1 = ComponentsToComplex()(d_1)
+    d_1 = iFFT2d()(d_1)
+    d_1 = Reshape((4, 750, 128))(d_1)
     d_1 = Conv2D(32, (1, 201), padding='valid')(d_1)
     d_1 = Conv2D(32, (1, 301), padding='valid')(d_1)
-    d_1 = iFFT2d()(d_1)
     d_1 = Conv2D(32, (2, 16), padding='valid')(d_1)
     d_1 = Conv2D(32, (2, 36), padding='valid')(d_1)
     d_1 = MinibatchStdDev()(d_1)
@@ -747,109 +804,119 @@ def define_generator(n_blocks, latent_dim):
     # input
     ly0 = Input(shape=latent_dim)
     #selector de incice 0
-    i_sel_0=FFT2d(name="defly_"+counter.get_next())(ly0)
-    i_sel_0=Conv2D(32, (1,6), padding='valid', name="defly_"+counter.get_next())(i_sel_0)
+    i_sel_0_tf=FFT2d(name="defly_"+counter.get_next())(ly0)
+    #procesar frecuencias
+    i_sel_0_b0=SlicerRealLayer()(i_sel_0_tf)
+    i_sel_0_b0=Conv1D(16, 6, padding='valid', name="defly_"+counter.get_next())(i_sel_0_b0)
+    i_sel_0_b0=Dense(1, name="defly_"+counter.get_next())(i_sel_0_b0)
+    #procesar fases
+    i_sel_0_b1=SlicerImagLayer()(i_sel_0_tf)
+    i_sel_0_b1=Conv1D(16, 6, padding='valid', name="defly_"+counter.get_next())(i_sel_0_b1)
+    i_sel_0_b1=Dense(1, name="defly_"+counter.get_next())(i_sel_0_b1)
+    #fusionar en complejo
+    i_sel_0=MergeComplexLayer()([i_sel_0_b0, i_sel_0_b1])
     i_sel_0=iFFT2d(name="defly_"+counter.get_next())(i_sel_0)
-    i_sel_0=Conv2D(32, (1,11), padding='valid', name="defly_"+counter.get_next())(i_sel_0)
+    i_sel_0=Reshape((1,40,1))(i_sel_0)
+    i_sel_0=Conv2D(16, (1,11), padding='valid', name="defly_"+counter.get_next())(i_sel_0)
     i_sel_0=Dropout(0.3)(i_sel_0)
     i_sel_0=Flatten()(i_sel_0)
     i_sel_0=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_0)
     #decision layer 0
     des_ly_0=DecisionLayer(output_size=12)([ly0, i_sel_0])
-    #bloque 0 salidas de (1,250,16)
+    #bloque 0 salidas de (1,250,8)
     #rama 1 bloque 0
     b0_r1 = SlicerLayer(index_work=0)(des_ly_0)
-    b0_r1 = Conv2DTranspose(16, (1, 5), strides=(1,5), padding='valid')(b0_r1)
+    b0_r1 = Conv2DTranspose(8, (1, 5), strides=(1,5), padding='valid')(b0_r1)
     #rama 2 bloque 0
     b0_r2 = SlicerLayer(index_work=1)(des_ly_0)
     b0_r2 = Conv2DTranspose(8, (1, 3), strides=(1,2), padding='valid')(b0_r2)
     b0_r2 = Conv2DTranspose(8, (1, 5), strides=(1,2), padding='valid')(b0_r2)
-    b0_r2 = Conv2DTranspose(16, (1, 46), padding='valid')(b0_r2)
+    b0_r2 = Conv2DTranspose(8, (1, 46), padding='valid')(b0_r2)
     #rama 3 bloque 0
     b0_r3 = SlicerLayer(index_work=2)(des_ly_0)
     b0_r3 = Conv2DTranspose(8, (1, 23), strides=(1,3), padding='valid')(b0_r3)
-    b0_r3 = Conv2DTranspose(16, (1, 81), padding='valid')(b0_r3)
+    b0_r3 = Conv2DTranspose(8, (1, 81), padding='valid')(b0_r3)
     #rama 4 bloque 0
     b0_r4 = SlicerLayer(index_work=3)(des_ly_0)
     b0_r4 = Conv2DTranspose(8, (1, 51), padding='valid')(b0_r4)
     b0_r4 = Conv2DTranspose(8, (1, 101), padding='valid')(b0_r4)
-    b0_r4 = Conv2DTranspose(16, (1, 51), padding='valid')(b0_r4)
+    b0_r4 = Conv2DTranspose(8, (1, 51), padding='valid')(b0_r4)
     #rama 5 bloque 0
     b0_r5 = SlicerLayer(index_work=4)(des_ly_0)
-    b0_r5 = Conv2DTranspose(16, (1, 5), strides=(1,5), padding='valid')(b0_r5)
+    b0_r5 = Conv2DTranspose(8, (1, 5), strides=(1,5), padding='valid')(b0_r5)
     #rama 6 bloque 0
     b0_r6 = SlicerLayer(index_work=5)(des_ly_0)
     b0_r6 = Conv2DTranspose(8, (1, 3), strides=(1,2), padding='valid')(b0_r6)
     b0_r6 = Conv2DTranspose(8, (1, 5), strides=(1,2), padding='valid')(b0_r6)
-    b0_r6 = Conv2DTranspose(16, (1, 46), padding='valid')(b0_r6)
+    b0_r6 = Conv2DTranspose(8, (1, 46), padding='valid')(b0_r6)
     #rama 7 bloque 0
     b0_r7 = SlicerLayer(index_work=6)(des_ly_0)
-    b0_r7 = FFT2d()(b0_r7)
     b0_r7 = Conv2DTranspose(8, (1, 23), strides=(1,3), padding='valid')(b0_r7)
-    b0_r7 = Conv2DTranspose(32, (1, 81), padding='valid')(b0_r7)
-    b0_r7 = iFFT2d()(b0_r7)
+    b0_r7 = Conv2DTranspose(8, (1, 81), padding='valid')(b0_r7)
     #rama 8 bloque 0
     b0_r8 = SlicerLayer(index_work=7)(des_ly_0)
-    b0_r8 = FFT2d()(b0_r8)
     b0_r8 = Conv2DTranspose(8, (1, 51), padding='valid')(b0_r8)
     b0_r8 = Conv2DTranspose(8, (1, 101), padding='valid')(b0_r8)
-    b0_r8 = Conv2DTranspose(32, (1, 51), padding='valid')(b0_r8)
-    b0_r8 = iFFT2d()(b0_r8)
+    b0_r8 = Conv2DTranspose(8, (1, 51), padding='valid')(b0_r8)
     #rama 9 bloque 0
     b0_r9 = SlicerLayer(index_work=8)(des_ly_0)
-    b0_r9 = FFT2d()(b0_r9)
-    b0_r9 = Conv2DTranspose(32, (1, 5), strides=(1,5), padding='valid')(b0_r9)
-    b0_r9 = iFFT2d()(b0_r9)
+    b0_r9 = Conv2DTranspose(8, (1, 5), strides=(1,5), padding='valid')(b0_r9)
     #rama 10 bloque 0
     b0_r10 = SlicerLayer(index_work=9)(des_ly_0)
-    b0_r10 = FFT2d()(b0_r10)
     b0_r10 = Conv2DTranspose(8, (1, 3), strides=(1,2), padding='valid')(b0_r10)
     b0_r10 = Conv2DTranspose(8, (1, 5), strides=(1,2), padding='valid')(b0_r10)
-    b0_r10 = Conv2DTranspose(32, (1, 46), padding='valid')(b0_r10)
-    b0_r10 = iFFT2d()(b0_r10)
+    b0_r10 = Conv2DTranspose(8, (1, 46), padding='valid')(b0_r10)
     #rama 11 bloque 0
     b0_r11 = SlicerLayer(index_work=10)(des_ly_0)
-    b0_r11 = FFT2d()(b0_r11)
     b0_r11 = Conv2DTranspose(8, (1, 23), strides=(1,3), padding='valid')(b0_r11)
-    b0_r11 = Conv2DTranspose(32, (1, 81), padding='valid')(b0_r11)
-    b0_r11 = iFFT2d()(b0_r11)
+    b0_r11 = Conv2DTranspose(8, (1, 81), padding='valid')(b0_r11)
     #rama 12 bloque 0
     b0_r12 = SlicerLayer(index_work=11)(des_ly_0)
-    b0_r12 = FFT2d()(b0_r12)
     b0_r12 = Conv2DTranspose(8, (1, 51), padding='valid')(b0_r12)
     b0_r12 = Conv2DTranspose(8, (1, 101), padding='valid')(b0_r12)
-    b0_r12 = Conv2DTranspose(32, (1, 51), padding='valid')(b0_r12)
-    b0_r12 = iFFT2d()(b0_r12)
+    b0_r12 = Conv2DTranspose(8, (1, 51), padding='valid')(b0_r12)
     #sumar ramas bloque 0
     merger_b0=Add()([b0_r1, b0_r2, b0_r3, b0_r4, b0_r5, b0_r6, b0_r7, b0_r8, b0_r9, b0_r10, b0_r11, b0_r12])
     #index selector block 1
-    i_sel_1=FFT2d(name="defly_"+counter.get_next())(merger_b0)
-    i_sel_1=Conv2D(32, (1,16), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
+    i_sel_1_tf=FFT2d(name="defly_"+counter.get_next())(merger_b0)
+    #procesar frecuencias
+    i_sel_1_b0=SlicerRealLayer()(i_sel_1_tf)
+    i_sel_1_b0=Conv1D(16, 16, padding='valid', name="defly_"+counter.get_next())(i_sel_1_b0)
+    i_sel_1_b0=Conv1DTranspose(16, 16, padding='valid', name="defly_"+counter.get_next())(i_sel_1_b0)
+    i_sel_1_b0=Dense(1, name="defly_"+counter.get_next())(i_sel_1_b0)
+    #procesar fases
+    i_sel_1_b1=SlicerImagLayer()(i_sel_1_tf)
+    i_sel_1_b1=Conv1D(16, 16, padding='valid', name="defly_"+counter.get_next())(i_sel_1_b1)
+    i_sel_1_b1=Conv1DTranspose(16, 16, padding='valid', name="defly_"+counter.get_next())(i_sel_1_b1)
+    i_sel_1_b1=Dense(1, name="defly_"+counter.get_next())(i_sel_1_b1)
+    #fusionar en complejo
+    i_sel_1=MergeComplexLayer()([i_sel_1_b0, i_sel_1_b1])
     i_sel_1=iFFT2d(name="defly_"+counter.get_next())(i_sel_1)
-    i_sel_1=Conv2D(32, (1,16), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
+    i_sel_1=Reshape((1,250,8))(i_sel_1)
+    i_sel_1=Conv2D(16, (1,16), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
     i_sel_1=Dropout(0.3)(i_sel_1)
     i_sel_1=Flatten()(i_sel_1)
     i_sel_1=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_1)
     #decision layer
     des_ly_1=DecisionLayer(output_size=12)([merger_b0, i_sel_1])
-    #bloque 1 salida (1,750,16)
+    #bloque 1 salida (1,750,8)
     #rama 1
     b1_r1 = SlicerLayer(index_work=0)(des_ly_1)
-    b1_r1 = Conv2DTranspose(16, (1, 3), strides=(1,3), padding='valid')(b1_r1)
+    b1_r1 = Conv2DTranspose(8, (1, 3), strides=(1,3), padding='valid')(b1_r1)
     #rama 2
     b1_r2 = SlicerLayer(index_work=1)(des_ly_1)
     b1_r2 = Conv2DTranspose(8, (1, 5), strides=(1,2), padding='valid')(b1_r2)
-    b1_r2 = Conv2DTranspose(16, (1, 248), padding='valid')(b1_r2)
+    b1_r2 = Conv2DTranspose(8, (1, 248), padding='valid')(b1_r2)
     #rama 3
     b1_r3 = SlicerLayer(index_work=2)(des_ly_1)
     b1_r3 = Conv2DTranspose(8, (1, 36), padding='valid')(b1_r3)
     b1_r3 = Conv2DTranspose(8, (1, 132), strides=(1,2), padding='valid')(b1_r3)
-    b1_r3 = Conv2DTranspose(16, (1, 51), padding='valid')(b1_r3)
+    b1_r3 = Conv2DTranspose(8, (1, 51), padding='valid')(b1_r3)
     #rama 4
     b1_r4 = SlicerLayer(index_work=3)(des_ly_1)
     b1_r4 = Conv2DTranspose(8, (1, 101), padding='valid')(b1_r4)
     b1_r4 = Conv2DTranspose(8, (1, 351), padding='valid')(b1_r4)
-    b1_r4 = Conv2DTranspose(16, (1, 51), padding='valid')(b1_r4)
+    b1_r4 = Conv2DTranspose(8, (1, 51), padding='valid')(b1_r4)
     #rama 5
     b1_r5 = SlicerLayer(index_work=4)(des_ly_1)
     b1_r5 = Conv2DTranspose(8, (1, 16), padding='valid')(b1_r5)
@@ -858,149 +925,163 @@ def define_generator(n_blocks, latent_dim):
     b1_r5 = Conv2DTranspose(8, (1, 76), padding='valid')(b1_r5)
     b1_r5 = Conv2DTranspose(8, (1, 101), padding='valid')(b1_r5)
     b1_r5 = Conv2DTranspose(8, (1, 151), padding='valid')(b1_r5)
-    b1_r5 = Conv2DTranspose(16, (1, 76), padding='valid')(b1_r5)
+    b1_r5 = Conv2DTranspose(8, (1, 76), padding='valid')(b1_r5)
     #rama 6
     b1_r6 = SlicerLayer(index_work=5)(des_ly_1)
     b1_r6 = Conv2DTranspose(8, (1, 16), padding='valid')(b1_r6)
     b1_r6 = Conv2DTranspose(8, (1, 36), padding='valid')(b1_r6)
     b1_r6 = Conv2DTranspose(8, (1, 301), padding='valid')(b1_r6)
-    b1_r6 = Conv2DTranspose(16, (1, 151), padding='valid')(b1_r6)
+    b1_r6 = Conv2DTranspose(8, (1, 151), padding='valid')(b1_r6)
     #rama 7
     b1_r7 = SlicerLayer(index_work=6)(des_ly_1)
-    b1_r7 = FFT2d()(b1_r7)
     b1_r7 = Conv2DTranspose(32, (1, 3), strides=(1,3), padding='valid')(b1_r7)
-    b1_r7 = iFFT2d()(b1_r7)
     #rama 8
     b1_r8 = SlicerLayer(index_work=7)(des_ly_1)
-    b1_r8 = FFT2d()(b1_r8)
     b1_r8 = Conv2DTranspose(8, (1, 5), strides=(1,2), padding='valid')(b1_r8)
-    b1_r8 = Conv2DTranspose(32, (1, 248), padding='valid')(b1_r8)
-    b1_r8 = iFFT2d()(b1_r8)
+    b1_r8 = Conv2DTranspose(8, (1, 248), padding='valid')(b1_r8)
     #rama 9
     b1_r9 = SlicerLayer(index_work=8)(des_ly_1)
-    b1_r9 = FFT2d()(b1_r9)
     b1_r9 = Conv2DTranspose(8, (1, 36), padding='valid')(b1_r9)
     b1_r9 = Conv2DTranspose(8, (1, 132), strides=(1,2), padding='valid')(b1_r9)
-    b1_r9 = Conv2DTranspose(32, (1, 51), padding='valid')(b1_r9)
-    b1_r9 = iFFT2d()(b1_r9)
+    b1_r9 = Conv2DTranspose(8, (1, 51), padding='valid')(b1_r9)
     #rama 10
     b1_r10 = SlicerLayer(index_work=9)(des_ly_1)
-    b1_r10 = FFT2d()(b1_r10)
     b1_r10 = Conv2DTranspose(8, (1, 101), padding='valid')(b1_r10)
     b1_r10 = Conv2DTranspose(8, (1, 351), padding='valid')(b1_r10)
-    b1_r10 = Conv2DTranspose(32, (1, 51), padding='valid')(b1_r10)
-    b1_r10 = iFFT2d()(b1_r10)
+    b1_r10 = Conv2DTranspose(8, (1, 51), padding='valid')(b1_r10)
     #rama 11
     b1_r11 = SlicerLayer(index_work=10)(des_ly_1)
-    b1_r11 = FFT2d()(b1_r11)
     b1_r11 = Conv2DTranspose(8, (1, 16), padding='valid')(b1_r11)
     b1_r11 = Conv2DTranspose(8, (1, 36), padding='valid')(b1_r11)
     b1_r11 = Conv2DTranspose(8, (1, 51), padding='valid')(b1_r11)
     b1_r11 = Conv2DTranspose(8, (1, 76), padding='valid')(b1_r11)
     b1_r11 = Conv2DTranspose(8, (1, 101), padding='valid')(b1_r11)
     b1_r11 = Conv2DTranspose(8, (1, 151), padding='valid')(b1_r11)
-    b1_r11 = Conv2DTranspose(32, (1, 76), padding='valid')(b1_r11)
-    b1_r11 = iFFT2d()(b1_r11)
+    b1_r11 = Conv2DTranspose(8, (1, 76), padding='valid')(b1_r11)
     #rama 12
     b1_r12 = SlicerLayer(index_work=11)(des_ly_1)
-    b1_r12 = FFT2d()(b1_r12)
     b1_r12 = Conv2DTranspose(8, (1, 16), padding='valid')(b1_r12)
     b1_r12 = Conv2DTranspose(8, (1, 36), padding='valid')(b1_r12)
     b1_r12 = Conv2DTranspose(8, (1, 301), padding='valid')(b1_r12)
-    b1_r12 = Conv2DTranspose(32, (1, 151), padding='valid')(b1_r12)
-    b1_r12 = iFFT2d()(b1_r12)
+    b1_r12 = Conv2DTranspose(8, (1, 151), padding='valid')(b1_r12)
     #sumar ramas
     merger_b1=Add()([b1_r1, b1_r2, b1_r3, b1_r4, b1_r5, b1_r6, b1_r7, b1_r8, b1_r9, b1_r10, b1_r11, b1_r12])
+    #fft block 0
+    fft_0_p0=FFT2d(name="defly_"+counter.get_next())(merger_b1)
+    #procesar frecuencias
+    fft_0_b0=SlicerRealLayer()(fft_0_p0)
+    fft_0_b0=Conv1D(32, 26, padding='valid', name="defly_"+counter.get_next())(fft_0_b0)
+    fft_0_b0=Conv1DTranspose(32, 26, padding='valid', name="defly_"+counter.get_next())(fft_0_b0)
+    fft_0_b0=Dense(1, name="defly_"+counter.get_next())(fft_0_b0)
+    #procesar fases
+    fft_0_b1=SlicerImagLayer()(fft_0_p0)
+    fft_0_b1=Conv1D(32, 26, padding='valid', name="defly_"+counter.get_next())(fft_0_b1)
+    fft_0_b1=Conv1DTranspose(32, 26, padding='valid', name="defly_"+counter.get_next())(fft_0_b1)
+    fft_0_b1=Dense(1, name="defly_"+counter.get_next())(fft_0_b1)
+    #fusionar en complejo
+    fft_0=MergeComplexLayer()([fft_0_b0, fft_0_b1])
+    fft_0=iFFT2d(name="defly_"+counter.get_next())(fft_0)
+    fft_0=Reshape((1,750,8))(fft_0)
     #index selector block 2
-    i_sel_2=FFT2d(name="defly_"+counter.get_next())(merger_b1)
-    i_sel_2=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(merger_b1)
-    i_sel_2=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
+    i_sel_2_tf=FFT2d(name="defly_"+counter.get_next())(fft_0)
+    #procesar frecuencias
+    i_sel_2_b0=SlicerRealLayer()(i_sel_2_tf)
+    i_sel_2_b0=Conv1D(16, 26, padding='valid', name="defly_"+counter.get_next())(i_sel_2_b0)
+    i_sel_2_b0=Conv1DTranspose(16, 26, padding='valid', name="defly_"+counter.get_next())(i_sel_2_b0)
+    i_sel_2_b0=Dense(1, name="defly_"+counter.get_next())(i_sel_2_b0)
+    #procesar fases
+    i_sel_2_b1=SlicerImagLayer()(i_sel_2_tf)
+    i_sel_2_b1=Conv1D(16, 26, padding='valid', name="defly_"+counter.get_next())(i_sel_2_b1)
+    i_sel_2_b1=Conv1DTranspose(16, 26, padding='valid', name="defly_"+counter.get_next())(i_sel_2_b1)
+    i_sel_2_b1=Dense(1, name="defly_"+counter.get_next())(i_sel_2_b1)
+    #fusionar en complejo
+    i_sel_2=MergeComplexLayer()([i_sel_2_b0, i_sel_2_b1])
     i_sel_2=iFFT2d(name="defly_"+counter.get_next())(i_sel_2)
+    i_sel_2=Reshape((1,750,8))(i_sel_2)
     i_sel_2=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
     i_sel_2=Dropout(0.3)(i_sel_2)
     i_sel_2=Flatten()(i_sel_2)
     i_sel_2=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_2)
     #decision layer
-    des_ly_2=DecisionLayer(output_size=12)([merger_b1, i_sel_2])
-    #bloque 2 salida (4,750,16)
+    des_ly_2=DecisionLayer(output_size=12)([fft_0, i_sel_2])
+    #bloque 2 salida (4,750,8)
     #rama 1
     b2_r1 = SlicerLayer(index_work=0)(des_ly_2)
     b2_r1 = Conv2DTranspose(8, (2, 1), strides=(2,1), padding='valid')(b2_r1)
-    b2_r1 = Conv2DTranspose(16, (2, 1), strides=(2,1), padding='valid')(b2_r1)
+    b2_r1 = Conv2DTranspose(8, (2, 1), strides=(2,1), padding='valid')(b2_r1)
     #rama 2
     b2_r2 = SlicerLayer(index_work=1)(des_ly_2)
-    b2_r2 = Conv2DTranspose(16, (4, 1), strides=(4,1), padding='valid')(b2_r2)
+    b2_r2 = Conv2DTranspose(8, (4, 1), strides=(4,1), padding='valid')(b2_r2)
     #rama 3
     b2_r3 = SlicerLayer(index_work=2)(des_ly_2)
     b2_r3 = Conv2DTranspose(8, (2, 1), strides=(2,1), padding='valid')(b2_r3)
-    b2_r3 = Conv2DTranspose(16, (2, 1), strides=(2,1), padding='valid')(b2_r3)
+    b2_r3 = Conv2DTranspose(8, (2, 1), strides=(2,1), padding='valid')(b2_r3)
     #rama 4
     b2_r4 = SlicerLayer(index_work=3)(des_ly_2)
-    b2_r4 = Conv2DTranspose(16, (4, 1), strides=(4,1), padding='valid')(b2_r4)
+    b2_r4 = Conv2DTranspose(8, (4, 1), strides=(4,1), padding='valid')(b2_r4)
     #rama 5
     b2_r5 = SlicerLayer(index_work=4)(des_ly_2)
     b2_r5 = Conv2DTranspose(8, (3, 1), strides=(2,1), padding='valid')(b2_r5)
-    b2_r5 = Conv2DTranspose(16, (2, 1), padding='valid')(b2_r5)
+    b2_r5 = Conv2DTranspose(8, (2, 1), padding='valid')(b2_r5)
     #rama 6
     b2_r6 = SlicerLayer(index_work=5)(des_ly_2)
     b2_r6 = Conv2DTranspose(8, (3, 1), strides=(2,1), padding='valid')(b2_r6)
-    b2_r6 = Conv2DTranspose(16, (2, 1), padding='valid')(b2_r6)
+    b2_r6 = Conv2DTranspose(8, (2, 1), padding='valid')(b2_r6)
     #rama 7
     b2_r7 = SlicerLayer(index_work=6)(des_ly_2)
-    b2_r7 = FFT2d()(b2_r7)
     b2_r7 = UpSampling2D()(b2_r7)
     b2_r7 = UpSampling2D(size=(2,1))(b2_r7)
     b2_r7 = Conv2D(8, (1, 201), padding='valid')(b2_r7)
     b2_r7 = Conv2D(8, (1, 251), padding='valid')(b2_r7)
-    b2_r7 = Conv2D(32, (1, 301), padding='valid')(b2_r7)
-    b2_r7 = iFFT2d()(b2_r7)
+    b2_r7 = Conv2D(8, (1, 301), padding='valid')(b2_r7)
     #rama 8
     b2_r8 = SlicerLayer(index_work=7)(des_ly_2)
-    b2_r8 = FFT2d()(b2_r8)
     b2_r8 = UpSampling2D()(b2_r8)
     b2_r8 = UpSampling2D(size=(2,1))(b2_r8)
     b2_r8 = Conv2D(8, (1, 201), padding='valid')(b2_r8)
     b2_r8 = Conv2D(8, (1, 251), padding='valid')(b2_r8)
-    b2_r8 = Conv2D(32, (1, 301), padding='valid')(b2_r8)
-    b2_r8 = iFFT2d()(b2_r8)
+    b2_r8 = Conv2D(8, (1, 301), padding='valid')(b2_r8)
     #rama 9
     b2_r9 = SlicerLayer(index_work=8)(des_ly_2)
-    b2_r9 = FFT2d()(b2_r9)
     b2_r9 = UpSampling2D(size=(2,1))(b2_r9)
     b2_r9 = UpSampling2D(size=(2,1))(b2_r9)
-    b2_r9 = Conv2D(32, (4, 150), padding='same')(b2_r9)
-    b2_r9 = iFFT2d()(b2_r9)
+    b2_r9 = Conv2D(8, (4, 150), padding='same')(b2_r9)
     #rama 10
     b2_r10 = SlicerLayer(index_work=9)(des_ly_2)
-    b2_r10 = FFT2d()(b2_r10)
     b2_r10 = UpSampling2D(size=(2,1))(b2_r10)
     b2_r10 = UpSampling2D(size=(2,1))(b2_r10)
     b2_r10 = Conv2D(8, (2, 150), padding='same')(b2_r10)
-    b2_r10 = Conv2D(32, (2, 150), padding='same')(b2_r10)
-    b2_r10 = iFFT2d()(b2_r10)
+    b2_r10 = Conv2D(8, (2, 150), padding='same')(b2_r10)
     #rama 11
     b2_r11 = SlicerLayer(index_work=10)(des_ly_2)
-    b2_r11 = FFT2d()(b2_r11)
     b2_r11 = UpSampling2D(size=(2,1))(b2_r11)
     b2_r11 = UpSampling2D(size=(2,1))(b2_r11)
-    b2_r11 = Conv2D(32, (4, 150), padding='same')(b2_r11)
-    b2_r11 = iFFT2d()(b2_r11)
+    b2_r11 = Conv2D(8, (4, 150), padding='same')(b2_r11)
     #rama 12
     b2_r12 = SlicerLayer(index_work=11)(des_ly_2)
-    b2_r12 = FFT2d()(b2_r12)
     b2_r12 = UpSampling2D(size=(2,1))(b2_r12)
     b2_r12 = UpSampling2D(size=(2,1))(b2_r12)
     b2_r12 = Conv2D(8, (2, 150), padding='same')(b2_r12)
-    b2_r12 = Conv2D(32, (2, 150), padding='same')(b2_r12)
-    b2_r12 = iFFT2d()(b2_r12)
+    b2_r12 = Conv2D(8, (2, 150), padding='same')(b2_r12)
     #unir ramas
     merger_b2=Add()([b2_r1, b2_r2, b2_r3, b2_r4, b2_r5, b2_r6, b2_r7, b2_r8, b2_r9, b2_r10, b2_r11, b2_r12])
     #index selector block 3
-    i_sel_3=FFT2d(name="defly_"+counter.get_next())(merger_b2)
-    i_sel_3=Conv2D(16, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
-    i_sel_3=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
+    i_sel_3_tf=FFT2d(name="defly_"+counter.get_next())(merger_b2)
+    #procesar frecuencias
+    i_sel_3_b0=SlicerRealLayer()(i_sel_3_tf)
+    i_sel_3_b0=Conv1D(16, 26, padding='valid', name="defly_"+counter.get_next())(i_sel_3_b0)
+    i_sel_3_b0=Conv1DTranspose(16, 26, padding='valid', name="defly_"+counter.get_next())(i_sel_3_b0)
+    i_sel_3_b0=Dense(1, name="defly_"+counter.get_next())(i_sel_3_b0)
+    #procesar fases
+    i_sel_3_b1=SlicerImagLayer()(i_sel_3_tf)
+    i_sel_3_b1=Conv1D(16, 26, padding='valid', name="defly_"+counter.get_next())(i_sel_3_b1)
+    i_sel_3_b1=Conv1DTranspose(16, 26, padding='valid', name="defly_"+counter.get_next())(i_sel_3_b1)
+    i_sel_3_b1=Dense(1, name="defly_"+counter.get_next())(i_sel_3_b1)
+    #fusionar en complejo
+    i_sel_3=MergeComplexLayer()([i_sel_3_b0, i_sel_3_b1])
     i_sel_3=iFFT2d(name="defly_"+counter.get_next())(i_sel_3)
-    i_sel_3=Conv2D(64, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
+    i_sel_3=Reshape((1,750,8))(i_sel_3)
+    i_sel_3=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
     i_sel_3=Dropout(0.3)(i_sel_3)
     i_sel_3=Flatten()(i_sel_3)
     i_sel_3=Dense(64, activation='softmax', name="defly_"+counter.get_next())(i_sel_3)
@@ -1049,8 +1130,8 @@ def define_generator(n_blocks, latent_dim):
     return (-10+(delta/1000))*(-((lambda_1*lambda_2)/1000))+(lambda_1/0.5)'''
 
 def discriminator_loss(fake_logits, real_logits):
-    fake_logits=tf.reduce_mean(fake_logits)
-    real_logits=tf.reduce_mean(real_logits)
+    #fake_logits=tf.reduce_mean(fake_logits)
+    #real_logits=tf.reduce_mean(real_logits)
     m=(fake_logits*real_logits)/9
     return 2*tf.math.sin(m)
 
@@ -1070,8 +1151,8 @@ def generator_loss_fake(fake_logits, real_logits):
     return (delta/0.1)-(5*tf.math.abs(fake_logits))'''
 
 def generator_loss(fake_logits, real_logits):
-    fake_logits=tf.reduce_mean(fake_logits)
-    real_logits=tf.reduce_mean(real_logits)
+    #fake_logits=tf.reduce_mean(fake_logits)
+    #real_logits=tf.reduce_mean(real_logits)
     m=(fake_logits*real_logits)/10
     return 3*tf.math.sin(-m)
     
