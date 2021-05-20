@@ -937,7 +937,7 @@ def define_generator(n_blocks, latent_dim):
     b1_r6 = Conv2DTranspose(8, (1, 151), padding='valid')(b1_r6)
     #rama 7
     b1_r7 = SlicerLayer(index_work=6)(des_ly_1)
-    b1_r7 = Conv2DTranspose(32, (1, 3), strides=(1,3), padding='valid')(b1_r7)
+    b1_r7 = Conv2DTranspose(8, (1, 3), strides=(1,3), padding='valid')(b1_r7)
     #rama 8
     b1_r8 = SlicerLayer(index_work=7)(des_ly_1)
     b1_r8 = Conv2DTranspose(8, (1, 5), strides=(1,2), padding='valid')(b1_r8)
