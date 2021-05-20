@@ -458,10 +458,10 @@ def add_discriminator_block(old_model, n_input_layers=2):
     in_image = Input(shape=input_shape)
     featured_layer = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
     #convolusion block 1
-    d_1 = FFT2d()(featured_layer)
-    d_1 = Conv2D(512, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(d_1)
+    #d_1 = FFT2d()(featured_layer)
+    d_1 = Conv2D(512, (1, 2), strides=(1, 2), padding='valid', kernel_initializer='he_normal')(featured_layer)
     d_1 = Conv2D(512, (2, 1), strides=(2, 1), padding='valid', kernel_initializer='he_normal')(d_1)
-    d_1 = iFFT2d()(d_1)
+    #d_1 = iFFT2d()(d_1)
     d_1 = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(d_1)
     d_1 = Dropout(0.2)(d_1)
     d_block = SoftRectifier(start_alpha=soft_alpha)(d_1)
