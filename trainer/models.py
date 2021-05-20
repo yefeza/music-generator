@@ -1083,7 +1083,7 @@ def define_generator(n_blocks, latent_dim):
     #fusionar en complejo
     i_sel_3=MergeComplexLayer()([i_sel_3_b0, i_sel_3_b1])
     i_sel_3=iFFT2d(name="defly_"+counter.get_next())(i_sel_3)
-    i_sel_3=Reshape((1,750,8))(i_sel_3)
+    i_sel_3=Reshape((4,750,8))(i_sel_3)
     i_sel_3=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
     i_sel_3=Dropout(0.3)(i_sel_3)
     i_sel_3=Flatten()(i_sel_3)
