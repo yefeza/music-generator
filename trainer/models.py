@@ -406,7 +406,8 @@ class FFT2d(Layer):
         flat_ly=Flatten()
         reshaped=flat_ly(inputs)
         fft = tf.signal.rfft(reshaped)
-        return fft
+        shape_result=fft.shape
+        return tf.reshape(fft, shape=(-1,shape_result[1], 1))
 
     def get_config(self):
         config = super(FFT2d, self).get_config()
