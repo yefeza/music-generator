@@ -419,7 +419,9 @@ class iFFT2d(Layer):
         super(iFFT2d, self).__init__(**kwargs)
 
     def call(self, inputs):
-        ifft = tf.signal.irfft(inputs)
+        flat_ly=Flatten()
+        reshaped=flat_ly(inputs)
+        ifft = tf.signal.irfft(reshaped)
         return ifft
 
     def get_config(self):
@@ -501,7 +503,7 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
     d_1 = ConcatComplexComponents()(d_1)
     d_1 = Conv1D(32, 16, padding='same')(d_1)
     d_1 = Conv1DTranspose(32, 16, padding='same')(d_1)
-    d_1 = Dense(1)(d_1)
+    d_1 = Dense(2)(d_1)
     d_1 = ComponentsToComplex()(d_1)
     d_1 = iFFT2d()(d_1)
     d_1 = Reshape((4, 750, 128))(d_1)
