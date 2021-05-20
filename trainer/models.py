@@ -4,7 +4,7 @@ from keras.optimizers import Adam, Adamax
 from keras.models import Sequential, Model
 from keras.layers.core import Dense, Activation, Dropout
 from keras.layers import Input, UpSampling2D, Layer
-from keras.layers.convolutional import Conv1D, Conv2D, Conv2DTranspose, SeparableConv2D, Conv1DTranspose
+from keras.layers.convolutional import Conv1D, Conv2D, Conv2DTranspose, SeparableConv2D
 from keras.layers.convolutional import AveragePooling2D
 from keras.layers import Flatten
 from keras.layers import Reshape
@@ -20,7 +20,7 @@ from .dataset import *
 from .utils import *
 from google.cloud import storage
 import os
-
+from tf.keras.layers import Conv1DTranspose
 # Weighted Sum Layer para el proceso de fade-in
 
 class WeightedSum(Add):
