@@ -352,7 +352,8 @@ class iFFT(Layer):
     def call(self, inputs):
         transposed=tf.transpose(inputs, perm=[0, 2, 1])
         ifft = tf.signal.irfft(transposed)
-        return tf.transpose(ifft, perm=[0, 2, 1])
+        shape_out=ifft.shape
+        return tf.reshape(ifft, shape=(-1,shape_out[1], 1))
 
     def get_config(self):
         config = super(iFFT, self).get_config()
