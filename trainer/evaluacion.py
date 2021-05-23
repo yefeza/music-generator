@@ -74,10 +74,13 @@ def define_evaluator(n_blocks, input_shape=(3000, 2)):
     converted_block = FFT()(in_data)
     converted_block = ComplexToChannels()(converted_block)
     # convolusion block 1
-    d_1 = Conv1D(256, 3, strides=3, padding='valid')(converted_block)
-    d_1 = Conv1D(32, 50, padding='valid')(d_1)
-    d_1 = Conv1D(32, 150, padding='valid')(d_1)
-    d_1 = Conv1D(32, 100, padding='valid')(d_1)
+    d_1 = Dense(8)(converted_block)
+    d_1 = Conv1D(32, 351, padding='valid')(d_1)
+    d_1 = Conv1D(32, 251, padding='valid')(d_1)
+    d_1 = Conv1D(32, 151, padding='valid')(d_1)
+    d_1 = Conv1D(32, 101, padding='valid')(d_1)
+    d_1 = Conv1D(32, 52, padding='valid')(d_1)
+    d_1 = Dense(4)(d_1)
     d = Flatten()(d_1)
     out_class = Dense(9, activation='softmax')(d)
     # define model
