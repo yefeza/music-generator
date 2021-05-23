@@ -71,15 +71,15 @@ def generar_ejemplo(g_model, enc_model, gen_shape, random_real_data, prefix, ite
     pred=evaluador.predict(gen_auds)
     return pred
 
-def save_inception_score(g_model, prefix, bucket_name, pred):
-    gen_shape = g_model.output_shape
+def save_inception_score(g_model, prefix, bucket_name, pred, dimension):
+    gen_shape = dimension
     #evaluar resultados
     iscore=calculate_inception_score(pred)
     local_path = "local_gen/" + \
-        str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
+        str(gen_shape[0]) + "x" + str(gen_shape[1]) + \
         "/" + prefix + 'inception_score.txt'
     path_save = "generated-data-byepoch/" + \
-        str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
+        str(gen_shape[0]) + "x" + str(gen_shape[1]) + \
         "/" + prefix + 'inception_score.txt'
     folder=os.path.dirname(local_path)
     if not os.path.exists(folder):
