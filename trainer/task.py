@@ -170,7 +170,7 @@ if __name__ == '__main__':
             plot_losses(history, (gen_shape[-3], gen_shape[-2]))
 
     batch_sizes=[8,4,2,2,2,2,2]
-    epochs_norm=[100,5,350,400,450,500,550]
+    epochs_norm=[10,5,350,400,450,500,550]
     #epochs_norm=[10,5,400,450,500,550]
     #epochs_norm=[50,60,70,
     # 80,90,100,110]
