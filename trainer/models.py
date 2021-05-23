@@ -322,8 +322,8 @@ class ChannelsToComplex(Layer):
         super(ChannelsToComplex, self).__init__(**kwargs)
 
     def call(self, inputs):
-        real=inputs[:,:,0]
-        imag=inputs[:,:,1]
+        real=inputs[:,:,:2]
+        imag=inputs[:,:,2:]
         return tf.complex(real, imag)
 
     def get_config(self):
@@ -350,9 +350,9 @@ class iFFT(Layer):
         super(iFFT, self).__init__(**kwargs)
 
     def call(self, inputs):
-        ifft = tf.signal.irfft(inputs)
-        shape_out=ifft.shape
-        return tf.reshape(ifft, shape=(-1,shape_out[1], 1))
+        transposed=tf.transpose(inputs, perm=[0, 2, 1])
+        ifft = tf.signal.irfft(transposed)
+        return tf.transpose(ifft, perm=[0, 2, 1])
 
     def get_config(self):
         config = super(iFFT, self).get_config()
@@ -429,10 +429,13 @@ def define_discriminator(n_blocks, input_shape=(3000, 2)):
     converted_block = FFT()(in_data)
     converted_block = ComplexToChannels()(converted_block)
     # convolusion block 1
-    d_1 = Conv1D(256, 3, strides=3, padding='valid')(converted_block)
-    d_1 = Conv1D(32, 50, padding='valid')(d_1)
-    d_1 = Conv1D(32, 150, padding='valid')(d_1)
-    d_1 = Conv1D(32, 100, padding='valid')(d_1)
+    d_1 = Dense(8)(converted_block)
+    d_1 = Conv1D(32, 351, padding='valid')(d_1)
+    d_1 = Conv1D(32, 251, padding='valid')(d_1)
+    d_1 = Conv1D(32, 151, padding='valid')(d_1)
+    d_1 = Conv1D(32, 101, padding='valid')(d_1)
+    d_1 = Conv1D(32, 51, padding='valid')(d_1)
+    d_1 = Dense(4)(d_1)
     d_1 = MinibatchStdDev()(d_1)
     d_1 = Flatten()(d_1)
     d_1 = SoftRectifier()(d_1)
@@ -520,10 +523,14 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     converted_block = FFT()(in_data)
     converted_block = ComplexToChannels()(converted_block)
     # convolusion block 1
-    d_1 = Conv1D(256, 3, strides=3, padding='valid')(converted_block)
-    d_1 = Conv1D(32, 51, padding='valid')(d_1)
+    d_1 = Dense(8)(converted_block)
+    d_1 = Conv1D(32, 351, padding='valid')(d_1)
+    d_1 = Conv1D(32, 251, padding='valid')(d_1)
     d_1 = Conv1D(32, 151, padding='valid')(d_1)
-    d_1 = Conv1D(32, 3, strides=3, padding='valid')(d_1)
+    d_1 = Conv1D(32, 101, padding='valid')(d_1)
+    d_1 = Conv1D(32, 52, padding='valid')(d_1)
+    d_1 = Conv1D(32, 6, strides=6, padding='valid')(d_1)
+    d_1 = Dense(4)(d_1)
     #d_1 = Flatten()(d_1)
     d_1 = Dropout(0.2)(d_1)
     out_class = Dense(1)(d_1)
@@ -892,9 +899,6 @@ def define_generator(n_blocks, latent_dim):
     b2_r6 = Conv1DTranspose(8, 51, padding='valid')(b2_r6)
     #unir ramas
     merger_b2=Add()([b2_r1, b2_r2, b2_r3, b2_r4, b2_r5, b2_r6])
-    merger_b2=Dense(2, name="defly_"+counter.get_next())(merger_b2)
-    merger_b2=ChannelsToComplex()(merger_b2)
-    merger_b2=iFFT()(merger_b2)
     #selector de incice 2
     i_sel_3=Conv1D(8, 16, padding='valid', name="defly_"+counter.get_next())(merger_b2)
     i_sel_3=Conv1D(8, 36, padding='valid', name="defly_"+counter.get_next())(i_sel_3)
@@ -909,14 +913,16 @@ def define_generator(n_blocks, latent_dim):
     #Convolutional outputs
     for i in range(32):
         new_output_block = SlicerLayer(index_work=i)(des_ly_3)
-        new_output_block = Conv1D(2, 1, padding='valid')(new_output_block)
+        new_output_block = Conv1D(4, 1, padding='valid')(new_output_block)
         outputs_list.append(new_output_block)
     #Dense outputs
     for i in range(32):
         new_output_block = SlicerLayer(index_work=(32+i))(des_ly_3)
-        new_output_block = Dense(2)(new_output_block)
+        new_output_block = Dense(4)(new_output_block)
         outputs_list.append(new_output_block)
     merger_b3=Add()(outputs_list)
+    merger_b3=ChannelsToComplex()(merger_b3)
+    merger_b3=iFFT()(merger_b3)
     wls = LayerNormalization(axis=[1,2])(merger_b3)
     model_normal = Model(ly0, wls)
     model_normal.compile(optimizer=Adamax(learning_rate=0.0005))
