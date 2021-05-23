@@ -521,12 +521,12 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     converted_block = ComplexToChannels()(converted_block)
     # convolusion block 1
     d_1 = Conv1D(256, 3, strides=3, padding='valid')(converted_block)
-    d_1 = Conv1D(32, 50, padding='valid')(d_1)
-    d_1 = Conv1D(32, 150, padding='valid')(d_1)
-    d_1 = Conv1D(32, 100, padding='valid')(d_1)
-    d_1 = Flatten()(d_1)
+    d_1 = Conv1D(32, 51, padding='valid')(d_1)
+    d_1 = Conv1D(32, 151, padding='valid')(d_1)
+    d_1 = Conv1D(32, 3, strides=3, padding='valid')(d_1)
+    #d_1 = Flatten()(d_1)
     d_1 = Dropout(0.2)(d_1)
-    out_class = Dense(100)(d_1)
+    out_class = Dense(1)(d_1)
     # define model
     model_comp = Model(in_data, out_class)
     # store model
@@ -1015,7 +1015,7 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             enc_models[0].compile(optimizer=prev_e_model.optimizer)
         # straight-through model
         #d_models[2].trainable = False
-        #enc_models[0].summary()
+        enc_models[0].summary()
         #d_models[0].summary()
         #g_models[0].summary()
         #g_models[1].summary()
