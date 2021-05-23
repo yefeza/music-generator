@@ -523,7 +523,7 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     d_1 = Conv1D(256, 3, strides=3, padding='valid')(converted_block)
     d_1 = Conv1D(32, 50, padding='valid')(d_1)
     d_1 = Conv1D(32, 150, padding='valid')(d_1)
-    d_1 = Conv2D(32, 100, padding='valid')(d_1)
+    d_1 = Conv1D(32, 100, padding='valid')(d_1)
     d_1 = Flatten()(d_1)
     d_1 = Dropout(0.2)(d_1)
     out_class = Dense(1)(d_1)
