@@ -212,7 +212,7 @@ class MinibatchStdDev(Layer):
             # [NCHW]  Input shape.
             s = x.shape
             # [GMCHW] Split minibatch into M groups of size G.
-            y = tf.reshape(x, [group_size, -1, s[1], s[2], s[3]])
+            y = tf.reshape(x, [group_size, -1, s[1], s[2]])
             # [GMCHW] Cast to FP32.
             y = tf.cast(y, tf.float32)
             # [GMCHW] Subtract mean over group.
@@ -222,11 +222,11 @@ class MinibatchStdDev(Layer):
             # [MCHW]  Calc stddev over group.
             y = tf.sqrt(y + 1e-8)
             # [M111]  Take average over fmaps and pixels.
-            y = tf.reduce_mean(y, axis=[1, 2, 3], keepdims=True)
+            y = tf.reduce_mean(y, axis=[1, 2], keepdims=True)
             # [M111]  Cast back to original data type.
             y = tf.cast(y, x.dtype)
             # [N1HW]  Replicate over group and pixels.
-            y = tf.tile(y, [group_size, 1, s[2], s[3]])
+            y = tf.tile(y, [group_size, 1, s[2]])
             # [NCHW]  Append as new fmap.
             return tf.concat([x, y], axis=1)
 
