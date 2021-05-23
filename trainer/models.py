@@ -350,8 +350,7 @@ class iFFT(Layer):
         super(iFFT, self).__init__(**kwargs)
 
     def call(self, inputs):
-        transposed=tf.transpose(inputs, perm=[0, 2, 1])
-        ifft = tf.signal.irfft(transposed)
+        ifft = tf.signal.irfft(inputs)
         shape_out=ifft.shape
         return tf.reshape(ifft, shape=(-1,shape_out[1], 1))
 
