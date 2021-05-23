@@ -44,7 +44,7 @@ def generar_ejemplo(g_model, enc_model, gen_shape, random_real_data, prefix, ite
             random_encoder_input = tf.random.uniform(shape=(10, gen_shape[-3]*gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
             random_latent_vectors = enc_model(random_encoder_input, training=False)
         else:
-            if iter_num<=14:
+            if iter_num<=15:
                 random_encoder_input = tf.random.uniform(shape=(10, gen_shape[-3]*gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
                 random_ecoded = enc_model(random_encoder_input, training=False)
                 random_noise = tf.random.uniform(shape=(10, latent_dim[0], latent_dim[1]), minval=-1., maxval=1.)
