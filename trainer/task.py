@@ -75,7 +75,7 @@ if __name__ == '__main__':
     #print("Number of devices: {}".format(strategy.num_replicas_in_sync))
 
     # size of the latent space
-    latent_dim = (100, 1)
+    latent_dim = (100,)
 
     #with strategy.scope():
 
