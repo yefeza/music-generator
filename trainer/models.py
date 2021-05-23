@@ -1015,10 +1015,10 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             enc_models[0].compile(optimizer=prev_e_model.optimizer)
         # straight-through model
         #d_models[2].trainable = False
-        enc_models[0].summary()
-        d_models[0].summary()
-        g_models[0].summary()
-        g_models[1].summary()
+        #enc_models[0].summary()
+        #d_models[0].summary()
+        #g_models[0].summary()
+        #g_models[1].summary()
         wgan1 = GAN(
             discriminator=d_models[0],
             encoder=enc_models[0],
