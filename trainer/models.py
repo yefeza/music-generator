@@ -274,15 +274,15 @@ class DecisionLayer(Layer):
         assert (len(inputs) == 2)
         output_distribution=inputs[1]
         shape_data=inputs[0].shape
-        output_distribution=tf.reshape(output_distribution, shape=[-1, self.output_size, 1, 1, 1])
+        output_distribution=tf.reshape(output_distribution, shape=[-1, self.output_size, 1, 1])
         #output_distribution=tf.math.round(output_distribution)
         input_data=inputs[0]
-        input_data=tf.reshape(input_data, shape=[-1, 1, shape_data[1], shape_data[2], shape_data[3]])
-        input_data=tf.tile(input_data, [1, self.output_size, 1, 1, 1])
+        input_data=tf.reshape(input_data, shape=[-1, 1, shape_data[1], shape_data[2]])
+        input_data=tf.tile(input_data, [1, self.output_size, 1, 1])
         return tf.math.multiply(input_data, output_distribution)
 
     def compute_output_shape(self, input_shape):
-        return (input_shape[0], self.output_size, input_shape[1], input_shape[2], input_shape[3])
+        return (input_shape[0], self.output_size, input_shape[1], input_shape[2])
 
     def get_config(self):
         config = super(DecisionLayer, self).get_config()
