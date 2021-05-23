@@ -526,7 +526,7 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     d_1 = Conv1D(32, 100, padding='valid')(d_1)
     d_1 = Flatten()(d_1)
     d_1 = Dropout(0.2)(d_1)
-    out_class = Dense(1)(d_1)
+    out_class = Dense(100)(d_1)
     # define model
     model_comp = Model(in_data, out_class)
     # store model
