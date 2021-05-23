@@ -223,7 +223,7 @@ def read_dataset(dimension, files_format):
             try:
                 signal, sampling_rate = af.read(directory+song_dirname)
                 song_reshaped = np.reshape(signal, newshape=(dimension[0]*dimension[1], 2))
-                data.append(signal)
+                data.append(song_reshaped)
                 y_evaluator.append(folder)
                 continuos_error=0
                 songs_dir+=1
@@ -249,7 +249,7 @@ def get_random_real_data(dimension, files_format='mp3'):
         try:
             signal, sampling_rate = af.read(directory+rnd_selected_song)
             song_reshaped = np.reshape(signal, newshape=(dimension[0]*dimension[1], 2))
-            data.append(signal)
+            data.append(song_reshaped)
         except:
             if folder==0:
                 folder=1
@@ -258,7 +258,7 @@ def get_random_real_data(dimension, files_format='mp3'):
             rnd_selected_song=ls_dir_folder[random.randrange(0,len(ls_dir_folder))]
             signal, sampling_rate = af.read(directory+rnd_selected_song)
             song_reshaped = np.reshape(signal, newshape=(dimension[0]*dimension[1], 2))
-            data.append(signal)
+            data.append(song_reshaped)
     return np.array(data)
 
 
