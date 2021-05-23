@@ -6,6 +6,7 @@ from .utils import *
 import numpy as np
 import matplotlib.pyplot as plt
 from .evaluacion import *
+
 def get_args():
     """Argument parser.
     Returns:
@@ -74,22 +75,23 @@ if __name__ == '__main__':
     #print("Number of devices: {}".format(strategy.num_replicas_in_sync))
 
     # size of the latent space
-    latent_dim = (1, 50, 1)
+    latent_dim = (100, 1)
 
     #with strategy.scope():
 
-    discriminators = define_discriminator(4)
-    encoders = define_encoder(4)
+    discriminators = define_discriminator(1)
+    encoders = define_encoder(1)
 
     # define generator
 
-    generators = define_generator(4, latent_dim)
+    generators = define_generator(1, latent_dim)
 
     # define composite models
 
     composite = define_composite(discriminators, generators, encoders, latent_dim)
 
     def plot_losses(history, dimension):
+        dimension=EQ_DIM[dimension[-2]]
         plt.clf()
         plt.plot(history.history['ci_1'], label='Real Logits')
         plt.plot(history.history['cu_1'], label='Fake Logits')
@@ -106,11 +108,12 @@ if __name__ == '__main__':
     # train the generator and discriminator
 
     def train(gan_models, latent_dim, epochs_norm, epochs_fade, batch_sizes, job_dir, bucket_name, files_format, path_dataset, download_data, epochs_evaluadores, start_from_growing):
-        get_evaluators=[True,True,False,False,False,False,False]
+        get_evaluators=[False,False,False,False,False,False,False]
         # fit the baseline model
         g_normal = gan_models[start_from_growing][0].generator
         # scale dataset to appropriate size
         gen_shape = g_normal.output_shape
+        gen_shape = EQ_DIM[gen_shape[-2]]
         if download_data:
             download_diension_dataset(path_dataset, bucket_name, files_format, (gen_shape[-3], gen_shape[-2]))
         scaled_data, y_evaluator = read_dataset((gen_shape[-3], gen_shape[-2]),files_format)

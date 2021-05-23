@@ -21,6 +21,7 @@ import numpy as np
 from .utils import upload_blob
 from google.cloud import storage
 import os
+from .models import *
 
 # agregar bloque a evaluador para escalar las dimensiones
 
@@ -66,37 +67,21 @@ def add_evaluator_block(old_model, n_input_layers=3):
 
 # definir los evaluadores
 
-def define_evaluator(n_blocks, input_shape=(4, 750, 2)):
+def define_evaluator(n_blocks, input_shape=(3000, 2)):
     model_list = list()
     # base model input
-    in_image = Input(shape=input_shape)
-    featured_block = Conv2D(128, (1, 1), padding='same', kernel_initializer='he_normal')(in_image)
-    #featured_block = LeakyReLU(alpha=0.2)(featured_block)
+    in_data = Input(shape=input_shape)
+    converted_block = FFT()(in_data)
+    converted_block = ComplexToChannels()(converted_block)
     # convolusion block 1
-    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(featured_block)
-    #d_1 = LeakyReLU(alpha=0.2)(d_1)
-    d_1 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_1)
-    #d_1 = LeakyReLU(alpha=0.2)(d_1)
-    d_1 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
-    #d_1 = LeakyReLU(alpha=0.2)(d_1)
-    # convolusion block 2
-    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_1)
-    #d_2 = LeakyReLU(alpha=0.2)(d_2)
-    d_2 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_2)
-    #d_2 = LeakyReLU(alpha=0.2)(d_2)
-    d_2 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
-    #d_2 = LeakyReLU(alpha=0.2)(d_2)
-    # convolusion block 3
-    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_2)
-    #d_3 = LeakyReLU(alpha=0.2)(d_3)
-    d_3 = Conv2D(128, (4, 4), padding='same', kernel_initializer='he_normal')(d_3)
-    #d_3 = LeakyReLU(alpha=0.2)(d_3)
-    d_3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_normal')(d_3)
-    #d_3 = LeakyReLU(alpha=0.2)(d_3)
-    d = Flatten()(d_3)
+    d_1 = Conv1D(256, 3, strides=3, padding='valid')(converted_block)
+    d_1 = Conv1D(32, 50, padding='valid')(d_1)
+    d_1 = Conv1D(32, 150, padding='valid')(d_1)
+    d_1 = Conv2D(32, 100, padding='valid')(d_1)
+    d = Flatten()(d_1)
     out_class = Dense(9, activation='softmax')(d)
     # define model
-    model = Model(in_image, out_class)
+    model = Model(in_data, out_class)
     # store model
     model_list.append(model)
     # create submodels
@@ -126,7 +111,7 @@ def load_evaluator(dimension, bucket_name, download, train_dataset, epochs):
         model=keras.models.load_model(file_name)
         return model
     else:
-        evaluadores=define_evaluator(7)
+        evaluadores=define_evaluator(1)
         if dimension[0]==4:
             model=evaluadores[0]
             batch_size=64

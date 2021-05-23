@@ -21,6 +21,17 @@ from .utils import *
 from google.cloud import storage
 import os
 from tensorflow.keras.layers import Conv1DTranspose
+
+EQ_DIM={
+    3000: (4,750,2),
+    12000: (8,1500,2),
+    48000: (16,3000,2),
+    192000: (32,6000,2),
+    768000: (64,12000,2),
+    3072000: (128,24000,2),
+    12288000: (256,48000,2)
+    }
+
 # Weighted Sum Layer para el proceso de fade-in
 
 class WeightedSum(Add):
@@ -42,16 +53,7 @@ class WeightedSum(Add):
         config.update({"alpha": self.alpha})
         return config
 
-class DefaultNetwork(keras.Model):
-    @property
-    def trainable_default_network(self):
-        default_vars=[]
-        for i in range(0, len(self.layers)):
-            if self.layers[i].name[:5]=="defly":
-                default_vars+=self.layers[i].trainable_weights
-        return default_vars
-
-class WGAN(keras.Model):
+class GAN(keras.Model):
     def __init__(
         self,
         discriminator,
@@ -60,40 +62,37 @@ class WGAN(keras.Model):
         generator_default,
         latent_dim,
         fade_in=False,
-        discriminator_extra_steps=3,
+        default_network_extra=4,
         gp_weight=10.0,
     ):
-        super(WGAN, self).__init__()
+        super(GAN, self).__init__()
         self.discriminator = discriminator
         self.encoder = encoder
         self.generator = generator
         self.generator_default = generator_default
         self.latent_dim = latent_dim
-        self.d_steps = discriminator_extra_steps
+        self.def_steps = default_network_extra
         self.gp_weight = gp_weight
         self.actual_step = 0
         self.total_steps = 0
         self.fade_in=fade_in
 
-    def compile(self, d_optimizer, enc_optimizer, g_optimizer, df_optimizer, d_loss_fn, g_loss_fn, g_loss_fn_extra, was_loaded=False):
-        super(WGAN, self).compile()
+    def compile(self, d_optimizer, enc_optimizer, g_optimizer, df_optimizer, d_loss_fn, g_loss_fn, was_loaded=False):
+        super(GAN, self).compile()
         self.d_optimizer = d_optimizer
         self.enc_optimizer = enc_optimizer
         self.g_optimizer = g_optimizer
         self.df_optimizer = df_optimizer
         self.d_loss_fn = d_loss_fn
         self.g_loss_fn = g_loss_fn
-        self.g_loss_fn_extra = g_loss_fn_extra
         if not was_loaded:
-            #self.generator.compile(optimizer=g_optimizer)
-            #self.generator_default.compile(optimizer=df_optimizer)
             self.discriminator.compile(optimizer=d_optimizer)
             self.encoder.compile(optimizer=enc_optimizer)
 
     def set_train_steps(self, size):
         self.train_steps=size
 
-    def train_step(self, real_images):
+    def train_step(self, real_data):
         #control actual step
         if self.fade_in:
             models=[self.discriminator, self.generator]
@@ -105,18 +104,18 @@ class WGAN(keras.Model):
                     if isinstance(layer, WeightedSum):
                         backend.set_value(layer.alpha, alpha)
 
-        if isinstance(real_images, tuple):
-            real_images = real_images[0]
+        if isinstance(real_data, tuple):
+            real_data = real_data[0]
 
         # Get the batch size
-        batch_size = real_images.shape[0]
+        batch_size = real_data.shape[0]
         gen_shape = self.generator.output_shape
 
         # Run on default network
-        for i in range(4):
+        for i in range(self.def_steps):
             mini_bsize=int(batch_size/2)
-            random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-3], gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
-            random_encoded_real=self.encoder(real_images[:mini_bsize], training=False)
+            random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+            random_encoded_real=self.encoder(real_data[:mini_bsize], training=False)
             random_encoded_random=self.encoder(random_encoder_input, training=False)
             random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
             random_latent_vectors = tf.random.shuffle(random_latent_vectors)
@@ -126,7 +125,7 @@ class WGAN(keras.Model):
                 # Get the logits for the fake images
                 fake_logits = self.discriminator(fake_images, training=False)
                 # Get the logits for the real images
-                real_logits = self.discriminator(real_images, training=False)
+                real_logits = self.discriminator(real_data, training=False)
                 # Calculate the discriminator loss using the fake and real image logits
                 def_loss = self.g_loss_fn(fake_logits, real_logits)
             # Get the gradients w.r.t the discriminator loss
@@ -137,36 +136,35 @@ class WGAN(keras.Model):
             )
 
         # Train discriminator
-        for i in range(self.d_steps):
-            mini_bsize=int(batch_size/2)
-            random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-3], gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
-            random_encoded_real=self.encoder(real_images[:mini_bsize], training=False)
-            random_encoded_random=self.encoder(random_encoder_input, training=False)
-            random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
-            random_latent_vectors = tf.random.shuffle(random_latent_vectors)
-            with tf.GradientTape() as tape:
-                # Generate fake images from the latent vector
-                fake_images = self.generator(random_latent_vectors, training=False)
-                # Get the logits for the fake images
-                fake_logits = self.discriminator(fake_images, training=True)
-                # Get the logits for the real images
-                real_logits = self.discriminator(real_images, training=True)
-                # Calculate the discriminator loss using the fake and real image logits
-                d_loss = self.d_loss_fn(fake_logits, real_logits)
-            # Get the gradients w.r.t the discriminator loss
-            d_gradient = tape.gradient(d_loss, self.discriminator.trainable_variables)
-            # Update the weights of the discriminator using the discriminator optimizer
-            self.discriminator.optimizer.apply_gradients(
-                zip(d_gradient, self.discriminator.trainable_variables)
-            )
+        mini_bsize=int(batch_size/2)
+        random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+        random_encoded_real=self.encoder(real_data[:mini_bsize], training=False)
+        random_encoded_random=self.encoder(random_encoder_input, training=False)
+        random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
+        random_latent_vectors = tf.random.shuffle(random_latent_vectors)
+        with tf.GradientTape() as tape:
+            # Generate fake images from the latent vector
+            fake_images = self.generator(random_latent_vectors, training=False)
+            # Get the logits for the fake images
+            fake_logits = self.discriminator(fake_images, training=True)
+            # Get the logits for the real images
+            real_logits = self.discriminator(real_data, training=True)
+            # Calculate the discriminator loss using the fake and real image logits
+            d_loss = self.d_loss_fn(fake_logits, real_logits)
+        # Get the gradients w.r.t the discriminator loss
+        d_gradient = tape.gradient(d_loss, self.discriminator.trainable_variables)
+        # Update the weights of the discriminator using the discriminator optimizer
+        self.discriminator.optimizer.apply_gradients(
+            zip(d_gradient, self.discriminator.trainable_variables)
+        )
         # Train the generator
         # Get the latent vector
         #random_latent_vectors = tf.random.uniform(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
         with tf.GradientTape(persistent=True) as tape:
             #get noise from encoder
             mini_bsize=int(batch_size/2)
-            random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-3], gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
-            random_encoded_real=self.encoder(real_images[:mini_bsize], training=True)
+            random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+            random_encoded_real=self.encoder(real_data[:mini_bsize], training=True)
             random_encoded_random=self.encoder(random_encoder_input, training=True)
             random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
             #random_latent_vectors = tf.random.shuffle(random_latent_vectors)
@@ -175,7 +173,7 @@ class WGAN(keras.Model):
             # Get the discriminator logits for fake images
             gen_img_logits = self.discriminator(generated_images, training=False)
             # Get the logits for the real images
-            real_logits = self.discriminator(real_images, training=False)
+            real_logits = self.discriminator(real_data, training=False)
             # Calculate the generator loss using the fake and real image logits
             g_loss = self.g_loss_fn(gen_img_logits, real_logits)
         # Get the gradients w.r.t the encoder with generator loss
@@ -265,35 +263,6 @@ class StaticOptTanh(Layer):
         config.update({"alpha": self.alpha})
         return config
 
-#DeLiGAN Layer
-class DeliGanLayer(Layer):
-    def __init__(self, latent_dim=(1,50,1), batch_size=16, **kwargs):
-        super(DeliGanLayer, self).__init__(**kwargs)
-        self.latent_dim=latent_dim
-        miu_init=tf.random_uniform_initializer(-1,1)
-        self.miu = self.add_weight(
-            shape=(batch_size, self.latent_dim[-3], self.latent_dim[-2], self.latent_dim[-1]),
-            initializer=miu_init, 
-            trainable=True,
-            name="miu"
-        )
-        rho_init=tf.constant_initializer(0.02)
-        self.rho = self.add_weight(
-            shape=(batch_size, self.latent_dim[-3], self.latent_dim[-2], self.latent_dim[-1]),
-            initializer=rho_init, 
-            trainable=True,
-            name="rho"
-        )
-
-    def call(self, inputs):
-        return tf.add(self.miu,tf.math.multiply(inputs,self.rho))
-
-    def get_config(self):
-        config = super(DeliGanLayer, self).get_config()
-        config.update({"latent_dim": self.latent_dim})
-        #config.update({"rho": self.rho.numpy()})
-        return config
-
 #Decision Layer
 class DecisionLayer(Layer):
     def __init__(self, output_size=9, **kwargs):
@@ -333,46 +302,11 @@ class SlicerLayer(Layer):
         config = super(SlicerLayer, self).get_config()
         config.update({"index_work": self.index_work})
         return config
-#Slicer Layer
-class SlicerRealLayer(Layer):
+
+#Complex real amd imag components as channels
+class ComplexToChannels(Layer):
     def __init__(self, **kwargs):
-        super(SlicerRealLayer, self).__init__(**kwargs)
-
-    def call(self, inputs):
-        return tf.math.real(inputs)
-
-    def get_config(self):
-        config = super(SlicerRealLayer, self).get_config()
-        return config
-
-#Slicer Layer
-class SlicerImagLayer(Layer):
-    def __init__(self, **kwargs):
-        super(SlicerImagLayer, self).__init__(**kwargs)
-
-    def call(self, inputs):
-        return tf.math.imag(inputs)
-
-    def get_config(self):
-        config = super(SlicerImagLayer, self).get_config()
-        return config
-
-#Merge Complex Layer
-class MergeComplexLayer(Layer):
-    def __init__(self, **kwargs):
-        super(MergeComplexLayer, self).__init__(**kwargs)
-
-    def call(self, inputs):
-        return tf.complex(inputs[0], inputs[1])
-
-    def get_config(self):
-        config = super(MergeComplexLayer, self).get_config()
-        return config
-
-#Complex concatenated
-class ConcatComplexComponents(Layer):
-    def __init__(self, **kwargs):
-        super(ConcatComplexComponents, self).__init__(**kwargs)
+        super(ComplexToChannels, self).__init__(**kwargs)
 
     def call(self, inputs):
         real=tf.math.real(inputs)
@@ -380,57 +314,53 @@ class ConcatComplexComponents(Layer):
         return tf.concat([real, imag], -1)
 
     def get_config(self):
-        config = super(ConcatComplexComponents, self).get_config()
+        config = super(ComplexToChannels, self).get_config()
         return config
 
-#Complex concatenated
-class ComponentsToComplex(Layer):
+class ChannelsToComplex(Layer):
     def __init__(self, **kwargs):
-        super(ComponentsToComplex, self).__init__(**kwargs)
+        super(ChannelsToComplex, self).__init__(**kwargs)
 
     def call(self, inputs):
-        real=inputs[:,:,:1]
-        imag=inputs[:,:,1:]
+        real=inputs[:,:,0]
+        imag=inputs[:,:,1]
         return tf.complex(real, imag)
 
     def get_config(self):
-        config = super(ComponentsToComplex, self).get_config()
+        config = super(ChannelsToComplex, self).get_config()
         return config
 
-#FFT 2d Layer
-class FFT2d(Layer):
+#FFT Layer
+class FFT(Layer):
     def __init__(self, **kwargs):
-        super(FFT2d, self).__init__(**kwargs)
+        super(FFT, self).__init__(**kwargs)
 
     def call(self, inputs):
-        flat_ly=Flatten()
-        reshaped=flat_ly(inputs)
-        fft = tf.signal.rfft(reshaped)
-        shape_result=fft.shape
-        return tf.reshape(fft, shape=(-1,shape_result[1], 1))
+        transposed=tf.transpose(inputs, perm=[0, 2, 1])
+        fft = tf.signal.rfft(transposed)
+        return tf.transpose(fft, perm=[0, 2, 1])
 
     def get_config(self):
-        config = super(FFT2d, self).get_config()
+        config = super(FFT, self).get_config()
         return config
 
-#inverse FFT 2d Layer
-class iFFT2d(Layer):
+#inverse FFT Layer
+class iFFT(Layer):
     def __init__(self, **kwargs):
-        super(iFFT2d, self).__init__(**kwargs)
+        super(iFFT, self).__init__(**kwargs)
 
     def call(self, inputs):
-        flat_ly=Flatten()
-        reshaped=flat_ly(inputs)
-        ifft = tf.signal.irfft(reshaped)
-        return ifft
+        transposed=tf.transpose(inputs, perm=[0, 2, 1])
+        ifft = tf.signal.irfft(transposed)
+        return tf.transpose(ifft, perm=[0, 2, 1])
 
     def get_config(self):
-        config = super(iFFT2d, self).get_config()
+        config = super(iFFT, self).get_config()
         return config
 
 # agregar bloque a discriminador para escalar las dimensiones
 
-def add_discriminator_block(old_model, n_input_layers=2):
+def add_discriminator_block(old_model, n_input_layers=3):
     # getshapeofexistingmodel
     in_shape = list(old_model.input[0].shape)
     alpha=400.0
@@ -491,33 +421,25 @@ def add_discriminator_block(old_model, n_input_layers=2):
 
 # definir los discriminadores
 
-def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
+def define_discriminator(n_blocks, input_shape=(3000, 2)):
     model_list = list()
     # base model input
-    in_image = Input(shape=input_shape)
+    in_data = Input(shape=input_shape)
     # conv 1x1
-    featured_block = Conv2D(128, (1, 1), padding='same')(in_image)
+    converted_block = FFT()(in_data)
+    converted_block = ComplexToChannels()(converted_block)
     # convolusion block 1
-    #d_1 = Conv2D(32, (1, 151), padding='same')(featured_block)
-    d_1 = FFT2d()(featured_block)
-    d_1 = ConcatComplexComponents()(d_1)
-    d_1 = Conv1D(32, 16, padding='same')(d_1)
-    d_1 = Conv1DTranspose(32, 16, padding='same')(d_1)
-    d_1 = Dense(2)(d_1)
-    d_1 = ComponentsToComplex()(d_1)
-    d_1 = iFFT2d()(d_1)
-    d_1 = Reshape((4, 750, 128))(d_1)
-    d_1 = Conv2D(32, (1, 201), padding='valid')(d_1)
-    d_1 = Conv2D(32, (1, 301), padding='valid')(d_1)
-    d_1 = Conv2D(32, (2, 16), padding='valid')(d_1)
-    d_1 = Conv2D(32, (2, 36), padding='valid')(d_1)
+    d_1 = Conv1D(256, 3, strides=3, padding='valid')(converted_block)
+    d_1 = Conv1D(32, 50, padding='valid')(d_1)
+    d_1 = Conv1D(32, 150, padding='valid')(d_1)
+    d_1 = Conv2D(32, 100, padding='valid')(d_1)
+    d_1 = Flatten()(d_1)
     d_1 = MinibatchStdDev()(d_1)
-    d_1 = Conv2D(32, (3, 50), padding='valid')(d_1)
     d_1 = SoftRectifier()(d_1)
     d = Dense(1)(d_1)
     out_class = StaticOptTanh()(d)
     # define model
-    model_comp = Model(in_image, out_class)
+    model_comp = Model(in_data, out_class)
     # store model
     model_list.append([model_comp, model_comp])
     # create submodels
@@ -532,7 +454,7 @@ def define_discriminator(n_blocks, input_shape=(4, 750, 2)):
 
 # agregar bloque al encoder para escalar las dimensiones
 
-def add_encoder_block(old_model, n_input_layers=2):
+def add_encoder_block(old_model, n_input_layers=3):
     # getshapeofexistingmodel
     in_shape = list(old_model.input[0].shape)
     alpha=400.0
@@ -591,21 +513,22 @@ def add_encoder_block(old_model, n_input_layers=2):
 
 # definir los discriminadores
 
-def define_encoder(n_blocks, input_shape=(4, 750, 2)):
+def define_encoder(n_blocks, input_shape=(3000, 2)):
     model_list = list()
     # base model input
-    in_image = Input(shape=input_shape)
-    # conv 1x1
-    featured_block = Conv2D(128, (1, 51), padding='same')(in_image)
+    in_data = Input(shape=input_shape)
+    converted_block = FFT()(in_data)
+    converted_block = ComplexToChannels()(converted_block)
     # convolusion block 1
-    d_1 = Conv2D(64, (1, 101), padding='valid')(featured_block)
-    d_1 = Conv2D(64, (2, 151), padding='valid')(d_1)
-    d_1 = Conv2D(64, (2, 251), padding='valid')(d_1)
-    d_1 = Conv2D(64, (2, 201), padding='valid')(d_1)
+    d_1 = Conv1D(256, 3, strides=3, padding='valid')(converted_block)
+    d_1 = Conv1D(32, 50, padding='valid')(d_1)
+    d_1 = Conv1D(32, 150, padding='valid')(d_1)
+    d_1 = Conv2D(32, 100, padding='valid')(d_1)
+    d_1 = Flatten()(d_1)
     d_1 = Dropout(0.2)(d_1)
     out_class = Dense(1)(d_1)
     # define model
-    model_comp = Model(in_image, out_class)
+    model_comp = Model(in_data, out_class)
     # store model
     model_list.append([model_comp, model_comp])
     # create submodels
@@ -617,7 +540,6 @@ def define_encoder(n_blocks, input_shape=(4, 750, 2)):
         # store model
         model_list.append(models)
     return model_list
-
 
 #controlador de nombres de capas
 class LayerCounter:
@@ -807,284 +729,177 @@ def define_generator(n_blocks, latent_dim):
     # input
     ly0 = Input(shape=latent_dim)
     #selector de incice 0
-    i_sel_0_tf=FFT2d(name="defly_"+counter.get_next())(ly0)
-    #procesar frecuencias
-    i_sel_0_b0=SlicerRealLayer()(i_sel_0_tf)
-    i_sel_0_b0=Conv1D(16, 6, padding='valid', name="defly_"+counter.get_next())(i_sel_0_b0)
-    i_sel_0_b0=Dense(1, name="defly_"+counter.get_next())(i_sel_0_b0)
-    #procesar fases
-    i_sel_0_b1=SlicerImagLayer()(i_sel_0_tf)
-    i_sel_0_b1=Conv1D(16, 6, padding='valid', name="defly_"+counter.get_next())(i_sel_0_b1)
-    i_sel_0_b1=Dense(1, name="defly_"+counter.get_next())(i_sel_0_b1)
-    #fusionar en complejo
-    i_sel_0=MergeComplexLayer()([i_sel_0_b0, i_sel_0_b1])
-    i_sel_0=iFFT2d(name="defly_"+counter.get_next())(i_sel_0)
-    i_sel_0=Reshape((1,40,1))(i_sel_0)
-    i_sel_0=Conv2D(16, (1,11), padding='valid', name="defly_"+counter.get_next())(i_sel_0)
+    i_sel_0=Conv1D(8, 16, padding='valid', name="defly_"+counter.get_next())(ly0)
+    i_sel_0=Conv1D(8, 36, padding='valid', name="defly_"+counter.get_next())(i_sel_0)
     i_sel_0=Dropout(0.3)(i_sel_0)
     i_sel_0=Flatten()(i_sel_0)
     i_sel_0=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_0)
     #decision layer 0
     des_ly_0=DecisionLayer(output_size=12)([ly0, i_sel_0])
-    #bloque 0 salidas de (1,250,8)
+    #bloque 0 salidas de (250,8)
     #rama 1 bloque 0
     b0_r1 = SlicerLayer(index_work=0)(des_ly_0)
-    b0_r1 = Conv2DTranspose(8, (1, 5), strides=(1,5), padding='valid')(b0_r1)
+    b0_r1 = Conv1D(32, 2, strides=2, padding='valid')(b0_r1)
+    b0_r1 = Conv1DTranspose(8, 5, strides=5, padding='valid')(b0_r1)
     #rama 2 bloque 0
     b0_r2 = SlicerLayer(index_work=1)(des_ly_0)
-    b0_r2 = Conv2DTranspose(8, (1, 3), strides=(1,2), padding='valid')(b0_r2)
-    b0_r2 = Conv2DTranspose(8, (1, 5), strides=(1,2), padding='valid')(b0_r2)
-    b0_r2 = Conv2DTranspose(8, (1, 46), padding='valid')(b0_r2)
+    b0_r2 = Conv1D(32, 2, strides=2, padding='valid')(b0_r2)
+    b0_r2 = Conv1DTranspose(8, 3, strides=2, padding='valid')(b0_r2)
+    b0_r2 = Conv1DTranspose(8, 5, strides=2, padding='valid')(b0_r2)
+    b0_r2 = Conv1DTranspose(8, 46, padding='valid')(b0_r2)
     #rama 3 bloque 0
     b0_r3 = SlicerLayer(index_work=2)(des_ly_0)
-    b0_r3 = Conv2DTranspose(8, (1, 23), strides=(1,3), padding='valid')(b0_r3)
-    b0_r3 = Conv2DTranspose(8, (1, 81), padding='valid')(b0_r3)
+    b0_r3 = Conv1D(16, 51, padding='valid')(b0_r3)
+    b0_r3 = Conv1DTranspose(8, 23, strides=3, padding='valid')(b0_r3)
+    b0_r3 = Conv1DTranspose(8, 81, padding='valid')(b0_r3)
     #rama 4 bloque 0
     b0_r4 = SlicerLayer(index_work=3)(des_ly_0)
-    b0_r4 = Conv2DTranspose(8, (1, 51), padding='valid')(b0_r4)
-    b0_r4 = Conv2DTranspose(8, (1, 101), padding='valid')(b0_r4)
-    b0_r4 = Conv2DTranspose(8, (1, 51), padding='valid')(b0_r4)
+    b0_r4 = Conv1D(16, 51, padding='valid')(b0_r4)
+    b0_r4 = Conv1DTranspose(8, 51, padding='valid')(b0_r4)
+    b0_r4 = Conv1DTranspose(8, 101, padding='valid')(b0_r4)
+    b0_r4 = Conv1DTranspose(8, 51, padding='valid')(b0_r4)
     #rama 5 bloque 0
     b0_r5 = SlicerLayer(index_work=4)(des_ly_0)
-    b0_r5 = Conv2DTranspose(8, (1, 5), strides=(1,5), padding='valid')(b0_r5)
+    b0_r5 = Conv1D(16, 51, padding='valid')(b0_r5)
+    b0_r5 = Conv1DTranspose(8, 5, strides=5, padding='valid')(b0_r5)
     #rama 6 bloque 0
     b0_r6 = SlicerLayer(index_work=5)(des_ly_0)
-    b0_r6 = Conv2DTranspose(8, (1, 3), strides=(1,2), padding='valid')(b0_r6)
-    b0_r6 = Conv2DTranspose(8, (1, 5), strides=(1,2), padding='valid')(b0_r6)
-    b0_r6 = Conv2DTranspose(8, (1, 46), padding='valid')(b0_r6)
+    b0_r6 = Conv1D(16, 51, padding='valid')(b0_r6)
+    b0_r6 = Conv1DTranspose(8, 3, strides=2, padding='valid')(b0_r6)
+    b0_r6 = Conv1DTranspose(8, 5, strides=2, padding='valid')(b0_r6)
+    b0_r6 = Conv1DTranspose(8, 46, padding='valid')(b0_r6)
     #rama 7 bloque 0
     b0_r7 = SlicerLayer(index_work=6)(des_ly_0)
-    b0_r7 = Conv2DTranspose(8, (1, 23), strides=(1,3), padding='valid')(b0_r7)
-    b0_r7 = Conv2DTranspose(8, (1, 81), padding='valid')(b0_r7)
+    b0_r7 = Conv1D(16, 51, padding='valid')(b0_r7)
+    b0_r7 = Conv1DTranspose(8, 23, strides=3, padding='valid')(b0_r7)
+    b0_r7 = Conv1DTranspose(8, 81, padding='valid')(b0_r7)
     #rama 8 bloque 0
     b0_r8 = SlicerLayer(index_work=7)(des_ly_0)
-    b0_r8 = Conv2DTranspose(8, (1, 51), padding='valid')(b0_r8)
-    b0_r8 = Conv2DTranspose(8, (1, 101), padding='valid')(b0_r8)
-    b0_r8 = Conv2DTranspose(8, (1, 51), padding='valid')(b0_r8)
+    b0_r8 = Conv1D(16, 2, strides=2, padding='valid')(b0_r8)
+    b0_r8 = Conv1DTranspose(8, 51, padding='valid')(b0_r8)
+    b0_r8 = Conv1DTranspose(8, 101, padding='valid')(b0_r8)
+    b0_r8 = Conv1DTranspose(8, 51, padding='valid')(b0_r8)
     #rama 9 bloque 0
     b0_r9 = SlicerLayer(index_work=8)(des_ly_0)
-    b0_r9 = Conv2DTranspose(8, (1, 5), strides=(1,5), padding='valid')(b0_r9)
+    b0_r9 = Conv1D(16, 51, padding='valid')(b0_r9)
+    b0_r9 = Conv1DTranspose(8, 5, strides=5, padding='valid')(b0_r9)
     #rama 10 bloque 0
     b0_r10 = SlicerLayer(index_work=9)(des_ly_0)
-    b0_r10 = Conv2DTranspose(8, (1, 3), strides=(1,2), padding='valid')(b0_r10)
-    b0_r10 = Conv2DTranspose(8, (1, 5), strides=(1,2), padding='valid')(b0_r10)
-    b0_r10 = Conv2DTranspose(8, (1, 46), padding='valid')(b0_r10)
+    b0_r10 = Conv1D(16, 51, padding='valid')(b0_r10)
+    b0_r10 = Conv1DTranspose(8, 3, strides=2, padding='valid')(b0_r10)
+    b0_r10 = Conv1DTranspose(8, 5, strides=2, padding='valid')(b0_r10)
+    b0_r10 = Conv1DTranspose(8, 46, padding='valid')(b0_r10)
     #rama 11 bloque 0
     b0_r11 = SlicerLayer(index_work=10)(des_ly_0)
-    b0_r11 = Conv2DTranspose(8, (1, 23), strides=(1,3), padding='valid')(b0_r11)
-    b0_r11 = Conv2DTranspose(8, (1, 81), padding='valid')(b0_r11)
+    b0_r11 = Conv1D(16, 51, padding='valid')(b0_r11)
+    b0_r11 = Conv1DTranspose(8, 23, strides=3, padding='valid')(b0_r11)
+    b0_r11 = Conv1DTranspose(8, 81, padding='valid')(b0_r11)
     #rama 12 bloque 0
     b0_r12 = SlicerLayer(index_work=11)(des_ly_0)
-    b0_r12 = Conv2DTranspose(8, (1, 51), padding='valid')(b0_r12)
-    b0_r12 = Conv2DTranspose(8, (1, 101), padding='valid')(b0_r12)
-    b0_r12 = Conv2DTranspose(8, (1, 51), padding='valid')(b0_r12)
+    b0_r12 = Conv1D(16, 2, strides=2, padding='valid')(b0_r12)
+    b0_r12 = Conv1DTranspose(8, 51, padding='valid')(b0_r12)
+    b0_r12 = Conv1DTranspose(8, 101, padding='valid')(b0_r12)
+    b0_r12 = Conv1DTranspose(8, 51, padding='valid')(b0_r12)
     #sumar ramas bloque 0
     merger_b0=Add()([b0_r1, b0_r2, b0_r3, b0_r4, b0_r5, b0_r6, b0_r7, b0_r8, b0_r9, b0_r10, b0_r11, b0_r12])
-    #index selector block 1
-    i_sel_1_tf=FFT2d(name="defly_"+counter.get_next())(merger_b0)
-    #procesar frecuencias
-    i_sel_1_b0=SlicerRealLayer()(i_sel_1_tf)
-    i_sel_1_b0=Conv1D(16, 16, padding='valid', name="defly_"+counter.get_next())(i_sel_1_b0)
-    i_sel_1_b0=Conv1DTranspose(16, 16, padding='valid', name="defly_"+counter.get_next())(i_sel_1_b0)
-    i_sel_1_b0=Dense(1, name="defly_"+counter.get_next())(i_sel_1_b0)
-    #procesar fases
-    i_sel_1_b1=SlicerImagLayer()(i_sel_1_tf)
-    i_sel_1_b1=Conv1D(16, 16, padding='valid', name="defly_"+counter.get_next())(i_sel_1_b1)
-    i_sel_1_b1=Conv1DTranspose(16, 16, padding='valid', name="defly_"+counter.get_next())(i_sel_1_b1)
-    i_sel_1_b1=Dense(1, name="defly_"+counter.get_next())(i_sel_1_b1)
-    #fusionar en complejo
-    i_sel_1=MergeComplexLayer()([i_sel_1_b0, i_sel_1_b1])
-    i_sel_1=iFFT2d(name="defly_"+counter.get_next())(i_sel_1)
-    i_sel_1=Reshape((1,250,8))(i_sel_1)
-    i_sel_1=Conv2D(16, (1,16), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
+    merger_b0=Dense(2, name="defly_"+counter.get_next())(merger_b0)
+    #selector de incice 1
+    i_sel_1=Conv1D(8, 16, padding='valid', name="defly_"+counter.get_next())(merger_b0)
+    i_sel_1=Conv1D(8, 36, padding='valid', name="defly_"+counter.get_next())(i_sel_1)
+    i_sel_1=Conv1D(8, 51, padding='valid', name="defly_"+counter.get_next())(i_sel_1)
     i_sel_1=Dropout(0.3)(i_sel_1)
     i_sel_1=Flatten()(i_sel_1)
-    i_sel_1=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_1)
+    i_sel_1=Dense(6, activation='softmax', name="defly_"+counter.get_next())(i_sel_1)
     #decision layer
-    des_ly_1=DecisionLayer(output_size=12)([merger_b0, i_sel_1])
-    #bloque 1 salida (1,750,8)
+    des_ly_1=DecisionLayer(output_size=6)([merger_b0, i_sel_1])
+    #bloque 1 salida (750,8)
     #rama 1
     b1_r1 = SlicerLayer(index_work=0)(des_ly_1)
-    b1_r1 = Conv2DTranspose(8, (1, 3), strides=(1,3), padding='valid')(b1_r1)
+    b1_r1 = Conv1DTranspose(128, 3, strides=3, padding='valid')(b1_r1)
+    b1_r1 = Conv1D(8, 51, padding='valid')(b1_r1)
+    b1_r1 = Conv1DTranspose(8, 51, padding='valid')(b1_r1)
     #rama 2
     b1_r2 = SlicerLayer(index_work=1)(des_ly_1)
-    b1_r2 = Conv2DTranspose(8, (1, 5), strides=(1,2), padding='valid')(b1_r2)
-    b1_r2 = Conv2DTranspose(8, (1, 248), padding='valid')(b1_r2)
+    b1_r2 = Conv1DTranspose(8, 5, strides=2, padding='valid')(b1_r2)
+    b1_r2 = Conv1DTranspose(8, 248, padding='valid')(b1_r2)
     #rama 3
     b1_r3 = SlicerLayer(index_work=2)(des_ly_1)
-    b1_r3 = Conv2DTranspose(8, (1, 36), padding='valid')(b1_r3)
-    b1_r3 = Conv2DTranspose(8, (1, 132), strides=(1,2), padding='valid')(b1_r3)
-    b1_r3 = Conv2DTranspose(8, (1, 51), padding='valid')(b1_r3)
+    b1_r3 = Conv1DTranspose(8, 36, padding='valid')(b1_r3)
+    b1_r3 = Conv1DTranspose(8, 132, strides=2, padding='valid')(b1_r3)
+    b1_r3 = Conv1DTranspose(8, 51, padding='valid')(b1_r3)
     #rama 4
     b1_r4 = SlicerLayer(index_work=3)(des_ly_1)
-    b1_r4 = Conv2DTranspose(8, (1, 101), padding='valid')(b1_r4)
-    b1_r4 = Conv2DTranspose(8, (1, 351), padding='valid')(b1_r4)
-    b1_r4 = Conv2DTranspose(8, (1, 51), padding='valid')(b1_r4)
+    b1_r4 = Conv1DTranspose(8, 101, padding='valid')(b1_r4)
+    b1_r4 = Conv1DTranspose(8, 351, padding='valid')(b1_r4)
+    b1_r4 = Conv1DTranspose(8, 51, padding='valid')(b1_r4)
     #rama 5
     b1_r5 = SlicerLayer(index_work=4)(des_ly_1)
-    b1_r5 = Conv2DTranspose(8, (1, 16), padding='valid')(b1_r5)
-    b1_r5 = Conv2DTranspose(8, (1, 36), padding='valid')(b1_r5)
-    b1_r5 = Conv2DTranspose(8, (1, 51), padding='valid')(b1_r5)
-    b1_r5 = Conv2DTranspose(8, (1, 76), padding='valid')(b1_r5)
-    b1_r5 = Conv2DTranspose(8, (1, 101), padding='valid')(b1_r5)
-    b1_r5 = Conv2DTranspose(8, (1, 151), padding='valid')(b1_r5)
-    b1_r5 = Conv2DTranspose(8, (1, 76), padding='valid')(b1_r5)
+    b1_r5 = Conv1DTranspose(4, 16, padding='valid')(b1_r5)
+    b1_r5 = Conv1DTranspose(8, 36, padding='valid')(b1_r5)
+    b1_r5 = Conv1DTranspose(4, 51, padding='valid')(b1_r5)
+    b1_r5 = Conv1DTranspose(8, 76, padding='valid')(b1_r5)
+    b1_r5 = Conv1DTranspose(4, 101, padding='valid')(b1_r5)
+    b1_r5 = Conv1DTranspose(8, 151, padding='valid')(b1_r5)
+    b1_r5 = Conv1DTranspose(8, 76, padding='valid')(b1_r5)
     #rama 6
     b1_r6 = SlicerLayer(index_work=5)(des_ly_1)
-    b1_r6 = Conv2DTranspose(8, (1, 16), padding='valid')(b1_r6)
-    b1_r6 = Conv2DTranspose(8, (1, 36), padding='valid')(b1_r6)
-    b1_r6 = Conv2DTranspose(8, (1, 301), padding='valid')(b1_r6)
-    b1_r6 = Conv2DTranspose(8, (1, 151), padding='valid')(b1_r6)
-    #rama 7
-    b1_r7 = SlicerLayer(index_work=6)(des_ly_1)
-    b1_r7 = Conv2DTranspose(8, (1, 3), strides=(1,3), padding='valid')(b1_r7)
-    #rama 8
-    b1_r8 = SlicerLayer(index_work=7)(des_ly_1)
-    b1_r8 = Conv2DTranspose(8, (1, 5), strides=(1,2), padding='valid')(b1_r8)
-    b1_r8 = Conv2DTranspose(8, (1, 248), padding='valid')(b1_r8)
-    #rama 9
-    b1_r9 = SlicerLayer(index_work=8)(des_ly_1)
-    b1_r9 = Conv2DTranspose(8, (1, 36), padding='valid')(b1_r9)
-    b1_r9 = Conv2DTranspose(8, (1, 132), strides=(1,2), padding='valid')(b1_r9)
-    b1_r9 = Conv2DTranspose(8, (1, 51), padding='valid')(b1_r9)
-    #rama 10
-    b1_r10 = SlicerLayer(index_work=9)(des_ly_1)
-    b1_r10 = Conv2DTranspose(8, (1, 101), padding='valid')(b1_r10)
-    b1_r10 = Conv2DTranspose(8, (1, 351), padding='valid')(b1_r10)
-    b1_r10 = Conv2DTranspose(8, (1, 51), padding='valid')(b1_r10)
-    #rama 11
-    b1_r11 = SlicerLayer(index_work=10)(des_ly_1)
-    b1_r11 = Conv2DTranspose(8, (1, 16), padding='valid')(b1_r11)
-    b1_r11 = Conv2DTranspose(8, (1, 36), padding='valid')(b1_r11)
-    b1_r11 = Conv2DTranspose(8, (1, 51), padding='valid')(b1_r11)
-    b1_r11 = Conv2DTranspose(8, (1, 76), padding='valid')(b1_r11)
-    b1_r11 = Conv2DTranspose(8, (1, 101), padding='valid')(b1_r11)
-    b1_r11 = Conv2DTranspose(8, (1, 151), padding='valid')(b1_r11)
-    b1_r11 = Conv2DTranspose(8, (1, 76), padding='valid')(b1_r11)
-    #rama 12
-    b1_r12 = SlicerLayer(index_work=11)(des_ly_1)
-    b1_r12 = Conv2DTranspose(8, (1, 16), padding='valid')(b1_r12)
-    b1_r12 = Conv2DTranspose(8, (1, 36), padding='valid')(b1_r12)
-    b1_r12 = Conv2DTranspose(8, (1, 301), padding='valid')(b1_r12)
-    b1_r12 = Conv2DTranspose(8, (1, 151), padding='valid')(b1_r12)
+    b1_r6 = Conv1DTranspose(4, 16, padding='valid')(b1_r6)
+    b1_r6 = Conv1DTranspose(8, 36, padding='valid')(b1_r6)
+    b1_r6 = Conv1DTranspose(4, 301, padding='valid')(b1_r6)
+    b1_r6 = Conv1DTranspose(8, 151, padding='valid')(b1_r6)
     #sumar ramas
-    merger_b1=Add()([b1_r1, b1_r2, b1_r3, b1_r4, b1_r5, b1_r6, b1_r7, b1_r8, b1_r9, b1_r10, b1_r11, b1_r12])
-    #fft block 0
-    fft_0_p0=FFT2d(name="defly_"+counter.get_next())(merger_b1)
-    #procesar frecuencias
-    fft_0_b0=SlicerRealLayer()(fft_0_p0)
-    fft_0_b0=Conv1D(32, 26, padding='valid', name="defly_"+counter.get_next())(fft_0_b0)
-    fft_0_b0=Conv1DTranspose(32, 26, padding='valid', name="defly_"+counter.get_next())(fft_0_b0)
-    fft_0_b0=Dense(1, name="defly_"+counter.get_next())(fft_0_b0)
-    #procesar fases
-    fft_0_b1=SlicerImagLayer()(fft_0_p0)
-    fft_0_b1=Conv1D(32, 26, padding='valid', name="defly_"+counter.get_next())(fft_0_b1)
-    fft_0_b1=Conv1DTranspose(32, 26, padding='valid', name="defly_"+counter.get_next())(fft_0_b1)
-    fft_0_b1=Dense(1, name="defly_"+counter.get_next())(fft_0_b1)
-    #fusionar en complejo
-    fft_0=MergeComplexLayer()([fft_0_b0, fft_0_b1])
-    fft_0=iFFT2d(name="defly_"+counter.get_next())(fft_0)
-    fft_0=Reshape((1,750,8))(fft_0)
-    #index selector block 2
-    i_sel_2_tf=FFT2d(name="defly_"+counter.get_next())(fft_0)
-    #procesar frecuencias
-    i_sel_2_b0=SlicerRealLayer()(i_sel_2_tf)
-    i_sel_2_b0=Conv1D(16, 26, padding='valid', name="defly_"+counter.get_next())(i_sel_2_b0)
-    i_sel_2_b0=Conv1DTranspose(16, 26, padding='valid', name="defly_"+counter.get_next())(i_sel_2_b0)
-    i_sel_2_b0=Dense(1, name="defly_"+counter.get_next())(i_sel_2_b0)
-    #procesar fases
-    i_sel_2_b1=SlicerImagLayer()(i_sel_2_tf)
-    i_sel_2_b1=Conv1D(16, 26, padding='valid', name="defly_"+counter.get_next())(i_sel_2_b1)
-    i_sel_2_b1=Conv1DTranspose(16, 26, padding='valid', name="defly_"+counter.get_next())(i_sel_2_b1)
-    i_sel_2_b1=Dense(1, name="defly_"+counter.get_next())(i_sel_2_b1)
-    #fusionar en complejo
-    i_sel_2=MergeComplexLayer()([i_sel_2_b0, i_sel_2_b1])
-    i_sel_2=iFFT2d(name="defly_"+counter.get_next())(i_sel_2)
-    i_sel_2=Reshape((1,750,8))(i_sel_2)
-    i_sel_2=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
+    merger_b1=Add()([b1_r1, b1_r2, b1_r3, b1_r4, b1_r5, b1_r6])
+    merger_b1=Dense(2, name="defly_"+counter.get_next())(merger_b1)
+    #selector de incice 2
+    i_sel_2=Conv1D(8, 16, padding='valid', name="defly_"+counter.get_next())(merger_b1)
+    i_sel_2=Conv1D(8, 36, padding='valid', name="defly_"+counter.get_next())(i_sel_2)
+    i_sel_2=Conv1D(8, 51, padding='valid', name="defly_"+counter.get_next())(i_sel_2)
     i_sel_2=Dropout(0.3)(i_sel_2)
     i_sel_2=Flatten()(i_sel_2)
-    i_sel_2=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_2)
+    i_sel_2=Dense(6, activation='softmax', name="defly_"+counter.get_next())(i_sel_2)
     #decision layer
-    des_ly_2=DecisionLayer(output_size=12)([fft_0, i_sel_2])
-    #bloque 2 salida (4,750,8)
+    des_ly_2=DecisionLayer(output_size=6)([merger_b1, i_sel_2])
+    #bloque 2 salida (1501,8)
     #rama 1
     b2_r1 = SlicerLayer(index_work=0)(des_ly_2)
-    b2_r1 = Conv2DTranspose(8, (2, 1), strides=(2,1), padding='valid')(b2_r1)
-    b2_r1 = Conv2DTranspose(8, (2, 1), strides=(2,1), padding='valid')(b2_r1)
+    b2_r1 = Conv1DTranspose(32, 2, strides=2, padding='valid')(b2_r1)
+    b2_r1 = Conv1D(16, 15, padding='valid')(b2_r1)
+    b2_r1 = Conv1DTranspose(8, 16, padding='valid')(b2_r1)
     #rama 2
     b2_r2 = SlicerLayer(index_work=1)(des_ly_2)
-    b2_r2 = Conv2DTranspose(8, (4, 1), strides=(4,1), padding='valid')(b2_r2)
+    b2_r2 = Conv1DTranspose(8, 251, padding='valid')(b2_r2)
+    b2_r2 = Conv1DTranspose(8, 251, padding='valid')(b2_r2)
+    b2_r2 = Conv1DTranspose(8, 252, padding='valid')(b2_r2)
     #rama 3
     b2_r3 = SlicerLayer(index_work=2)(des_ly_2)
-    b2_r3 = Conv2DTranspose(8, (2, 1), strides=(2,1), padding='valid')(b2_r3)
-    b2_r3 = Conv2DTranspose(8, (2, 1), strides=(2,1), padding='valid')(b2_r3)
+    b2_r3 = Conv1DTranspose(8, 2, strides=2, padding='valid')(b2_r3)
+    b2_r3 = Conv1D(8, 50, padding='valid')(b2_r3)
+    b2_r3 = Conv1DTranspose(8, 51, padding='valid')(b2_r3)
     #rama 4
     b2_r4 = SlicerLayer(index_work=3)(des_ly_2)
-    b2_r4 = Conv2DTranspose(8, (4, 1), strides=(4,1), padding='valid')(b2_r4)
+    b2_r4 = Conv1DTranspose(32, 2, strides=2, padding='valid')(b2_r4)
+    b2_r4 = Conv1D(16, 15, padding='valid')(b2_r4)
+    b2_r4 = Conv1DTranspose(8, 16, padding='valid')(b2_r4)
     #rama 5
     b2_r5 = SlicerLayer(index_work=4)(des_ly_2)
-    b2_r5 = Conv2DTranspose(8, (3, 1), strides=(2,1), padding='valid')(b2_r5)
-    b2_r5 = Conv2DTranspose(8, (2, 1), padding='valid')(b2_r5)
+    b2_r5 = Conv1DTranspose(8, 251, padding='valid')(b2_r5)
+    b2_r5 = Conv1DTranspose(8, 251, padding='valid')(b2_r5)
+    b2_r5 = Conv1DTranspose(8, 252, padding='valid')(b2_r5)
     #rama 6
     b2_r6 = SlicerLayer(index_work=5)(des_ly_2)
-    b2_r6 = Conv2DTranspose(8, (3, 1), strides=(2,1), padding='valid')(b2_r6)
-    b2_r6 = Conv2DTranspose(8, (2, 1), padding='valid')(b2_r6)
-    #rama 7
-    b2_r7 = SlicerLayer(index_work=6)(des_ly_2)
-    b2_r7 = UpSampling2D()(b2_r7)
-    b2_r7 = UpSampling2D(size=(2,1))(b2_r7)
-    b2_r7 = Conv2D(8, (1, 201), padding='valid')(b2_r7)
-    b2_r7 = Conv2D(8, (1, 251), padding='valid')(b2_r7)
-    b2_r7 = Conv2D(8, (1, 301), padding='valid')(b2_r7)
-    #rama 8
-    b2_r8 = SlicerLayer(index_work=7)(des_ly_2)
-    b2_r8 = UpSampling2D()(b2_r8)
-    b2_r8 = UpSampling2D(size=(2,1))(b2_r8)
-    b2_r8 = Conv2D(8, (1, 201), padding='valid')(b2_r8)
-    b2_r8 = Conv2D(8, (1, 251), padding='valid')(b2_r8)
-    b2_r8 = Conv2D(8, (1, 301), padding='valid')(b2_r8)
-    #rama 9
-    b2_r9 = SlicerLayer(index_work=8)(des_ly_2)
-    b2_r9 = UpSampling2D(size=(2,1))(b2_r9)
-    b2_r9 = UpSampling2D(size=(2,1))(b2_r9)
-    b2_r9 = Conv2D(8, (4, 150), padding='same')(b2_r9)
-    #rama 10
-    b2_r10 = SlicerLayer(index_work=9)(des_ly_2)
-    b2_r10 = UpSampling2D(size=(2,1))(b2_r10)
-    b2_r10 = UpSampling2D(size=(2,1))(b2_r10)
-    b2_r10 = Conv2D(8, (2, 150), padding='same')(b2_r10)
-    b2_r10 = Conv2D(8, (2, 150), padding='same')(b2_r10)
-    #rama 11
-    b2_r11 = SlicerLayer(index_work=10)(des_ly_2)
-    b2_r11 = UpSampling2D(size=(2,1))(b2_r11)
-    b2_r11 = UpSampling2D(size=(2,1))(b2_r11)
-    b2_r11 = Conv2D(8, (4, 150), padding='same')(b2_r11)
-    #rama 12
-    b2_r12 = SlicerLayer(index_work=11)(des_ly_2)
-    b2_r12 = UpSampling2D(size=(2,1))(b2_r12)
-    b2_r12 = UpSampling2D(size=(2,1))(b2_r12)
-    b2_r12 = Conv2D(8, (2, 150), padding='same')(b2_r12)
-    b2_r12 = Conv2D(8, (2, 150), padding='same')(b2_r12)
+    b2_r6 = Conv1DTranspose(8, 2, strides=2, padding='valid')(b2_r6)
+    b2_r6 = Conv1D(8, 50, padding='valid')(b2_r6)
+    b2_r6 = Conv1DTranspose(8, 51, padding='valid')(b2_r6)
     #unir ramas
-    merger_b2=Add()([b2_r1, b2_r2, b2_r3, b2_r4, b2_r5, b2_r6, b2_r7, b2_r8, b2_r9, b2_r10, b2_r11, b2_r12])
-    #index selector block 3
-    i_sel_3_tf=FFT2d(name="defly_"+counter.get_next())(merger_b2)
-    #procesar frecuencias
-    i_sel_3_b0=SlicerRealLayer()(i_sel_3_tf)
-    i_sel_3_b0=Conv1D(16, 26, padding='valid', name="defly_"+counter.get_next())(i_sel_3_b0)
-    i_sel_3_b0=Conv1DTranspose(16, 26, padding='valid', name="defly_"+counter.get_next())(i_sel_3_b0)
-    i_sel_3_b0=Dense(1, name="defly_"+counter.get_next())(i_sel_3_b0)
-    #procesar fases
-    i_sel_3_b1=SlicerImagLayer()(i_sel_3_tf)
-    i_sel_3_b1=Conv1D(16, 26, padding='valid', name="defly_"+counter.get_next())(i_sel_3_b1)
-    i_sel_3_b1=Conv1DTranspose(16, 26, padding='valid', name="defly_"+counter.get_next())(i_sel_3_b1)
-    i_sel_3_b1=Dense(1, name="defly_"+counter.get_next())(i_sel_3_b1)
-    #fusionar en complejo
-    i_sel_3=MergeComplexLayer()([i_sel_3_b0, i_sel_3_b1])
-    i_sel_3=iFFT2d(name="defly_"+counter.get_next())(i_sel_3)
-    i_sel_3=Reshape((4,750,8))(i_sel_3)
-    i_sel_3=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
+    merger_b2=Add()([b2_r1, b2_r2, b2_r3, b2_r4, b2_r5, b2_r6])
+    merger_b2=Dense(2, name="defly_"+counter.get_next())(merger_b2)
+    merger_b2=ChannelsToComplex()(merger_b2)
+    merger_b2=iFFT()(merger_b2)
+    #selector de incice 2
+    i_sel_3=Conv1D(8, 16, padding='valid', name="defly_"+counter.get_next())(merger_b2)
+    i_sel_3=Conv1D(8, 36, padding='valid', name="defly_"+counter.get_next())(i_sel_3)
+    i_sel_3=Conv1D(8, 51, padding='valid', name="defly_"+counter.get_next())(i_sel_3)
+    i_sel_3=Conv1D(8, 151, padding='valid', name="defly_"+counter.get_next())(i_sel_3)
     i_sel_3=Dropout(0.3)(i_sel_3)
     i_sel_3=Flatten()(i_sel_3)
     i_sel_3=Dense(64, activation='softmax', name="defly_"+counter.get_next())(i_sel_3)
@@ -1094,7 +909,7 @@ def define_generator(n_blocks, latent_dim):
     #Convolutional outputs
     for i in range(32):
         new_output_block = SlicerLayer(index_work=i)(des_ly_3)
-        new_output_block = Conv2D(2, (1,1), padding='valid')(new_output_block)
+        new_output_block = Conv1D(2, 1, padding='valid')(new_output_block)
         outputs_list.append(new_output_block)
     #Dense outputs
     for i in range(32):
@@ -1123,14 +938,7 @@ def define_generator(n_blocks, latent_dim):
         model_list.append(models)
     return model_list
 
-# Define the loss functions for the discriminator,
-# which should be (fake_loss - real_loss).
-# We will add the gradient penalty later to this loss function.
-'''def discriminator_loss(fake_logits, real_logits):
-    lambda_1=(fake_logits-real_logits)
-    lambda_2=(real_logits-fake_logits)
-    delta=tf.math.abs(lambda_1)
-    return (-10+(delta/1000))*(-((lambda_1*lambda_2)/1000))+(lambda_1/0.5)'''
+#losses definition
 
 def discriminator_loss(fake_logits, real_logits):
     #fake_logits=tf.reduce_mean(fake_logits)
@@ -1138,33 +946,12 @@ def discriminator_loss(fake_logits, real_logits):
     m=(fake_logits*real_logits)/9
     return 2*tf.math.sin(m)
 
-# Define the loss functions for the generator.
-def generator_loss_fake(fake_logits, real_logits):
-    fake_logits=tf.reduce_mean(fake_logits)
-    real_logits=tf.reduce_mean(real_logits)
-    lambda_1=(real_logits+fake_logits)
-    lambda_2=(fake_logits+real_logits)
-    delta_1=tf.math.abs((real_logits-fake_logits))
-    delta_2=tf.math.abs((real_logits+fake_logits))
-    return -(((-3+(delta_1/2))*(-((lambda_1*lambda_2)/1000)))+(3*delta_2))
-
-'''def generator_loss(fake_logits, real_logits):
-    lamb_2=(fake_logits-real_logits)
-    delta=tf.math.abs(lamb_2)
-    return (delta/0.1)-(5*tf.math.abs(fake_logits))'''
-
 def generator_loss(fake_logits, real_logits):
     #fake_logits=tf.reduce_mean(fake_logits)
     #real_logits=tf.reduce_mean(real_logits)
     m=(fake_logits*real_logits)/10
     return 3*tf.math.sin(-m)
-    
-# Define the loss functions for the generator.
-def generator_loss_extra(fake_logits, real_logits):
-    delta=tf.math.abs(fake_logits-real_logits)
-    theta=tf.math.abs((fake_logits/500)*real_logits)
-    return -delta + theta
-    
+
 def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoint=20):
     storage_client = storage.Client(project='ia-devs')
     bucket = storage_client.bucket(bucket_name)
@@ -1178,7 +965,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
     print("Loading discriminator")
-    d_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum, 'DeliGanLayer': DeliGanLayer, 'DefaultNetwork': DefaultNetwork, "FFT2d":FFT2d, "iFFT2d":iFFT2d})
+    d_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum,   "FFT":FFT, "iFFT":iFFT})
     #cargar generador
     gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/g_model.h5"
     local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/g_model.h5"
@@ -1186,7 +973,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
     print("Loading generator")
-    g_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum, 'DeliGanLayer': DeliGanLayer, 'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer, 'DefaultNetwork': DefaultNetwork, "FFT2d":FFT2d, "iFFT2d":iFFT2d})
+    g_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum,  'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer,  "FFT":FFT, "iFFT":iFFT})
     #cargar generador default
     gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/df_model.h5"
     local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/df_model.h5"
@@ -1194,7 +981,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
     print("Loading generator default")
-    df_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum, 'DeliGanLayer': DeliGanLayer, 'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer, 'DefaultNetwork': DefaultNetwork, "FFT2d":FFT2d, "iFFT2d":iFFT2d})
+    df_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum,  'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer,  "FFT":FFT, "iFFT":iFFT})
     #cargar generador
     gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/e_model.h5"
     local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/e_model.h5"
@@ -1202,7 +989,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
     print("Loading encoder")
-    e_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum, 'DeliGanLayer': DeliGanLayer, 'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer, 'DefaultNetwork': DefaultNetwork, "FFT2d":FFT2d, "iFFT2d":iFFT2d})
+    e_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum,  'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer,  "FFT":FFT, "iFFT":iFFT})
     return g_model, df_model, d_model, e_model
 
 # define composite models for training generators via discriminators
@@ -1228,13 +1015,13 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             enc_models[0].compile(optimizer=prev_e_model.optimizer)
         # straight-through model
         #d_models[2].trainable = False
-        wgan1 = WGAN(
+        wgan1 = GAN(
             discriminator=d_models[0],
             encoder=enc_models[0],
             generator=g_models[0],
             generator_default=g_models[1],
             latent_dim=latent_dim,
-            discriminator_extra_steps=1,
+            default_network_extra=4,
         )
         wgan1.compile(
             d_optimizer=Adamax(learning_rate=0.0005),
@@ -1242,20 +1029,19 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             g_optimizer=Adamax(learning_rate=0.0005),
             df_optimizer=Adamax(learning_rate=0.0005),
             g_loss_fn=generator_loss,
-            g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss,
             was_loaded=resume_models[i]
         )
         # fade-in model
         #d_models[3].trainable = False
-        wgan2 = WGAN(
+        wgan2 = GAN(
             discriminator=d_models[1],
             encoder=enc_models[1],
             generator=g_models[2],
             generator_default=g_models[3],
             latent_dim=latent_dim,
             fade_in=True,
-            discriminator_extra_steps=1,
+            default_network_extra=4,
         )
         wgan2.compile(
             d_optimizer=Adamax(learning_rate=0.0005),
@@ -1263,7 +1049,6 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             g_optimizer=Adamax(learning_rate=0.0005),
             df_optimizer=Adamax(learning_rate=0.0005),
             g_loss_fn=generator_loss,
-            g_loss_fn_extra=generator_loss_extra,
             d_loss_fn=discriminator_loss
         )
         # store
@@ -1284,6 +1069,7 @@ class GANMonitor(keras.callbacks.Callback):
         iters_gen=self.num_examples
         pred=[]
         gen_shape = self.model.generator.output_shape
+        gen_shape = EQ_DIM[gen_shape[-2]]
         if not self.model.fade_in:
             for i in range(iters_gen):
                 if ((epoch+1)%5)==0:
