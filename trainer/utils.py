@@ -6,46 +6,6 @@ import keras
 import tensorflow as tf
 import random
 
-# update alpha for Weighted Sum
-
-def update_fadein(models, step, n_steps):
-    # calculate current alpha (linear from 0 to 1)
-    alpha = step / float(n_steps - 1)
-    # update the alpha for each model
-    for model in models:
-        for layer in model.layers:
-            if isinstance(layer, WeightedSum):
-                backend.set_value(layer.alpha, alpha)
-
-# generate fake samples
-
-def generate_fake_samples(g_model, latent_dim, half_batch):
-    noise = np.random.uniform(-1, 1, (half_batch,
-                                      latent_dim[0], latent_dim[1], latent_dim[2]))
-    gen_auds = g_model.predict(noise)
-    fake = np.zeros((half_batch, 1))
-    return gen_auds, fake
-
-# prepare real samples
-
-def generate_real_samples(dataset, half_batch):
-    gen_auds = dataset[np.random.randint(0, dataset.shape[0], half_batch)]
-    valid = np.ones((half_batch, 1))
-    return gen_auds, valid
-
-# helper for Gradient Penalty
-
-def lerp(a, b, t):
-    with tf.name_scope('Lerp'):
-        return a + (b - a) * t
-
-# generate random noises
-
-def generate_latent_points(latent_dim, n_batch):
-    noise = np.random.uniform(-1, 1, (n_batch,
-                                      latent_dim[0], latent_dim[1], latent_dim[2]))
-    return noise
-
 # generar datos con el modelo entrenado
 
 def upload_blob(bucket_name, source_file_name, destination_blob_name):
@@ -75,35 +35,25 @@ def calculate_inception_score(p_yx, eps=1E-16):
     is_score = np.exp(avg_kl_d)
     return is_score
 
-def generar_ejemplos(g_model, prefix, iter_num, n_examples, job_dir, bucket_name, latent_dim, evaluador):
-    gen_shape = g_model.output_shape
-    random_latent_vectors = tf.random.normal(shape=(n_examples, latent_dim[0], latent_dim[1], latent_dim[2]))
-    gen_auds = g_model(random_latent_vectors, training=False)
-    for i in range(n_examples):
-        signal_gen = gen_auds[i].numpy()
-        signal_gen = np.reshape(signal_gen, ((gen_shape[-3]*gen_shape[-2]), 2))
-        #signal_gen /= np.max(np.abs(signal_gen), axis=0)
-        local_path = "local_gen/" + \
-            str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
-            "/" + prefix + str(i*iter_num) + '.wav'
-        path_save = "generated-data-byepoch/" + \
-            str(gen_shape[-3]) + "x" + str(gen_shape[-2]) + \
-            "/" + prefix + str(i*iter_num) + '.wav'
-        folder=os.path.dirname(local_path)
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-        write(local_path, gen_shape[-2], signal_gen)
-        upload_blob(bucket_name,local_path,path_save)
-    #evaluar resultados
-    pred=evaluador.predict(gen_auds)
-    return pred
 
-def generar_ejemplo(g_model, prefix, iter_num, job_dir, bucket_name, latent_dim, evaluador, save):
-    gen_shape = g_model.output_shape
-    random_latent_vectors = tf.random.normal(shape=(10, latent_dim[0], latent_dim[1], latent_dim[2]))
+def generar_ejemplo(g_model, enc_model, gen_shape, random_real_data, prefix, iter_num, job_dir, bucket_name, latent_dim, evaluador, save):
+    if iter_num<=5:
+        random_latent_vectors = tf.random.uniform(shape=(10, latent_dim[0], latent_dim[1], latent_dim[2]), minval=-1., maxval=1.)
+    else:
+        if iter_num<=10:
+            random_encoder_input = tf.random.uniform(shape=(10, gen_shape[-3], gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+            random_latent_vectors = enc_model(random_encoder_input, training=False)
+        else:
+            if iter_num<=15:
+                random_encoder_input = tf.random.uniform(shape=(10, gen_shape[-3], gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+                random_ecoded = enc_model(random_encoder_input, training=False)
+                random_noise = tf.random.uniform(shape=(10, latent_dim[0], latent_dim[1], latent_dim[2]), minval=-1., maxval=1.)
+                random_latent_vectors=random_noise+random_ecoded
+            else:
+                random_latent_vectors = enc_model(random_real_data, training=False)
     gen_auds = g_model(random_latent_vectors, training=False)
     if save:
-        signal_gen = gen_auds[random.randrange(0,9)].numpy()
+        signal_gen = gen_auds[random.randrange(0,len(gen_auds))].numpy()
         signal_gen = np.reshape(signal_gen, ((gen_shape[-3]*gen_shape[-2]), 2))
         signal_gen /= np.max(np.abs(signal_gen), axis=0)
         local_path = "local_gen/" + \

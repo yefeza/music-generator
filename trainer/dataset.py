@@ -174,7 +174,7 @@ def download_diension_dataset(path_dataset, bucket_name, files_format, dimension
     #limit_songs_list=[3000,1500,1000,600,300,200,100,80,50]
     #limit_songs_list=[600,90,80,60,50,40,30,20,10]
     #limit_songs_list=[600,560,480,360,300,240,180,120,60]
-    limit_songs_list=[10,20,30,40,50,60,70,80,90]
+    limit_songs_list=[10,10,30,40,50,60,70,80,90]
     limit_songs=50
     if dimension[0]==4:
         limit_songs=limit_songs_list[0]
@@ -213,7 +213,7 @@ def download_diension_dataset(path_dataset, bucket_name, files_format, dimension
 def read_dataset(dimension, files_format):
     data=[]
     y_evaluator=[]
-    limit_songs=20
+    limit_songs=100
     for folder in range(9):
         continuos_error=0
         print("Leyendo dataset en folder "+str(folder+1))
@@ -237,6 +237,32 @@ def read_dataset(dimension, files_format):
     categorical_y=tf.compat.v1.keras.utils.to_categorical(np.array(y_evaluator), num_classes=9)
     categorical_y=tf.constant(categorical_y)
     return np.array(data), categorical_y.numpy()
+
+#read random data by dimension
+
+def get_random_real_data(dimension, files_format='mp3'):
+    data=[]
+    rnd_folders=random.sample(range(1, 9), 5)
+    for folder in rnd_folders:
+        directory="local_ds/" + files_format + "/"+str(dimension[0])+"-"+str(dimension[1])+"/" + str(folder+1) + "/"
+        ls_dir_folder=os.listdir(directory)
+        rnd_selected_song=ls_dir_folder[random.randrange(0,len(ls_dir_folder))]
+        try:
+            signal, sampling_rate = af.read(directory+rnd_selected_song)
+            song_reshaped = np.reshape(
+                    signal, newshape=(dimension[0], dimension[1], 2))
+            data.append(song_reshaped)
+        except:
+            if folder==0:
+                folder=1
+            directory="local_ds/" + files_format + "/"+str(dimension[0])+"-"+str(dimension[1])+"/" + str(folder) + "/"
+            ls_dir_folder=os.listdir(directory)
+            rnd_selected_song=ls_dir_folder[random.randrange(0,len(ls_dir_folder))]
+            signal, sampling_rate = af.read(directory+rnd_selected_song)
+            song_reshaped = np.reshape(
+                    signal, newshape=(dimension[0], dimension[1], 2))
+            data.append(song_reshaped)
+    return np.array(data)
 
 
 # resamplear y recortar audios
