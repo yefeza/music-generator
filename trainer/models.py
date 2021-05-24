@@ -222,11 +222,11 @@ class MinibatchStdDev(Layer):
             # [MCHW]  Calc stddev over group.
             y = tf.sqrt(y + 1e-8)
             # [M111]  Take average over fmaps and pixels.
-            y = tf.reduce_mean(y, axis=[1, 2], keepdims=True)
+            y = tf.reduce_mean(y, axis=[1, 2, 3], keepdims=True)
             # [M111]  Cast back to original data type.
             y = tf.cast(y, x.dtype)
             # [N1HW]  Replicate over group and pixels.
-            y = tf.tile(y, [group_size, 1, s[2], 1])
+            y = tf.tile(y, [group_size, 1, s[2], s[3]])
             # [NCHW]  Append as new fmap.
             return tf.concat([x, y], axis=1)
 
@@ -795,7 +795,7 @@ def define_generator(n_blocks, latent_dim):
     merger_b0=Add()([b0_r1, b0_r2, b0_r3, b0_r4, b0_r5, b0_r6])
     to_connect=Dense(2, name="defly_"+counter.get_next())(merger_b0)
     to_concat=[to_connect, ]
-    for i in range(4):
+    for i in range(3):
         #selector de incice 1
         i_sel_1=Conv1D(8, 16, padding='valid', name="defly_"+counter.get_next())(to_connect)
         i_sel_1=Conv1D(8, 36, padding='valid', name="defly_"+counter.get_next())(i_sel_1)
