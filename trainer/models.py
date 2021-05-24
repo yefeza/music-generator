@@ -846,7 +846,7 @@ def define_generator(n_blocks, latent_dim):
         to_concat.append(to_connect)
     #concatenar bloques
     merger_b2=Concatenate(axis=1)(to_concat)
-    merger_b2=Reshape((4, 376, 8))(merger_b2)
+    merger_b2=Reshape((4, 376, 2))(merger_b2)
     #selector de incice 2
     i_sel_3=Conv2D(8, (2, 16), padding='valid', name="defly_"+counter.get_next())(merger_b2)
     i_sel_3=Conv2D(8, (2, 36), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
