@@ -793,7 +793,7 @@ def define_generator(n_blocks, latent_dim):
     b0_r6 = Conv1DTranspose(8, 27, padding='valid')(b0_r6)
     #sumar ramas bloque 0
     merger_b0=Add()([b0_r1, b0_r2, b0_r3, b0_r4, b0_r5, b0_r6])
-    to_connect=Dense(2, name="defly_"+counter.get_next())(merger_b0)
+    to_connect=Dense(8, name="defly_"+counter.get_next())(merger_b0)
     to_concat=[to_connect, ]
     for i in range(3):
         #selector de incice 1
@@ -842,11 +842,11 @@ def define_generator(n_blocks, latent_dim):
         b1_r6 = Dense(8)(b1_r6)
         #sumar ramas
         merger_b1=Add()([b1_r1, b1_r2, b1_r3, b1_r4, b1_r5, b1_r6])
-        to_connect=Dense(2, name="defly_"+counter.get_next())(merger_b1)
+        to_connect=Dense(8, name="defly_"+counter.get_next())(merger_b1)
         to_concat.append(to_connect)
     #concatenar bloques
     merger_b2=Concatenate(axis=1)(to_concat)
-    merger_b2=Reshape((4, 376, 2))(merger_b2)
+    merger_b2=Reshape((4, 376, 8))(merger_b2)
     #selector de incice 2
     i_sel_3=Conv2D(8, (2, 16), padding='valid', name="defly_"+counter.get_next())(merger_b2)
     i_sel_3=Conv2D(8, (2, 36), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
