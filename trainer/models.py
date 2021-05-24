@@ -226,7 +226,7 @@ class MinibatchStdDev(Layer):
             # [M111]  Cast back to original data type.
             y = tf.cast(y, x.dtype)
             # [N1HW]  Replicate over group and pixels.
-            y = tf.tile(y, [group_size, 1, s[2], s[3]])
+            y = tf.tile(y, [group_size, 1, s[2], 1])
             # [NCHW]  Append as new fmap.
             return tf.concat([x, y], axis=1)
 
