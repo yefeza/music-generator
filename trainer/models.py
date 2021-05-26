@@ -1,20 +1,19 @@
 # keras imports
 import keras
-from keras.optimizers import Adam, Adamax
-from keras.models import Sequential, Model
-from keras.layers.core import Dense, Activation, Dropout
-from keras.layers import Input, UpSampling2D, Layer
-from keras.layers.convolutional import Conv1D, Conv2D, Conv2DTranspose, SeparableConv2D
-from keras.layers.convolutional import AveragePooling2D
-from keras.layers import Flatten
-from keras.layers import Reshape
-from keras.layers import LeakyReLU
-from keras.layers import Add, Multiply, Concatenate
-from keras.layers import LayerNormalization
+from tensorflow.keras.layers.optimizers import Adam, Adamax
+from tensorflow.keras import Sequential, Model
+from tensorflow.keras.layers import Dense, Activation, Dropout
+from tensorflow.keras.layers import Input, UpSampling2D, Layer
+from tensorflow.keras.layers import Conv1D, Conv2D, Conv2DTranspose, SeparableConv2D
+from tensorflow.keras.layers import AveragePooling2D
+from tensorflow.keras.layers import Flatten
+from tensorflow.keras.layers import Reshape
+from tensorflow.keras.layers import LeakyReLU
+from tensorflow.keras.layers import Add, Multiply, Concatenate
+from tensorflow.keras.layers import LayerNormalization
 from keras.utils.vis_utils import plot_model
-from keras import backend
+from tensorflow.keras import backend
 import tensorflow as tf
-from keras.losses import categorical_crossentropy
 import numpy as np
 from .dataset import *
 from .utils import *
