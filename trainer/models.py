@@ -883,8 +883,8 @@ def define_generator(n_blocks, latent_dim):
         b1_r4 = InvertTranspose1D()(b1_r4)
         b1_r4 = Dense(170)(b1_r4)
         b1_r4 = InvertTranspose1D()(b1_r4)
-        b1_r3 = Conv1DTranspose(16, 2, strides=2, padding='valid')(b1_r3)
-        b1_r3 = Conv1DTranspose(64, 37, padding='valid')(b1_r3)
+        b1_r4 = Conv1DTranspose(16, 2, strides=2, padding='valid')(b1_r4)
+        b1_r4 = Conv1DTranspose(64, 37, padding='valid')(b1_r4)
         #rama 5
         b1_r5 = SlicerLayer(index_work=4)(des_ly_1)
         b1_r5 = InvertTranspose1D()(b1_r5)
