@@ -572,7 +572,9 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     # convolusion block 1
     d_1 = Dense(120)(converted_block)
     d_1 = InvertTranspose()(d_1)
-    d_1 = Conv2D(32, (1, 21), padding='valid')(d_1)
+    d_1 = Conv2D(32, (2, 11), padding='valid')(d_1)
+    d_1 = Conv2D(32, (2, 6), padding='valid')(d_1)
+    d_1 = Conv2D(32, (2, 6), padding='valid')(d_1)
     d_1 = Reshape((100, 32))(d_1)
     d_1 = Dropout(0.2)(d_1)
     out_class = Dense(1)(d_1)
