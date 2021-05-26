@@ -788,12 +788,12 @@ def define_generator(n_blocks, latent_dim):
     i_sel_0=Dense(6, activation='softmax', name="defly_"+counter.get_next())(i_sel_0)
     #decision layer 0
     des_ly_0=DecisionLayer(output_size=6)([ly0, i_sel_0])
-    #bloque 0 salidas de (376,32)
+    #bloque 0 salidas de (376,16)
     #rama 1 bloque 0
     b0_r1 = SlicerLayer(index_work=0)(des_ly_0)
     b0_r1 = Conv1D(16, 2, strides=2, padding='valid')(b0_r1)
     b0_r1 = Conv1DTranspose(16, 5, strides=5, padding='valid')(b0_r1)
-    b0_r1 = Conv1DTranspose(32, 127, padding='valid')(b0_r1)
+    b0_r1 = Conv1DTranspose(16, 127, padding='valid')(b0_r1)
     #rama 2 bloque 0
     b0_r2 = SlicerLayer(index_work=1)(des_ly_0)
     b0_r2 = Conv1D(16, 2, strides=2, padding='valid')(b0_r2)
@@ -801,7 +801,7 @@ def define_generator(n_blocks, latent_dim):
     b0_r2 = Conv1DTranspose(16, 5, strides=2, padding='valid')(b0_r2)
     b0_r2 = Conv1DTranspose(16, 46, padding='valid')(b0_r2)
     b0_r2 = Conv1DTranspose(16, 51, padding='valid')(b0_r2)
-    b0_r2 = Conv1DTranspose(32, 77, padding='valid')(b0_r2)
+    b0_r2 = Conv1DTranspose(16, 77, padding='valid')(b0_r2)
     #rama 3 bloque 0
     b0_r3 = SlicerLayer(index_work=2)(des_ly_0)
     b0_r3 = Conv1D(16, 51, padding='valid')(b0_r3)
@@ -811,7 +811,7 @@ def define_generator(n_blocks, latent_dim):
     b0_r3 = Conv1DTranspose(16, 26, padding='valid')(b0_r3)
     b0_r3 = Conv1DTranspose(16, 26, padding='valid')(b0_r3)
     b0_r3 = Conv1DTranspose(16, 26, padding='valid')(b0_r3)
-    b0_r3 = Conv1DTranspose(32, 27, padding='valid')(b0_r3)
+    b0_r3 = Conv1DTranspose(16, 27, padding='valid')(b0_r3)
     #rama 4 bloque 0
     b0_r4 = SlicerLayer(index_work=3)(des_ly_0)
     b0_r4 = Conv1D(16, 51, padding='valid')(b0_r4)
@@ -820,7 +820,7 @@ def define_generator(n_blocks, latent_dim):
     b0_r4 = Conv1DTranspose(16, 51, padding='valid')(b0_r4)
     b0_r4 = Conv1DTranspose(8, 51, padding='valid')(b0_r4)
     b0_r4 = Conv1DTranspose(16, 51, padding='valid')(b0_r4)
-    b0_r4 = Conv1DTranspose(32, 27, padding='valid')(b0_r4)
+    b0_r4 = Conv1DTranspose(16, 27, padding='valid')(b0_r4)
     #rama 5 bloque 0
     b0_r5 = SlicerLayer(index_work=4)(des_ly_0)
     b0_r5 = Conv1D(16, 51, padding='valid')(b0_r5)
@@ -829,7 +829,7 @@ def define_generator(n_blocks, latent_dim):
     b0_r5 = Conv1DTranspose(16, 26, padding='valid')(b0_r5)
     b0_r5 = Conv1DTranspose(8, 26, padding='valid')(b0_r5)
     b0_r5 = Conv1DTranspose(8, 26, padding='valid')(b0_r5)
-    b0_r5 = Conv1DTranspose(32, 27, padding='valid')(b0_r5)
+    b0_r5 = Conv1DTranspose(16, 27, padding='valid')(b0_r5)
     #rama 6 bloque 0
     b0_r6 = SlicerLayer(index_work=5)(des_ly_0)
     b0_r6 = Conv1D(16, 51, padding='valid')(b0_r6)
@@ -838,7 +838,7 @@ def define_generator(n_blocks, latent_dim):
     b0_r6 = Conv1DTranspose(16, 46, padding='valid')(b0_r6)
     b0_r6 = Conv1DTranspose(8, 51, padding='valid')(b0_r6)
     b0_r6 = Conv1DTranspose(16, 51, padding='valid')(b0_r6)
-    b0_r6 = Conv1DTranspose(32, 27, padding='valid')(b0_r6)
+    b0_r6 = Conv1DTranspose(16, 27, padding='valid')(b0_r6)
     #sumar ramas bloque 0
     to_connect=Add()([b0_r1, b0_r2, b0_r3, b0_r4, b0_r5, b0_r6])
     to_concat=[to_connect, ]
@@ -860,7 +860,7 @@ def define_generator(n_blocks, latent_dim):
         b1_r1 = Dense(120)(b1_r1)
         b1_r1 = InvertTranspose1D()(b1_r1)
         b1_r1 = Conv1DTranspose(16, 121, padding='valid')(b1_r1)
-        b1_r1 = Conv1DTranspose(32, 137, padding='valid')(b1_r1)
+        b1_r1 = Conv1DTranspose(16, 137, padding='valid')(b1_r1)
         #rama 2
         b1_r2 = SlicerLayer(index_work=1)(des_ly_1)
         b1_r2 = InvertTranspose1D()(b1_r2)
@@ -868,7 +868,7 @@ def define_generator(n_blocks, latent_dim):
         b1_r2 = InvertTranspose1D()(b1_r2)
         b1_r2 = Conv1DTranspose(16, 2, strides=2, padding='valid')(b1_r2)
         b1_r2 = Conv1DTranspose(16, 3, strides=3, padding='valid')(b1_r2)
-        b1_r2 = Conv1DTranspose(32, 17, padding='valid')(b1_r2)
+        b1_r2 = Conv1DTranspose(16, 17, padding='valid')(b1_r2)
         #rama 3
         b1_r3 = SlicerLayer(index_work=2)(des_ly_1)
         b1_r3 = InvertTranspose1D()(b1_r3)
@@ -877,14 +877,14 @@ def define_generator(n_blocks, latent_dim):
         b1_r3 = Conv1DTranspose(16, 2, strides=2, padding='valid')(b1_r3)
         b1_r3 = Conv1DTranspose(16, 2, strides=2, padding='valid')(b1_r3)
         b1_r3 = Conv1DTranspose(16, 3, strides=3, padding='valid')(b1_r3)
-        b1_r3 = Conv1DTranspose(32, 17, padding='valid')(b1_r3)
+        b1_r3 = Conv1DTranspose(16, 17, padding='valid')(b1_r3)
         #rama 4
         b1_r4 = SlicerLayer(index_work=3)(des_ly_1)
         b1_r4 = InvertTranspose1D()(b1_r4)
         b1_r4 = Dense(170)(b1_r4)
         b1_r4 = InvertTranspose1D()(b1_r4)
         b1_r4 = Conv1DTranspose(16, 2, strides=2, padding='valid')(b1_r4)
-        b1_r4 = Conv1DTranspose(32, 37, padding='valid')(b1_r4)
+        b1_r4 = Conv1DTranspose(16, 37, padding='valid')(b1_r4)
         #rama 5
         b1_r5 = SlicerLayer(index_work=4)(des_ly_1)
         b1_r5 = InvertTranspose1D()(b1_r5)
@@ -892,20 +892,20 @@ def define_generator(n_blocks, latent_dim):
         b1_r5 = InvertTranspose1D()(b1_r5)
         b1_r5 = Conv1DTranspose(16, 2, strides=2, padding='valid')(b1_r5)
         b1_r5 = Conv1DTranspose(16, 26, padding='valid')(b1_r5)
-        b1_r5 = Conv1DTranspose(32, 32, padding='valid')(b1_r5)
+        b1_r5 = Conv1DTranspose(16, 32, padding='valid')(b1_r5)
         #rama 6
         b1_r6 = SlicerLayer(index_work=5)(des_ly_1)
         b1_r6 = InvertTranspose1D()(b1_r6)
         b1_r6 = Dense(50)(b1_r6)
         b1_r6 = InvertTranspose1D()(b1_r6)
         b1_r6 = Conv1DTranspose(16, 7, strides=7, padding='valid')(b1_r6)
-        b1_r6 = Conv1DTranspose(32, 27, padding='valid')(b1_r6)
+        b1_r6 = Conv1DTranspose(16, 27, padding='valid')(b1_r6)
         #sumar ramas
         to_connect=Add()([b1_r1, b1_r2, b1_r3, b1_r4, b1_r5, b1_r6])
         to_concat.append(to_connect)
     #concatenar bloques
     merger_b2=Concatenate(axis=1)(to_concat)
-    merger_b2=Reshape((4, 376, 32))(merger_b2)
+    merger_b2=Reshape((4, 376, 16))(merger_b2)
     #selector de incice 2
     i_sel_3=InvertTranspose()(merger_b2)
     i_sel_3=Dense(120, name="defly_"+counter.get_next())(i_sel_3)
