@@ -1,6 +1,6 @@
 # keras imports
 import keras
-from tensorflow.keras.layers.optimizers import Adam, Adamax
+from tensorflow.keras.optimizers import Adam, Adamax
 from tensorflow.keras import Sequential, Model
 from tensorflow.keras.layers import Dense, Activation, Dropout
 from tensorflow.keras.layers import Input, UpSampling2D, Layer
