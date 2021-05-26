@@ -888,15 +888,17 @@ def define_generator(n_blocks, latent_dim):
         #rama 5
         b1_r5 = SlicerLayer(index_work=4)(des_ly_1)
         b1_r5 = InvertTranspose1D()(b1_r5)
-        b1_r5 = Dense(320)(b1_r5)
+        b1_r5 = Dense(160)(b1_r5)
         b1_r5 = InvertTranspose1D()(b1_r5)
+        b1_r5 = Conv1DTranspose(32, 2, strides=2, padding='valid')(b1_r5)
         b1_r5 = Conv1DTranspose(32, 26, padding='valid')(b1_r5)
         b1_r5 = Conv1DTranspose(32, 32, padding='valid')(b1_r5)
         #rama 6
         b1_r6 = SlicerLayer(index_work=5)(des_ly_1)
         b1_r6 = InvertTranspose1D()(b1_r6)
-        b1_r6 = Dense(350)(b1_r6)
+        b1_r6 = Dense(50)(b1_r6)
         b1_r6 = InvertTranspose1D()(b1_r6)
+        b1_r6 = Conv1DTranspose(32, 7, strides=7, padding='valid')(b1_r6)
         b1_r6 = Conv1DTranspose(32, 27, padding='valid')(b1_r6)
         #sumar ramas
         to_connect=Add()([b1_r1, b1_r2, b1_r3, b1_r4, b1_r5, b1_r6])
