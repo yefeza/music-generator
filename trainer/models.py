@@ -779,7 +779,7 @@ def define_generator(n_blocks, latent_dim):
     ly0 = Input(shape=latent_dim)
     #selector de incice 0
     i_sel_0=InvertTranspose1D()(ly0)
-    i_sel_0=Dense(32)(i_sel_0)
+    i_sel_0=Dense(32, name="defly_"+counter.get_next())(i_sel_0)
     i_sel_0=InvertTranspose1D()(i_sel_0)
     i_sel_0=Conv1D(64, 17, padding='valid', name="defly_"+counter.get_next())(i_sel_0)
     i_sel_0=Dropout(0.2)(i_sel_0)
@@ -844,7 +844,7 @@ def define_generator(n_blocks, latent_dim):
     for i in range(3):
         #selector de incice 1
         i_sel_1=InvertTranspose1D()(to_connect)
-        i_sel_1=Dense(120)(i_sel_1)
+        i_sel_1=Dense(120, name="defly_"+counter.get_next())(i_sel_1)
         i_sel_1=InvertTranspose1D()(i_sel_1)
         i_sel_1=Conv1D(8, 31, padding='valid', name="defly_"+counter.get_next())(i_sel_1)
         i_sel_1=Dropout(0.3)(i_sel_1)
@@ -905,9 +905,9 @@ def define_generator(n_blocks, latent_dim):
     merger_b2=Reshape((4, 376, 64))(merger_b2)
     #selector de incice 2
     i_sel_3=InvertTranspose()(merger_b2)
-    i_sel_3=Dense(120)(i_sel_3)
+    i_sel_3=Dense(120, name="defly_"+counter.get_next())(i_sel_3)
     i_sel_3=InvertTranspose()(i_sel_3)
-    i_sel_3=Conv2D(32, (2, 16), padding='valid', name="defly_"+counter.get_next())(merger_b2)
+    i_sel_3=Conv2D(32, (2, 16), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
     i_sel_3=Conv2D(16, (2, 36), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
     i_sel_3=Conv2D(8, (2, 51), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
     i_sel_3=Dropout(0.3)(i_sel_3)
