@@ -336,7 +336,7 @@ class FusionLayer(Layer):
 
     def call(self, inputs):
         abs_value=tf.math.abs(inputs)
-        abs_value=tf.math.reduce_mean(abs_value, 2)
+        abs_value=tf.reduce_mean(abs_value, 3, keepdims=True)
         return tf.transpose(abs_value, perm=[0,1,3,2])
 
     def get_config(self):
