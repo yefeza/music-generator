@@ -128,10 +128,10 @@ class GAN(keras.Model):
                 # Calculate the discriminator loss using the fake and real image logits
                 def_loss = self.g_loss_fn(fake_logits, real_logits)
             # Get the gradients w.r.t the discriminator loss
-            def_gradient = tape.gradient(def_loss, self.generator_default.trainable_variables)
+            def_gradient = tape.gradient(def_loss, self.generator_default.trainable_default_network)
             # Update the weights of the discriminator using the discriminator optimizer
             self.generator_default.optimizer.apply_gradients(
-                zip(def_gradient, self.generator_default.trainable_variables)
+                zip(def_gradient, self.generator_default.trainable_default_network)
             )
 
         # Train discriminator
@@ -194,6 +194,15 @@ class GAN(keras.Model):
         delta_1=tf.math.abs(dif)
         self.actual_step+=1
         return {"dif": dif, "delta_1": delta_1, "cu_1": cu_1, "ci_1": ci_1, "d_loss": d_loss, "g_loss": g_loss}
+
+class DefaultNetwork(keras.Model):
+    @property
+    def trainable_default_network(self):
+        default_vars=[]
+        for i in range(0, len(self.layers)):
+            if self.layers[i].name[:5]=="defly":
+                default_vars+=self.layers[i].trainable_weights
+        return default_vars
 
 # Minibatch Standard Deviation Layer
 
@@ -1054,10 +1063,10 @@ def define_generator(n_blocks, latent_dim):
     model_normal = Model(ly0, wls)
     model_normal.compile(optimizer=Adamax(learning_rate=0.0005))
     #define default
-    model_default = Model(ly0, wls)
-    for i in range(0, len(model_default.layers)):
+    model_default = DefaultNetwork(ly0, wls)
+    '''for i in range(0, len(model_default.layers)):
         if model_default.layers[i].name[:5]!="defly":
-            model_default.layers[i].trainable=True
+            model_default.layers[i].trainable=True'''
     model_default.compile(optimizer=Adamax(learning_rate=0.0005))
     # store model
     model_list.append([model_normal, model_default, model_normal, model_default])
