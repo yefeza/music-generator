@@ -196,6 +196,8 @@ class GAN(keras.Model):
         return {"dif": dif, "delta_1": delta_1, "cu_1": cu_1, "ci_1": ci_1, "d_loss": d_loss, "g_loss": g_loss}
 
 class DefaultNetwork(keras.Model):
+    def __init__(self):
+        super(DefaultNetwork, self).__init__()
     @property
     def trainable_default_network(self):
         default_vars=[]
@@ -1159,9 +1161,9 @@ def define_composite(discriminators, generators, encoders, latent_dim):
         #d_models[2].trainable = False
         #enc_models[0].summary()
         #d_models[0].summary()
-        g_models[0].summary()
-        g_models[1].summary()
-        print("Real default trainable:", len(g_models[1].trainable_default_network))
+        #g_models[0].summary()
+        #g_models[1].summary()
+        #print("Real default trainable:", len(g_models[1].trainable_default_network))
         wgan1 = GAN(
             discriminator=d_models[0],
             encoder=enc_models[0],
