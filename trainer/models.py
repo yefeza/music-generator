@@ -196,8 +196,8 @@ class GAN(keras.Model):
         return {"dif": dif, "delta_1": delta_1, "cu_1": cu_1, "ci_1": ci_1, "d_loss": d_loss, "g_loss": g_loss}
 
 class DefaultNetwork(keras.Model):
-    def __init__(self, **kwargs):
-        super(DefaultNetwork, self).__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
+        super(DefaultNetwork, self).__init__(*args, **kwargs)
 
     @property
     def trainable_default_network(self):
