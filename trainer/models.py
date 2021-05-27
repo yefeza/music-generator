@@ -195,7 +195,7 @@ class GAN(keras.Model):
         self.actual_step+=1
         return {"dif": dif, "delta_1": delta_1, "cu_1": cu_1, "ci_1": ci_1, "d_loss": d_loss, "g_loss": g_loss}
 
-class DefaultNetwork(keras.Model):
+class DefaultNetwork(Model):
     def __init__(self, *args, **kwargs):
         super(DefaultNetwork, self).__init__(*args, **kwargs)
 
