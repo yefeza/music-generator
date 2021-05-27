@@ -1163,8 +1163,8 @@ def define_composite(discriminators, generators, encoders, latent_dim):
         #enc_models[0].summary()
         #d_models[0].summary()
         #g_models[0].summary()
-        #g_models[1].summary()
-        #print("Real default trainable:", len(g_models[1].trainable_default_network))
+        g_models[1].summary()
+        print("Real default trainable:", len(g_models[1].trainable_default_network))
         wgan1 = GAN(
             discriminator=d_models[0],
             encoder=enc_models[0],
