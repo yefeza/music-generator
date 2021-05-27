@@ -1057,7 +1057,7 @@ def define_generator(n_blocks, latent_dim):
     model_default = Model(ly0, wls)
     for i in range(0, len(model_default.layers)):
         if model_default.layers[i].name[:5]!="defly":
-            model_default.layers[i].trainable=False
+            model_default.layers[i].trainable=True
     model_default.compile(optimizer=Adamax(learning_rate=0.0005))
     # store model
     model_list.append([model_normal, model_default, model_normal, model_default])
