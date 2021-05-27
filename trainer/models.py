@@ -962,7 +962,7 @@ def define_generator(n_blocks, latent_dim):
     to_connect_2=Add()([b2_r1, b2_r2, b2_r3, b2_r4, b2_r5, b2_r6])
     #bloque 3
     #selector de incice 1
-    i_sel_3=InvertTranspose1D()(to_connect_1)
+    i_sel_3=InvertTranspose1D()(to_connect_2)
     i_sel_3=Dense(120, name="defly_"+counter.get_next())(i_sel_3)
     i_sel_3=InvertTranspose1D()(i_sel_3)
     i_sel_3=Conv1D(8, 31, padding='valid', name="defly_"+counter.get_next())(i_sel_3)
@@ -970,7 +970,7 @@ def define_generator(n_blocks, latent_dim):
     i_sel_3=Flatten()(i_sel_3)
     i_sel_3=Dense(6, activation='softmax', name="defly_"+counter.get_next())(i_sel_3)
     #decision layer
-    des_ly_3=DecisionLayer(output_size=6)([to_connect_1, i_sel_3])
+    des_ly_3=DecisionLayer(output_size=6)([to_connect_2, i_sel_3])
     #bloque 1 salida (376, 8)
     #rama 1
     b3_r1 = SlicerLayer(index_work=0)(des_ly_3)
