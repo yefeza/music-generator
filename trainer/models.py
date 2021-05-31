@@ -480,7 +480,7 @@ def define_discriminator(n_blocks, input_shape=(3000, 2)):
     # convolusion block 1
     d_1 = Conv2D(32, (95, 1), padding='valid')(converted_block)
     d_1 = Conv2D(64, (95, 1), padding='valid')(d_1)
-    d_1 = Conv2D(128, (95, 1), padding='valid')(d_1)
+    d_1 = Conv2D(32, (95, 1), padding='valid')(d_1)
     d_1 = Dense(1)(d_1)
     d_1 = MinibatchStdDev()(d_1)
     d_1 = Flatten()(d_1)
@@ -824,7 +824,7 @@ def define_generator(n_blocks, latent_dim):
     i_sel_1=Conv2D(16, (51,1), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
     i_sel_1=Conv2D(32, (76,1), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
     i_sel_1=Conv2D(64, (52,1), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
-    i_sel_1=Conv2D(64, (101,1), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
+    i_sel_1=Conv2D(16, (101,1), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
     i_sel_1=Dense(1, name="defly_"+counter.get_next())(i_sel_1)
     i_sel_1=Flatten()(i_sel_1)
     i_sel_1=Dropout(0.2)(i_sel_1)
