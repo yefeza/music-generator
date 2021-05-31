@@ -357,7 +357,7 @@ class FreqToTime(Layer):
         super(FreqToTime, self).__init__(**kwargs)
 
     def call(self, inputs):
-        return tf.transpose(inputs, perm=[0,3,2,1])
+        return tf.transpose(inputs, perm=[0,2,1,3])
 
     def get_config(self):
         config = super(FreqToTime, self).get_config()
