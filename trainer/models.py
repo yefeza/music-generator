@@ -187,7 +187,6 @@ class GAN(keras.Model):
         self.generator.optimizer.apply_gradients(
             zip(gen_gradient, self.generator.trainable_variables)
         )
-        del tape
         #calculate actual delta value
         ci_1=tf.reduce_mean(real_logits)
         cu_1=tf.reduce_mean(gen_img_logits)
@@ -956,7 +955,7 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             generator=g_models[0],
             generator_default=g_models[1],
             latent_dim=latent_dim,
-            default_network_extra=4,
+            default_network_extra=3,
         )
         wgan1.compile(
             d_optimizer=Adamax(learning_rate=0.0005),
@@ -976,7 +975,7 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             generator_default=g_models[3],
             latent_dim=latent_dim,
             fade_in=True,
-            default_network_extra=4,
+            default_network_extra=3,
         )
         wgan2.compile(
             d_optimizer=Adamax(learning_rate=0.0005),
