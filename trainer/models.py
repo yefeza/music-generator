@@ -187,6 +187,7 @@ class GAN(keras.Model):
         self.generator.optimizer.apply_gradients(
             zip(gen_gradient, self.generator.trainable_variables)
         )
+        del tape
         #calculate actual delta value
         ci_1=tf.reduce_mean(real_logits)
         cu_1=tf.reduce_mean(gen_img_logits)
