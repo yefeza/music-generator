@@ -572,7 +572,7 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     # convolusion block 1
     d_1 = Conv2D(32, (95, 2), padding='valid')(converted_block)
     d_1 = Conv2D(64, (95, 2), padding='valid')(d_1)
-    d_1 = Conv2D(128, (88, 2), padding='valid')(d_1)
+    d_1 = Conv2D(128, (89, 2), padding='valid')(d_1)
     d_1 = FreqToTime()(d_1)
     d_1 = Reshape((100, 128))(d_1)
     d_1 = Dropout(0.2)(d_1)
