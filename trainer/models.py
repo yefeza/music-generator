@@ -216,7 +216,7 @@ class LaplacianInitializer(tf.keras.initializers.Initializer):
 
     def __call__(self, shape, dtype=None, **kwargs):
         initializer = tf.constant_initializer(self._get_cauchy_samples(loc=0.0, scale=1.0, shape=shape))
-        return tf.Variable(initializer(shape=shape))
+        return tf.Variable(initializer(shape=shape, dtype=dtype))
 
 # Minibatch Standard Deviation Layer
 
