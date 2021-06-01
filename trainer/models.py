@@ -207,6 +207,17 @@ class DefaultNetwork(Model):
                 default_vars+=self.layers[i].trainable_weights
         return default_vars
 
+#laplacian initializer
+class LaplacianInitializer(tf.keras.initializers.Initializer):
+
+    def _get_cauchy_samples(loc, scale, shape):
+        probs = np.random.uniform(low=0., high=1., size=shape)
+        return loc + scale * np.tan(np.pi * (probs - 0.5))
+
+    def __call__(self, shape, dtype=None, **kwargs):
+        initializer = tf.constant_initializer(self._get_cauchy_samples(loc=0.0, scale=1.0, shape=shape))
+        return initializer(tf.Variable(shape=shape, dtype=dtype))
+
 # Minibatch Standard Deviation Layer
 
 class MinibatchStdDev(Layer):
@@ -363,6 +374,29 @@ class FreqToTime(Layer):
         config = super(FreqToTime, self).get_config()
         return config
 
+class FreqChannelChange(Layer):
+    def __init__(self, **kwargs):
+        super(FreqChannelChange, self).__init__(**kwargs)
+
+    def call(self, inputs):
+        return tf.transpose(inputs, perm=[0,1,3,2])
+
+    def get_config(self):
+        config = super(FreqChannelChange, self).get_config()
+        return config
+
+class TimeToEnd(Layer):
+    def __init__(self, **kwargs):
+        super(TimeToEnd, self).__init__(**kwargs)
+
+    def call(self, inputs):
+        return tf.transpose(inputs, perm=[0,2,3,1])
+
+    def get_config(self):
+        config = super(TimeToEnd, self).get_config()
+        return config
+
+
 class ChannelsToComplex(Layer):
     def __init__(self, **kwargs):
         super(ChannelsToComplex, self).__init__(**kwargs)
@@ -476,11 +510,10 @@ def define_discriminator(n_blocks, input_shape=(3000, 2)):
     converted_block = Reshape((4,750,2))(in_data)
     converted_block = ToMonoChannel()(converted_block)
     converted_block = FFT()(converted_block)
-    converted_block = FreqToTime()(converted_block)
+    converted_block = FreqChannelChange()(converted_block)
     # convolusion block 1
-    d_1 = Conv2D(32, (95, 1), padding='valid')(converted_block)
-    d_1 = Conv2D(64, (95, 1), padding='valid')(d_1)
-    d_1 = Conv2D(32, (95, 1), padding='valid')(d_1)
+    d_1 = Dense(64)(converted_block)
+    d_1 = TimeToEnd()(d_1)
     d_1 = Dense(1)(d_1)
     d_1 = MinibatchStdDev()(d_1)
     d_1 = Flatten()(d_1)
@@ -568,15 +601,13 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     converted_block = Reshape((4,750,2))(in_data)
     converted_block = ToMonoChannel()(converted_block)
     converted_block = FFT()(converted_block)
-    converted_block = FreqToTime()(converted_block)
+    converted_block = FreqChannelChange()(converted_block)
     # convolusion block 1
-    d_1 = Conv2D(32, (95, 2), padding='valid')(converted_block)
-    d_1 = Conv2D(64, (95, 2), padding='valid')(d_1)
-    d_1 = Conv2D(128, (89, 2), padding='valid')(d_1)
-    d_1 = FreqToTime()(d_1)
-    d_1 = Reshape((100, 128))(d_1)
-    d_1 = Dropout(0.2)(d_1)
-    out_class = Dense(1)(d_1)
+    d_1 = Dense(100)(converted_block)
+    d_1 = TimeToEnd()(d_1)
+    d_1 = Dense(1)(d_1)
+    d_1 = Reshape((100, 1))(d_1)
+    out_class = Dropout(0.2)(d_1)
     # define model
     model_comp = Model(in_data, out_class)
     # store model
@@ -612,7 +643,7 @@ def add_generator_block(old_model, counter):
     # upsample, and define new block
     upsampling = UpSampling2D()(block_end)
     #selector de incice 0
-    i_sel_0=Conv2D(32, (1,6), padding='valid', name="defly_"+counter.get_next())(block_end)
+    i_sel_1=Conv2D(32, (1,6), padding='valid', name="defly_"+counter.get_next())(block_end)
     i_sel_0=Conv2D(32, (1,11), padding='valid', name="defly_"+counter.get_next())(i_sel_0)
     i_sel_0=Dropout(0.3)(i_sel_0)
     i_sel_0=Flatten()(i_sel_0)
@@ -780,12 +811,12 @@ def define_generator(n_blocks, latent_dim):
     ly0 = Input(shape=latent_dim)
     #selector de incice 0
     i_sel_0=Reshape((1,100,1))(ly0)
-    i_sel_0=FreqToTime()(i_sel_0)
-    i_sel_0=Conv2D(16, (26,1), padding='valid', name="defly_"+counter.get_next())(i_sel_0)
-    i_sel_0=Conv2D(32, (26,1), padding='valid', name="defly_"+counter.get_next())(i_sel_0)
-    i_sel_0=Flatten()(i_sel_0)
-    i_sel_0=Dropout(0.2)(i_sel_0)
-    i_sel_0=Dense(3, activation='softmax', name="defly_"+counter.get_next())(i_sel_0)
+    i_sel_0 = Dense(25, name="defly_"+counter.get_next())(i_sel_0)
+    i_sel_0 = TimeToEnd()(i_sel_0)
+    i_sel_0 = Dense(1, name="defly_"+counter.get_next())(i_sel_0)
+    i_sel_0 = Flatten()(i_sel_0)
+    i_sel_0 = Dropout(0.2)(i_sel_0)
+    i_sel_0 = Dense(3, activation='softmax', name="defly_"+counter.get_next())(i_sel_0)
     #decision layer 0
     des_ly_0=DecisionLayer(output_size=3)([ly0, i_sel_0])
     #bloque 0 salidas de (376,4,128)
@@ -793,39 +824,37 @@ def define_generator(n_blocks, latent_dim):
     b0_r1 = SlicerLayer(index_work=0)(des_ly_0)
     b0_r1 = Reshape((1,100,1))(b0_r1)
     b0_r1 = FreqToTime()(b0_r1)
-    b0_r1 = Conv2DTranspose(16, (51,1), padding='valid')(b0_r1)
-    b0_r1 = Conv2DTranspose(32, (76,2), padding='valid')(b0_r1)
-    b0_r1 = Conv2DTranspose(64, (52,2), padding='valid')(b0_r1)
-    b0_r1 = Conv2DTranspose(32, (101,2), padding='valid')(b0_r1)
+    b0_r1 = Conv2DTranspose(16, (51,1), padding='valid', kernel_initializer=LaplacianInitializer)(b0_r1)
+    b0_r1 = Conv2DTranspose(32, (76,2), padding='valid', kernel_initializer=LaplacianInitializer)(b0_r1)
+    b0_r1 = Conv2DTranspose(64, (52,2), padding='valid', kernel_initializer=LaplacianInitializer)(b0_r1)
+    b0_r1 = Conv2DTranspose(32, (101,2), padding='valid', kernel_initializer=LaplacianInitializer)(b0_r1)
     #rama 2 bloque 0
     b0_r2 = SlicerLayer(index_work=1)(des_ly_0)
     b0_r2 = Reshape((1,100,1))(b0_r2)
     b0_r2 = FreqToTime()(b0_r2)
-    b0_r2 = Conv2DTranspose(16, (11,1), padding='valid')(b0_r2)
-    b0_r2 = Conv2DTranspose(16, (16,1), padding='valid')(b0_r2)
-    b0_r2 = Conv2DTranspose(32, (21,1), padding='valid')(b0_r2)
-    b0_r2 = Conv2DTranspose(32, (26,2), padding='valid')(b0_r2)
-    b0_r2 = Conv2DTranspose(32, (31,1), padding='valid')(b0_r2)
-    b0_r2 = Conv2DTranspose(32, (36,2), padding='valid')(b0_r2)
-    b0_r2 = Conv2DTranspose(32, (41,1), padding='valid')(b0_r2)
-    b0_r2 = Conv2DTranspose(32, (102,2), padding='valid')(b0_r2)
+    b0_r2 = Conv2DTranspose(16, (11,1), padding='valid', kernel_initializer=LaplacianInitializer)(b0_r2)
+    b0_r2 = Conv2DTranspose(16, (16,1), padding='valid', kernel_initializer=LaplacianInitializer)(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (21,1), padding='valid', kernel_initializer=LaplacianInitializer)(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (26,2), padding='valid', kernel_initializer=LaplacianInitializer)(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (31,1), padding='valid', kernel_initializer=LaplacianInitializer)(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (36,2), padding='valid', kernel_initializer=LaplacianInitializer)(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (41,1), padding='valid', kernel_initializer=LaplacianInitializer)(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (102,2), padding='valid', kernel_initializer=LaplacianInitializer)(b0_r2)
     #rama 3 bloque 0
     b0_r3 = SlicerLayer(index_work=2)(des_ly_0)
     b0_r3 = Reshape((1,100,1))(b0_r3)
     b0_r3 = FreqToTime()(b0_r3)
-    b0_r3 = Conv2DTranspose(32, (101,2), padding='valid')(b0_r3)
-    b0_r3 = Conv2DTranspose(32, (177,3), padding='valid')(b0_r3)
+    b0_r3 = Conv2DTranspose(32, (101,2), padding='valid', kernel_initializer=LaplacianInitializer)(b0_r3)
+    b0_r3 = Conv2DTranspose(32, (177,3), padding='valid', kernel_initializer=LaplacianInitializer)(b0_r3)
     #sumar ramas bloque 0
     to_connect_0=Add()([b0_r1, b0_r2, b0_r3])
     #bloque 0 salidas de (4,376,64)
     merger_b0 = FreqToTime()(to_connect_0)
     #selector de incice 2
     i_sel_1=FreqToTime()(merger_b0)
-    i_sel_1=Conv2D(16, (51,1), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
-    i_sel_1=Conv2D(32, (76,1), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
-    i_sel_1=Conv2D(32, (52,1), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
-    i_sel_1=Conv2D(16, (101,1), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
-    i_sel_1=Dense(1, name="defly_"+counter.get_next())(i_sel_1)
+    i_sel_1 = Dense(64, name="defly_"+counter.get_next())(i_sel_1)
+    i_sel_1 = TimeToEnd()(i_sel_1)
+    i_sel_1 = Dense(1, name="defly_"+counter.get_next())(i_sel_1)
     i_sel_1=Flatten()(i_sel_1)
     i_sel_1=Dropout(0.2)(i_sel_1)
     i_sel_1=Dense(64, activation='softmax', name="defly_"+counter.get_next())(i_sel_1)
@@ -835,7 +864,7 @@ def define_generator(n_blocks, latent_dim):
     #Convolutional outputs
     for i in range(32):
         new_output_block = SlicerLayer(index_work=i)(des_ly_3)
-        new_output_block = Conv2D(4, (1,1), padding='valid')(new_output_block)
+        new_output_block = Conv2D(4, (1,1), padding='valid', kernel_initializer=LaplacianInitializer)(new_output_block)
         outputs_list.append(new_output_block)
     #Dense outputs
     for i in range(32):
