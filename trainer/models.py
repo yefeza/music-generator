@@ -987,7 +987,7 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             generator=g_models[0],
             generator_default=g_models[1],
             latent_dim=latent_dim,
-            default_network_extra=3,
+            default_network_extra=4,
         )
         wgan1.compile(
             d_optimizer=Adamax(learning_rate=0.0005),
@@ -1007,7 +1007,7 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             generator_default=g_models[3],
             latent_dim=latent_dim,
             fade_in=True,
-            default_network_extra=3,
+            default_network_extra=4,
         )
         wgan2.compile(
             d_optimizer=Adamax(learning_rate=0.0005),
