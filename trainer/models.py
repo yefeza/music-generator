@@ -210,12 +210,12 @@ class DefaultNetwork(Model):
 #laplacian initializer
 class LaplacianInitializer(tf.keras.initializers.Initializer):
 
-    def _get_cauchy_samples(loc, scale, shape):
+    def _get_cauchy_samples(self, loc, scale, shape):
         probs = np.random.uniform(low=0., high=1., size=shape)
         return loc + scale * np.tan(np.pi * (probs - 0.5))
 
     def __call__(self, shape, dtype=None, **kwargs):
-        initializer = tf.constant_initializer(self._get_cauchy_samples(loc=0, scale=1, shape=shape))
+        initializer = tf.constant_initializer(self._get_cauchy_samples(loc=0.0, scale=1.0, shape=shape))
         return initializer(tf.Variable(shape=shape, dtype=dtype))
 
 # Minibatch Standard Deviation Layer
