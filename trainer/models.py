@@ -848,7 +848,7 @@ def define_generator(n_blocks, latent_dim):
     b0_r3 = FreqToTime()(b0_r3)
     b0_r3 = Conv2DTranspose(16, (101,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r3)
     b0_r3 = Conv2DTranspose(16, (177,3), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r3)
-    b0_r1 = Conv2DTranspose(32, (376,1), padding='same', kernel_initializer=LaplacianInitializer)(b0_r1)
+    b0_r3 = Conv2DTranspose(32, (376,1), padding='same', kernel_initializer=LaplacianInitializer)(b0_r3)
     #sumar ramas bloque 0
     to_connect_0=Add()([b0_r1, b0_r2, b0_r3])
     #bloque 0 salidas de (4,376,64)
