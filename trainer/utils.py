@@ -14,8 +14,7 @@ class LaplacianRandomic:
         return loc + scale * np.tan(np.pi * (probs - 0.5))
 
     def get_random(self, shape, dtype=tf.float64):
-        initializer = tf.constant_initializer(self._get_cauchy_samples(loc=0.0, scale=1.0, shape=shape))
-        return tf.Variable(initializer(shape=shape, dtype=dtype))
+        return self._get_cauchy_samples(loc=0.0, scale=1.0, shape=shape)
 
 # generar datos con el modelo entrenado
 
