@@ -52,6 +52,7 @@ class WeightedSum(Add):
         config.update({"alpha": self.alpha})
         return config
 
+
 class GAN(keras.Model):
     def __init__(
         self,
@@ -109,11 +110,12 @@ class GAN(keras.Model):
         # Get the batch size
         batch_size = real_data.shape[0]
         gen_shape = self.generator.output_shape
-
+        randomic_gen=LaplacianRandomic()
         # Run on default network
         for i in range(self.def_steps):
             mini_bsize=int(batch_size/2)
-            random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+            #random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+            random_encoder_input = randomic_gen.get_random(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]))
             random_encoded_real=self.encoder(real_data[:mini_bsize], training=False)
             random_encoded_random=self.encoder(random_encoder_input, training=False)
             random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
@@ -128,15 +130,16 @@ class GAN(keras.Model):
                 # Calculate the discriminator loss using the fake and real image logits
                 def_loss = self.g_loss_fn(fake_logits, real_logits)
             # Get the gradients w.r.t the discriminator loss
-            def_gradient = tape.gradient(def_loss, self.generator_default.trainable_default_network)
+            def_gradient = tape.gradient(def_loss, self.generator_default.trainable_default_weights)
             # Update the weights of the discriminator using the discriminator optimizer
             self.generator_default.optimizer.apply_gradients(
-                zip(def_gradient, self.generator_default.trainable_default_network)
+                zip(def_gradient, self.generator_default.trainable_default_weights)
             )
 
         # Train discriminator
         mini_bsize=int(batch_size/2)
-        random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+        #random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+        random_encoder_input = randomic_gen.get_random(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]))
         random_encoded_real=self.encoder(real_data[:mini_bsize], training=False)
         random_encoded_random=self.encoder(random_encoder_input, training=False)
         random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
@@ -162,7 +165,8 @@ class GAN(keras.Model):
         with tf.GradientTape(persistent=True) as tape:
             #get noise from encoder
             mini_bsize=int(batch_size/2)
-            random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+            #random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+            random_encoder_input = randomic_gen.get_random(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]))
             random_encoded_real=self.encoder(real_data[:mini_bsize], training=True)
             random_encoded_random=self.encoder(random_encoder_input, training=True)
             random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
@@ -200,11 +204,23 @@ class DefaultNetwork(Model):
         super(DefaultNetwork, self).__init__(*args, **kwargs)
 
     @property
+    def trainable_default_weights(self):
+        self._assert_weights_created()
+        if not self._trainable:
+            return []
+        trainable_variables = []
+        for trackable_obj in self._self_tracked_trackables:
+            if trackable_obj.name[:5]=="defly":
+                trainable_variables += trackable_obj.trainable_variables
+        trainable_variables += self._trainable_weights
+        return self._dedup_weights(trainable_variables)
+
+    @property
     def trainable_default_network(self):
         default_vars=[]
         for i in range(0, len(self.layers)):
             if self.layers[i].name[:5]=="defly":
-                default_vars+=self.layers[i].trainable_weights
+                default_vars+=self.layers[i].trainable_variables
         return default_vars
 
 #laplacian initializer
@@ -606,8 +622,11 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     d_1 = Dense(100)(converted_block)
     d_1 = TimeToEnd()(d_1)
     d_1 = Dense(1)(d_1)
-    d_1 = Reshape((100, 1))(d_1)
-    out_class = Dropout(0.2)(d_1)
+    d_1 = FreqToTime()(d_1)
+    d_1 = Conv2D(128, (376,1), padding='same', kernel_initializer=LaplacianInitializer)(d_1)
+    d_1 = FreqToTime()(d_1)
+    d_1 = Reshape((100, 128))(d_1)
+    out_class = Dense(1)(d_1)
     # define model
     model_comp = Model(in_data, out_class)
     # store model
@@ -811,6 +830,7 @@ def define_generator(n_blocks, latent_dim):
     ly0 = Input(shape=latent_dim)
     #selector de incice 0
     i_sel_0=Reshape((1,100,1))(ly0)
+    i_sel_0 = FreqChannelChange()(i_sel_0)
     i_sel_0 = Dense(25, name="defly_"+counter.get_next())(i_sel_0)
     i_sel_0 = TimeToEnd()(i_sel_0)
     i_sel_0 = Dense(1, name="defly_"+counter.get_next())(i_sel_0)
@@ -824,37 +844,35 @@ def define_generator(n_blocks, latent_dim):
     b0_r1 = SlicerLayer(index_work=0)(des_ly_0)
     b0_r1 = Reshape((1,100,1))(b0_r1)
     b0_r1 = FreqToTime()(b0_r1)
-    b0_r1 = Conv2DTranspose(16, (51,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r1)
-    b0_r1 = Conv2DTranspose(16, (76,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r1)
+    b0_r1 = Conv2DTranspose(32, (51,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r1)
+    b0_r1 = Conv2DTranspose(32, (76,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r1)
     b0_r1 = Conv2DTranspose(32, (52,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r1)
-    b0_r1 = Conv2DTranspose(16, (101,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r1)
-    b0_r1 = Conv2DTranspose(32, (376,1), padding='same', kernel_initializer=LaplacianInitializer)(b0_r1)
+    b0_r1 = Conv2DTranspose(32, (101,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r1)
     #rama 2 bloque 0
     b0_r2 = SlicerLayer(index_work=1)(des_ly_0)
     b0_r2 = Reshape((1,100,1))(b0_r2)
     b0_r2 = FreqToTime()(b0_r2)
-    b0_r2 = Conv2DTranspose(16, (11,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
-    b0_r2 = Conv2DTranspose(16, (16,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
-    b0_r2 = Conv2DTranspose(16, (21,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
-    b0_r2 = Conv2DTranspose(16, (26,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
-    b0_r2 = Conv2DTranspose(16, (31,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
-    b0_r2 = Conv2DTranspose(16, (36,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
-    b0_r2 = Conv2DTranspose(16, (41,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
-    b0_r2 = Conv2DTranspose(16, (102,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
-    b0_r2 = Conv2DTranspose(32, (376,1), padding='same', kernel_initializer=LaplacianInitializer)(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (11,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (16,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (21,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (26,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (31,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (36,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (41,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
+    b0_r2 = Conv2DTranspose(32, (102,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
     #rama 3 bloque 0
     b0_r3 = SlicerLayer(index_work=2)(des_ly_0)
     b0_r3 = Reshape((1,100,1))(b0_r3)
     b0_r3 = FreqToTime()(b0_r3)
-    b0_r3 = Conv2DTranspose(16, (101,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r3)
-    b0_r3 = Conv2DTranspose(16, (177,3), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r3)
-    b0_r3 = Conv2DTranspose(32, (376,1), padding='same', kernel_initializer=LaplacianInitializer)(b0_r3)
+    b0_r3 = Conv2DTranspose(32, (101,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r3)
+    b0_r3 = Conv2DTranspose(32, (177,3), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r3)
     #sumar ramas bloque 0
     to_connect_0=Add()([b0_r1, b0_r2, b0_r3])
+    to_connect_0 = Conv2D(128, (376,1), padding='same', kernel_initializer=LaplacianInitializer)(to_connect_0)
     #bloque 0 salidas de (4,376,64)
     merger_b0 = FreqToTime()(to_connect_0)
     #selector de incice 2
-    i_sel_1=FreqToTime()(merger_b0)
+    i_sel_1 = FreqChannelChange()(merger_b0)
     i_sel_1 = Dense(64, name="defly_"+counter.get_next())(i_sel_1)
     i_sel_1 = TimeToEnd()(i_sel_1)
     i_sel_1 = Dense(1, name="defly_"+counter.get_next())(i_sel_1)
@@ -980,7 +998,7 @@ def define_composite(discriminators, generators, encoders, latent_dim):
         #d_models[0].summary()
         #g_models[0].summary()
         g_models[1].summary()
-        print("Real default trainable:", len(g_models[1].trainable_default_network))
+        print("Real default trainable:", len(g_models[1].trainable_default_weights))
         wgan1 = GAN(
             discriminator=d_models[0],
             encoder=enc_models[0],

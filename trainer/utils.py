@@ -6,6 +6,17 @@ import keras
 import tensorflow as tf
 import random
 
+#laplacian randomic
+class LaplacianRandomic:
+
+    def _get_cauchy_samples(self, loc, scale, shape):
+        probs = np.random.uniform(low=0., high=1., size=shape)
+        return loc + scale * np.tan(np.pi * (probs - 0.5))
+
+    def get_random(self, shape, dtype=tf.float64):
+        initializer = tf.constant_initializer(self._get_cauchy_samples(loc=0.0, scale=1.0, shape=shape))
+        return tf.Variable(initializer(shape=shape, dtype=dtype))
+
 # generar datos con el modelo entrenado
 
 def upload_blob(bucket_name, source_file_name, destination_blob_name):
@@ -37,17 +48,21 @@ def calculate_inception_score(p_yx, eps=1E-16):
 
 
 def generar_ejemplo(g_model, enc_model, gen_shape, random_real_data, prefix, iter_num, job_dir, bucket_name, latent_dim, evaluador, save):
+    randomic_gen=LaplacianRandomic()
     if iter_num<0:
         random_latent_vectors = tf.random.uniform(shape=(10, latent_dim[0], latent_dim[1]), minval=-1., maxval=1.)
     else:
         if iter_num<=7:
-            random_encoder_input = tf.random.uniform(shape=(10, gen_shape[-3]*gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+            #random_encoder_input = tf.random.uniform(shape=(10, gen_shape[-3]*gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+            random_encoder_input = randomic_gen.get_random(shape=(10, gen_shape[-3]*gen_shape[-2], gen_shape[-1]))
             random_latent_vectors = enc_model(random_encoder_input, training=False)
         else:
             if iter_num<=15:
-                random_encoder_input = tf.random.uniform(shape=(10, gen_shape[-3]*gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+                #random_encoder_input = tf.random.uniform(shape=(10, gen_shape[-3]*gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+                random_encoder_input = randomic_gen.get_random(shape=(10, gen_shape[-3]*gen_shape[-2], gen_shape[-1]))
                 random_ecoded = enc_model(random_encoder_input, training=False)
-                random_noise = tf.random.uniform(shape=(10, latent_dim[0], latent_dim[1]), minval=-1., maxval=1.)
+                #random_noise = tf.random.uniform(shape=(10, latent_dim[0], latent_dim[1]), minval=-1., maxval=1.)
+                random_noise = randomic_gen.get_random(shape=(10, latent_dim[0], latent_dim[1]))
                 random_latent_vectors=random_noise+random_ecoded
             else:
                 random_latent_vectors = enc_model(random_real_data, training=False)
