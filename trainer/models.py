@@ -52,7 +52,6 @@ class WeightedSum(Add):
         config.update({"alpha": self.alpha})
         return config
 
-
 class GAN(keras.Model):
     def __init__(
         self,
@@ -209,9 +208,9 @@ class DefaultNetwork(Model):
         if not self._trainable:
             return []
         trainable_variables = []
-        for trackable_obj in self._self_tracked_trackables:
-            if trackable_obj.name[:5]=="defly":
-                trainable_variables += trackable_obj.trainable_variables
+        for i in range(0, len(self.layers)):
+            if self.layers[i].name[:5]=="defly":
+                trainable_variables+=self.layers[i].trainable_variables
         trainable_variables += self._trainable_weights
         return self._dedup_weights(trainable_variables)
 
