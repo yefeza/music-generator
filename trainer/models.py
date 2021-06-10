@@ -640,6 +640,7 @@ def add_encoder_block(old_model, n_input_layers=3):
 # definir los discriminadores
 
 def define_encoder(n_blocks, input_shape=(3000, 2)):
+    initializer_variance = tf.keras.initializers.VarianceScaling(scale=0.1, mode='fan_in')
     model_list = list()
     # base model input
     in_data = Input(shape=input_shape)
