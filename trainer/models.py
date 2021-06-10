@@ -113,8 +113,7 @@ class GAN(keras.Model):
         # Run on default network
         for i in range(self.def_steps):
             mini_bsize=int(batch_size/2)
-            #random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
-            random_encoder_input = randomic_gen.get_random(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]))
+            random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
             random_encoded_real=self.encoder(real_data[:mini_bsize], training=False)
             random_encoded_random=self.encoder(random_encoder_input, training=False)
             random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
@@ -137,8 +136,7 @@ class GAN(keras.Model):
 
         # Train discriminator
         mini_bsize=int(batch_size/2)
-        #random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
-        random_encoder_input = randomic_gen.get_random(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]))
+        random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
         random_encoded_real=self.encoder(real_data[:mini_bsize], training=False)
         random_encoded_random=self.encoder(random_encoder_input, training=False)
         random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
@@ -164,8 +162,7 @@ class GAN(keras.Model):
         with tf.GradientTape(persistent=True) as tape:
             #get noise from encoder
             mini_bsize=int(batch_size/2)
-            #random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
-            random_encoder_input = randomic_gen.get_random(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]))
+            random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
             random_encoded_real=self.encoder(real_data[:mini_bsize], training=True)
             random_encoded_random=self.encoder(random_encoder_input, training=True)
             random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
