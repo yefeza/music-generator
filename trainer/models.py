@@ -640,7 +640,7 @@ def add_encoder_block(old_model, n_input_layers=3):
 # definir los discriminadores
 
 def define_encoder(n_blocks, input_shape=(3000, 2)):
-    initializer_variance = tf.keras.initializers.VarianceScaling(scale=0.1, mode='fan_in')
+    initializer_variance = tf.random_uniform_initializer(minval=-1, maxval=1, seed=None)
     model_list = list()
     # base model input
     in_data = Input(shape=input_shape)
@@ -861,7 +861,7 @@ def add_generator_block(old_model, counter):
 # definir los generadores
 
 def define_generator(n_blocks, latent_dim):
-    initializer_variance = tf.keras.initializers.VarianceScaling(scale=0.1, mode='fan_in')
+    initializer_variance = tf.random_uniform_initializer(minval=-1, maxval=1, seed=None)
     counter=LayerCounter()
     model_list = list()
     # input
