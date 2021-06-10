@@ -484,6 +484,26 @@ class LaplaceLayer(Layer):
         config = super(LaplaceLayer, self).get_config()
         return config
 
+#laplace layer
+class LaplaceLayerNonTrain(Layer):
+    def __init__(self, **kwargs):
+        super(LaplaceLayerNonTrain, self).__init__(**kwargs)
+
+    def build(self, input_shape):
+        initializer_zeros = tf.keras.initializers.Zeros()
+        self.loc = self.add_weight(shape=(1, input_shape[-2], input_shape[-1]), initializer=initializer_zeros, trainable=True, name="loc")
+
+    def call(self, inputs):
+        input_shape=inputs.shape
+        scale=input_shape[1]
+        max_inputs=tf.math.reduce_max(inputs)
+        rescaled=(inputs/max_inputs)*scale
+        return tf.math.exp(-tf.math.abs(rescaled - self.loc) / self.scale) / (2*self.scale)
+
+    def get_config(self):
+        config = super(LaplaceLayerNonTrain, self).get_config()
+        return config
+
 # agregar bloque a discriminador para escalar las dimensiones
 
 def add_discriminator_block(old_model, n_input_layers=3):
@@ -890,7 +910,7 @@ def define_generator(n_blocks, latent_dim):
     b0_r1 = FreqChannelChange()(b0_r1)
     b0_r1 = Dense(376, kernel_initializer=initializer_variance)(b0_r1)
     b0_r1 = FreqChannelChange()(b0_r1)
-    b0_r1 = LaplaceLayer()(b0_r1)
+    b0_r1 = LaplaceLayerNonTrain()(b0_r1)
     b0_r1 = FreqToTime()(b0_r1)
     #rama 2 bloque 0
     b0_r2 = SlicerLayer(index_work=1)(des_ly_0)
@@ -908,7 +928,7 @@ def define_generator(n_blocks, latent_dim):
     b0_r2 = FreqChannelChange()(b0_r2)
     b0_r2 = Dense(376, kernel_initializer=initializer_variance)(b0_r2)
     b0_r2 = FreqChannelChange()(b0_r2)
-    b0_r2 = LaplaceLayer()(b0_r2)
+    b0_r2 = LaplaceLayerNonTrain()(b0_r2)
     b0_r2 = FreqToTime()(b0_r2)
     #rama 3 bloque 0
     b0_r3 = SlicerLayer(index_work=2)(des_ly_0)
@@ -920,7 +940,7 @@ def define_generator(n_blocks, latent_dim):
     b0_r3 = FreqChannelChange()(b0_r3)
     b0_r3 = Dense(376, kernel_initializer=initializer_variance)(b0_r3)
     b0_r3 = FreqChannelChange()(b0_r3)
-    b0_r3 = LaplaceLayer()(b0_r3)
+    b0_r3 = LaplaceLayerNonTrain()(b0_r3)
     b0_r3 = FreqToTime()(b0_r3)
     #rama 4 bloque 0
     b0_r4 = SlicerLayer(index_work=3)(des_ly_0)
@@ -933,7 +953,7 @@ def define_generator(n_blocks, latent_dim):
     b0_r4 = FreqChannelChange()(b0_r4)
     b0_r4 = Dense(376, kernel_initializer=initializer_variance)(b0_r4)
     b0_r4 = FreqChannelChange()(b0_r4)
-    b0_r4 = LaplaceLayer()(b0_r4)
+    b0_r4 = LaplaceLayerNonTrain()(b0_r4)
     b0_r4 = FreqToTime()(b0_r4)
     #sumar ramas bloque 0
     to_connect_0=Add()([b0_r1, b0_r2, b0_r3, b0_r4])
