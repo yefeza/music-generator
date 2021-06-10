@@ -942,12 +942,12 @@ def define_generator(n_blocks, latent_dim):
     b0_r3 = FreqToTime()(b0_r3)
     b0_r3 = Conv2DTranspose(16, (101,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r3)
     b0_r3 = Conv2DTranspose(16, (177,3), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r3)
-    b0_r3 = FreqToTime()(b0_r3)
+    """ b0_r3 = FreqToTime()(b0_r3)
     b0_r3 = FreqChannelChange()(b0_r3)
     b0_r3 = Dense(376, kernel_initializer=initializer_variance)(b0_r3)
     b0_r3 = FreqChannelChange()(b0_r3)
     b0_r3 = LaplaceLayerNonTrain()(b0_r3)
-    b0_r3 = FreqToTime()(b0_r3)
+    b0_r3 = FreqToTime()(b0_r3) """
     #rama 4 bloque 0
     b0_r4 = SlicerLayer(index_work=3)(des_ly_0)
     b0_r4 = Reshape((1,100,1))(b0_r4)
