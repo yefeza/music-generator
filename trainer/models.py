@@ -455,7 +455,7 @@ class iFFT(Layer):
         return config
 
 #kernel laplace initializer
-def init_kernel_laplace(shape):
+def init_kernel_laplace(shape, dtype, **kwargs):
     values=[]
     for i in range(shape[-1]):
         data_ex=tf.linspace(-float(shape[-3]),float(shape[-3]),(shape[-3]))
@@ -465,7 +465,7 @@ def init_kernel_laplace(shape):
     kernel = tf.Variable(values)
     kernel=tf.reshape(kernel, shape=(shape[-1], shape[-3], 1))
     kernel=tf.transpose(kernel, perm=[1,2,0])
-    return kernel
+    return tf.cast(kernel, dtype)
 
 #laplace layer
 class LaplaceLayer(Layer):
