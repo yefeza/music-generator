@@ -132,7 +132,6 @@ def resample_and_save_datasets(path_dataset, bucket_name, files_format, dimensio
 #preparar dataset y guardar datos preparados
 
 def preprocess_dataset(path_dataset, bucket_name, files_format, download_data, dimension_start, folder_start, song_start, fragment_start):
-    audio_list = []
     if download_data:
         download_originals(path_dataset,bucket_name, files_format)
     resample_and_save_datasets(path_dataset,bucket_name, files_format, dimension_start, folder_start, song_start, fragment_start)
@@ -222,7 +221,7 @@ def read_dataset(dimension, files_format):
         for song_dirname in os.listdir(directory):
             try:
                 signal, sampling_rate = af.read(directory+song_dirname)
-                song_reshaped = np.reshape(signal, newshape=(dimension[0]*dimension[1], 2))
+                song_reshaped = signal.transpose()
                 data.append(song_reshaped)
                 y_evaluator.append(folder)
                 continuos_error=0

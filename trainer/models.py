@@ -454,6 +454,37 @@ class iFFT(Layer):
         config = super(iFFT, self).get_config()
         return config
 
+#kernel laplace initializer
+def init_kernel_laplace(shape):
+    values=[]
+    for i in range(shape[-1]):
+        data_ex=tf.linspace(-float(shape[-3]),float(shape[-3]),(shape[-3]))
+        sinus=tf.math.exp(-tf.math.abs(data_ex - random.randint(-shape[-3],shape[-3])) / shape[-3]) / (2*shape[-3])
+        sinus=tf.reshape(sinus, shape=(shape[-3],1))
+        values.append(sinus)
+    kernel = tf.Variable(values)
+    kernel=tf.reshape(kernel, shape=(shape[-1], shape[-3], 1))
+    kernel=tf.transpose(kernel, perm=[1,2,0])
+    return kernel
+
+#laplace layer
+class LaplaceLayer(Layer):
+    def __init__(self, **kwargs):
+        super(LaplaceLayer, self).__init__(**kwargs)
+
+    def build(self, input_shape):
+        initializer_zeros = tf.keras.initializers.Zeros()
+        self.loc = self.add_weight(shape=(1, input_shape[-2], input_shape[-1]), initializer=initializer_zeros, trainable=True)
+        initializer_ones = tf.keras.initializers.Ones()
+        self.scale = self.add_weight(shape=(1, input_shape[-2], input_shape[-1]), initializer=initializer_ones, trainable=True)
+
+    def call(self, inputs):
+        return tf.math.exp(-tf.math.abs(inputs - self.loc) / self.scale) / (2*self.scale)
+
+    def get_config(self):
+        config = super(LaplaceLayer, self).get_config()
+        return config
+
 # agregar bloque a discriminador para escalar las dimensiones
 
 def add_discriminator_block(old_model, n_input_layers=3):
@@ -622,7 +653,8 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     d_1 = TimeToEnd()(d_1)
     d_1 = Dense(1)(d_1)
     d_1 = FreqToTime()(d_1)
-    d_1 = Conv2D(128, (376,1), padding='same', kernel_initializer=LaplacianInitializer)(d_1)
+    d_1 = LaplaceLayer()(d_1)
+    d_1 = Conv2D(128, (376,1), padding='same', kernel_initializer=init_kernel_laplace)(d_1)
     d_1 = FreqToTime()(d_1)
     d_1 = Reshape((100, 128))(d_1)
     d_1 = Dropout(0.25)(d_1)
@@ -848,7 +880,8 @@ def define_generator(n_blocks, latent_dim):
     b0_r1 = Conv2DTranspose(16, (76,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r1)
     b0_r1 = Conv2DTranspose(16, (52,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r1)
     b0_r1 = Conv2DTranspose(16, (101,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r1)
-    b0_r1 = Conv2D(16, (376,1), padding='same', kernel_initializer=LaplacianInitializer)(b0_r1)
+    b0_r1 = LaplaceLayer()(b0_r1)
+    b0_r1 = Conv2D(16, (376,1), padding='same', kernel_initializer=init_kernel_laplace)(b0_r1)
     #rama 2 bloque 0
     b0_r2 = SlicerLayer(index_work=1)(des_ly_0)
     b0_r2 = Reshape((1,100,1))(b0_r2)
@@ -861,14 +894,16 @@ def define_generator(n_blocks, latent_dim):
     b0_r2 = Conv2DTranspose(16, (36,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
     b0_r2 = Conv2DTranspose(16, (41,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
     b0_r2 = Conv2DTranspose(16, (102,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
-    b0_r2 = Conv2D(16, (376,1), padding='same', kernel_initializer=LaplacianInitializer)(b0_r2)
+    b0_r2 = LaplaceLayer()(b0_r2)
+    b0_r2 = Conv2D(16, (376,1), padding='same', kernel_initializer=init_kernel_laplace)(b0_r2)
     #rama 3 bloque 0
     b0_r3 = SlicerLayer(index_work=2)(des_ly_0)
     b0_r3 = Reshape((1,100,1))(b0_r3)
     b0_r3 = FreqToTime()(b0_r3)
     b0_r3 = Conv2DTranspose(16, (101,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r3)
     b0_r3 = Conv2DTranspose(16, (177,3), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r3)
-    b0_r3 = Conv2D(16, (376,1), padding='same', kernel_initializer=LaplacianInitializer)(b0_r3)
+    b0_r3 = LaplaceLayer()(b0_r3)
+    b0_r3 = Conv2D(16, (376,1), padding='same', kernel_initializer=init_kernel_laplace)(b0_r3)
     #sumar ramas bloque 0
     to_connect_0=Add()([b0_r1, b0_r2, b0_r3])
     #to_connect_0 = Conv2D(64, (376,1), padding='same', kernel_initializer=LaplacianInitializer)(to_connect_0)
