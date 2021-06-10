@@ -498,7 +498,7 @@ class LaplaceLayerNonTrain(Layer):
         scale=input_shape[1]
         max_inputs=tf.math.reduce_max(inputs)
         rescaled=(inputs/max_inputs)*scale
-        return tf.math.exp(-tf.math.abs(rescaled - self.loc) / self.scale) / (2*self.scale)
+        return tf.math.exp(-tf.math.abs(rescaled - self.loc) / scale) / (2*scale)
 
     def get_config(self):
         config = super(LaplaceLayerNonTrain, self).get_config()
