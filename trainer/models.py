@@ -967,13 +967,13 @@ def define_generator(n_blocks, latent_dim):
     merger_b3=Reshape((3000, 2))(merger_b3)
     wls = LayerNormalization(axis=[1,2])(merger_b3)
     model_normal = Model(ly0, wls)
-    model_normal.compile(optimizer=Adamax(learning_rate=0.0005))
+    model_normal.compile(optimizer=Adamax(learning_rate=0.001))
     #define default
     model_default = DefaultNetwork(ly0, wls)
     '''for i in range(0, len(model_default.layers)):
         if model_default.layers[i].name[:5]!="defly":
             model_default.layers[i].trainable=True'''
-    model_default.compile(optimizer=Adamax(learning_rate=0.0005))
+    model_default.compile(optimizer=Adamax(learning_rate=0.001))
     # store model
     model_list.append([model_normal, model_default, model_normal, model_default])
     # create submodels 
@@ -998,7 +998,7 @@ def generator_loss(fake_logits, real_logits):
     #fake_logits=tf.reduce_mean(fake_logits)
     #real_logits=tf.reduce_mean(real_logits)
     m=(fake_logits*real_logits)/10
-    return 3*tf.math.sin(-m)
+    return 10*tf.math.sin(-m)
 
 def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoint=20):
     storage_client = storage.Client(project='ia-devs')
