@@ -465,7 +465,7 @@ def init_kernel_laplace(shape, dtype, **kwargs):
             sinus=tf.reshape(sinus, shape=(shape[-4],1,1))
             values.append(sinus)
     kernel = tf.Variable(values)
-    kernel=tf.reshape(kernel, shape=(shape[-1], shape[-4], shape[-2], 1))
+    kernel=tf.reshape(kernel, shape=(shape[-1], shape[-4], 1, shape[-2]))
     kernel=tf.transpose(kernel, perm=[1,2,3,0])
     return tf.cast(kernel, dtype)
 
