@@ -504,7 +504,7 @@ class LaplaceLayerNonTrain(Layer):
         input_shape=inputs.shape
         scale=input_shape[-3]
         rescaled=inputs+self.linearity
-        return tf.math.exp(-tf.math.abs(rescaled - self.loc) / scale) / (2*scale)
+        return tf.math.exp(-tf.math.abs(rescaled - 0.0) / scale) / (2*scale)
 
     def get_config(self):
         config = super(LaplaceLayerNonTrain, self).get_config()
@@ -912,11 +912,11 @@ def define_generator(n_blocks, latent_dim):
     b0_r1 = Conv2DTranspose(16, (76,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r1)
     b0_r1 = Conv2DTranspose(16, (52,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r1)
     b0_r1 = Conv2DTranspose(16, (101,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r1)
-    b0_r1 = FreqToTime()(b0_r1)
+    """ b0_r1 = FreqToTime()(b0_r1)
     b0_r1 = FreqChannelChange()(b0_r1)
     b0_r1 = Dense(376, kernel_initializer=initializer_variance)(b0_r1)
     b0_r1 = FreqChannelChange()(b0_r1)
-    b0_r1 = LaplaceLayerNonTrain()(b0_r1)
+    b0_r1 = LaplaceLayerNonTrain()(b0_r1) """
     b0_r1 = FreqToTime()(b0_r1)
     #rama 2 bloque 0
     b0_r2 = SlicerLayer(index_work=1)(des_ly_0)
@@ -930,12 +930,12 @@ def define_generator(n_blocks, latent_dim):
     b0_r2 = Conv2DTranspose(16, (36,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
     b0_r2 = Conv2DTranspose(16, (41,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
     b0_r2 = Conv2DTranspose(16, (102,2), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r2)
-    b0_r2 = FreqToTime()(b0_r2)
+    """ b0_r2 = FreqToTime()(b0_r2)
     b0_r2 = FreqChannelChange()(b0_r2)
     b0_r2 = Dense(376, kernel_initializer=initializer_variance)(b0_r2)
     b0_r2 = FreqChannelChange()(b0_r2)
     b0_r2 = LaplaceLayerNonTrain()(b0_r2)
-    b0_r2 = FreqToTime()(b0_r2)
+    b0_r2 = FreqToTime()(b0_r2) """
     #rama 3 bloque 0
     b0_r3 = SlicerLayer(index_work=2)(des_ly_0)
     b0_r3 = Reshape((1,100,1))(b0_r3)
@@ -955,12 +955,12 @@ def define_generator(n_blocks, latent_dim):
     b0_r4 = Conv2D(16, (51,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r4)
     b0_r4 = Conv2DTranspose(16, (3,2), strides=(3,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r4)
     b0_r4 = Conv2DTranspose(16, (5,3), strides=(5,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r4)
-    b0_r4 = FreqToTime()(b0_r4)
+    """ b0_r4 = FreqToTime()(b0_r4)
     b0_r4 = FreqChannelChange()(b0_r4)
     b0_r4 = Dense(376, kernel_initializer=initializer_variance)(b0_r4)
     b0_r4 = FreqChannelChange()(b0_r4)
     b0_r4 = LaplaceLayerNonTrain()(b0_r4)
-    b0_r4 = FreqToTime()(b0_r4)
+    b0_r4 = FreqToTime()(b0_r4) """
     #sumar ramas bloque 0
     to_connect_0=Add()([b0_r1, b0_r2, b0_r3, b0_r4])
     #to_connect_0 = Conv2D(64, (376,1), padding='same', kernel_initializer=LaplacianInitializer)(to_connect_0)
