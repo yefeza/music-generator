@@ -653,6 +653,11 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     d_1 = Dense(1)(d_1)
     d_1 = FreqToTime()(d_1)
     d_1 = Conv2D(128, (376,1), padding='same')(d_1)
+    d_1 = FreqToTime()(d_1)
+    d_1 = FreqChannelChange()(d_1)
+    d_1 = Dense(376, kernel_initializer=initializer_variance)(d_1)
+    d_1 = FreqChannelChange()(d_1)
+    d_1 = FreqToTime()(d_1)
     d_1 = LaplaceLayer()(d_1)
     d_1 = FreqToTime()(d_1)
     d_1 = Reshape((100, 128))(d_1)
@@ -855,6 +860,7 @@ def add_generator_block(old_model, counter):
 # definir los generadores
 
 def define_generator(n_blocks, latent_dim):
+    initializer_variance = tf.keras.initializers.VarianceScaling(scale=0.1, mode='fan_in')
     counter=LayerCounter()
     model_list = list()
     # input
@@ -882,7 +888,7 @@ def define_generator(n_blocks, latent_dim):
     b0_r1 = Conv2D(16, (376,1), padding='same')(b0_r1)
     b0_r1 = FreqToTime()(b0_r1)
     b0_r1 = FreqChannelChange()(b0_r1)
-    b0_r1 = Dense(376)(b0_r1)
+    b0_r1 = Dense(376, kernel_initializer=initializer_variance)(b0_r1)
     b0_r1 = FreqChannelChange()(b0_r1)
     b0_r1 = FreqToTime()(b0_r1)
     b0_r1 = LaplaceLayer()(b0_r1)
@@ -901,7 +907,7 @@ def define_generator(n_blocks, latent_dim):
     b0_r2 = Conv2D(16, (376,1), padding='same')(b0_r2)
     b0_r2 = FreqToTime()(b0_r2)
     b0_r2 = FreqChannelChange()(b0_r2)
-    b0_r2 = Dense(376)(b0_r2)
+    b0_r2 = Dense(376, kernel_initializer=initializer_variance)(b0_r2)
     b0_r2 = FreqChannelChange()(b0_r2)
     b0_r2 = FreqToTime()(b0_r2)
     b0_r2 = LaplaceLayer()(b0_r2)
@@ -914,7 +920,7 @@ def define_generator(n_blocks, latent_dim):
     b0_r3 = Conv2D(16, (376,1), padding='same')(b0_r3)
     b0_r3 = FreqToTime()(b0_r3)
     b0_r3 = FreqChannelChange()(b0_r3)
-    b0_r3 = Dense(376)(b0_r3)
+    b0_r3 = Dense(376, kernel_initializer=initializer_variance)(b0_r3)
     b0_r3 = FreqChannelChange()(b0_r3)
     b0_r3 = FreqToTime()(b0_r3)
     b0_r3 = LaplaceLayer()(b0_r3)
