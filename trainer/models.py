@@ -967,18 +967,18 @@ def define_generator(n_blocks, latent_dim):
     i_sel_1 = Dense(1, name="defly_"+counter.get_next())(i_sel_1)
     i_sel_1=Flatten()(i_sel_1)
     i_sel_1=Dropout(0.2)(i_sel_1)
-    i_sel_1=Dense(64, activation='softmax', name="defly_"+counter.get_next())(i_sel_1)
+    i_sel_1=Dense(8, activation='softmax', name="defly_"+counter.get_next())(i_sel_1)
     #decision layer block 3
-    des_ly_3=DecisionLayer2D(output_size=64)([merger_b0, i_sel_1])
+    des_ly_3=DecisionLayer2D(output_size=8)([merger_b0, i_sel_1])
     outputs_list=[]
     #Convolutional outputs
-    for i in range(32):
+    for i in range(4):
         new_output_block = SlicerLayer(index_work=i)(des_ly_3)
         new_output_block = Conv2D(4, (1,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(new_output_block)
         outputs_list.append(new_output_block)
     #Dense outputs
-    for i in range(32):
-        new_output_block = SlicerLayer(index_work=(32+i))(des_ly_3)
+    for i in range(4):
+        new_output_block = SlicerLayer(index_work=(4+i))(des_ly_3)
         new_output_block = Dense(4)(new_output_block)
         outputs_list.append(new_output_block)
     merger_b3=Add()(outputs_list)
