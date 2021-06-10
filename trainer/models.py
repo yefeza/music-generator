@@ -458,13 +458,14 @@ class iFFT(Layer):
 def init_kernel_laplace(shape, dtype, **kwargs):
     values=[]
     for i in range(shape[-1]):
-        data_ex=tf.linspace(-float(shape[-4]),float(shape[-4]),(shape[-4]))
-        loc=random.randint(-shape[-4],shape[-4])
-        sinus=tf.math.exp(-tf.math.abs(data_ex -  loc)/ shape[-4]) / (2*shape[-4])
-        sinus=tf.reshape(sinus, shape=(shape[-4],1,1))
-        values.append(sinus)
+        for j in range(shape[-2]):
+            data_ex=tf.linspace(-float(shape[-4]),float(shape[-4]),(shape[-4]))
+            loc=random.randint(-shape[-4],shape[-4])
+            sinus=tf.math.exp(-tf.math.abs(data_ex -  loc)/ shape[-4]) / (2*shape[-4])
+            sinus=tf.reshape(sinus, shape=(shape[-4],1,1))
+            values.append(sinus)
     kernel = tf.Variable(values)
-    kernel=tf.reshape(kernel, shape=(shape[-1], shape[-4], 1, 1))
+    kernel=tf.reshape(kernel, shape=(shape[-1], shape[-4], shape[-2], 1))
     kernel=tf.transpose(kernel, perm=[1,2,3,0])
     return tf.cast(kernel, dtype)
 
