@@ -505,7 +505,7 @@ class LaplaceLayerNonTrain(Layer):
         scale=input_shape[1]
         max_inputs=tf.math.reduce_max(inputs)
         rescaled=(inputs/max_inputs)*scale
-        rescaled=rescaled*self.linearity
+        rescaled=rescaled+self.linearity
         return tf.math.exp(-tf.math.abs(rescaled - self.loc) / scale) / (2*scale)
 
     def get_config(self):
