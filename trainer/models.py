@@ -656,7 +656,7 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     d_1 = Conv2D(128, (376,1), padding='same')(d_1)
     d_1 = FreqToTime()(d_1)
     d_1 = FreqChannelChange()(d_1)
-    d_1 = Dense(376, kernel_initializer=initializer_variance)(d_1)
+    d_1 = Dense(100, kernel_initializer=initializer_variance)(d_1)
     d_1 = FreqChannelChange()(d_1)
     d_1 = FreqToTime()(d_1)
     d_1 = LaplaceLayer()(d_1)
