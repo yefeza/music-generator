@@ -459,7 +459,7 @@ def init_kernel_laplace(shape, dtype, **kwargs):
     values=[]
     for i in range(shape[-1]):
         data_ex=tf.linspace(-float(shape[-3]),float(shape[-3]),(shape[-3]))
-        loc=tf.Variable(random.randint(-shape[-3],shape[-3])))
+        loc=tf.Variable(random.randint(-shape[-3],shape[-3]))
         sinus=tf.math.exp(-tf.math.abs(data_ex -  loc)/ shape[-3]) / (2*shape[-3])
         sinus=tf.reshape(sinus, shape=(shape[-3],1))
         values.append(sinus)
