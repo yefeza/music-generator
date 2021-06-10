@@ -655,7 +655,7 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     d_1 = Dense(1)(d_1)
     d_1 = FreqToTime()(d_1)
     d_1 = LaplaceLayer()(d_1)
-    d_1 = Conv2D(128, (376,1), padding='same', kernel_initializer=init_kernel_laplace)(d_1)
+    d_1 = Conv2D(128, (376,1), padding='same')(d_1)
     d_1 = FreqToTime()(d_1)
     d_1 = Reshape((100, 128))(d_1)
     d_1 = Dropout(0.25)(d_1)
