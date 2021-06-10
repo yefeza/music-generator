@@ -885,7 +885,7 @@ def define_generator(n_blocks, latent_dim):
     b0_r1 = Conv2DTranspose(16, (51,1), padding='valid', kernel_initializer=tf.random_uniform_initializer)(b0_r1)
     b0_r1 = FreqToTime()(b0_r1)
     b0_r1 = FreqChannelChange()(b0_r1)
-    b0_r1 = Dense(115, kernel_initializer=initializer_variance)(b0_r1)
+    b0_r1 = Dense(150, kernel_initializer=initializer_variance)(b0_r1)
     b0_r1 = FreqChannelChange()(b0_r1)
     b0_r1 = LaplaceLayer()(b0_r1)
     b0_r1 = FreqToTime()(b0_r1)
