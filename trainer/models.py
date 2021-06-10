@@ -496,7 +496,7 @@ class LaplaceLayerNonTrain(Layer):
         for i in range(input_shape[-2]):
             data_ex=tf.linspace(-float(input_shape[-3]),float(input_shape[-3]),(input_shape[-3]))
             values.append(data_ex)
-        linearity = tf.constant(values)
+        linearity = tf.convert_to_tensor(values)
         linearity = tf.reshape(linearity, shape=(input_shape[-2], input_shape[-3], 1, 1))
         self.linearity = tf.transpose(linearity, perm=[2,1,0,3])
 
