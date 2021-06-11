@@ -409,6 +409,19 @@ class TimeToEnd(Layer):
         return config
 
 
+class ComplexToChannels(Layer):
+    def __init__(self, **kwargs):
+        super(ComplexToChannels, self).__init__(**kwargs)
+
+    def call(self, inputs):
+        real=tf.math.real(inputs)
+        imag=tf.math.imag(inputs)
+        return tf.concat([real, imag], -1)
+
+    def get_config(self):
+        config = super(ComplexToChannels, self).get_config()
+        return config
+
 class ChannelsToComplex(Layer):
     def __init__(self, **kwargs):
         super(ChannelsToComplex, self).__init__(**kwargs)
@@ -1026,15 +1039,23 @@ def define_generator(n_blocks, latent_dim):
     b1_r12 = Conv2DTranspose(16, (1, 151), padding='valid')(b1_r12)
     #sumar ramas
     merger_b1=Add()([b1_r1, b1_r2, b1_r3, b1_r4, b1_r5, b1_r6, b1_r7, b1_r8, b1_r9, b1_r10, b1_r11, b1_r12])
+    #aplicar filtros en el dominio de la frecuencia
+    on_freq=FFT()(merger_b1)
+    on_freq=ComplexToChannels()(on_freq)
+    on_freq=Conv2D(128, (4,15), padding="same")(on_freq)
+    on_freq=Conv2D(64, (4,25), padding="same")(on_freq)
+    on_freq=Conv2D(32, (4,50), padding="same")(on_freq)
+    on_freq=ChannelsToComplex()(on_freq)
+    on_freq=iFFT()(on_freq)
     #index selector block 2
-    i_sel_2=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(merger_b1)
+    i_sel_2=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(on_freq)
     i_sel_2=Conv2D(64, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
     i_sel_2=Conv2D(128, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
     i_sel_2=Dropout(0.3)(i_sel_2)
     i_sel_2=Flatten()(i_sel_2)
     i_sel_2=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_2)
     #decision layer
-    des_ly_2=DecisionLayer2D(output_size=12)([merger_b1, i_sel_2])
+    des_ly_2=DecisionLayer2D(output_size=12)([on_freq, i_sel_2])
     #bloque 2 salida (4,750,16)
     #rama 1
     b2_r1 = SlicerLayer(index_work=0)(des_ly_2)
