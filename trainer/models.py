@@ -1117,6 +1117,7 @@ def define_generator(n_blocks, latent_dim):
         new_output_block = Dense(2)(new_output_block)
         outputs_list.append(new_output_block)
     merger_b3=Add()(outputs_list)
+    merger_b3=Reshape((3000,2))(merger_b3)
     wls = LayerNormalization(axis=[1,2])(merger_b3)
     model_normal = Model(ly0, wls)
     model_normal.compile(optimizer=Adamax(learning_rate=0.0005))
