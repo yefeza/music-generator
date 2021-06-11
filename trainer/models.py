@@ -888,15 +888,15 @@ def define_generator(n_blocks, latent_dim):
     model_list = list()
     # input
     ly0 = Input(shape=latent_dim)
-    ly0 = Reshape((1,50,2))(ly0)
+    rsp = Reshape((1,50,2))(ly0)
     #selector de incice 0
-    i_sel_0=Conv2D(32, (1,6), padding='valid', name="defly_"+counter.get_next())(ly0)
+    i_sel_0=Conv2D(32, (1,6), padding='valid', name="defly_"+counter.get_next())(rsp)
     i_sel_0=Conv2D(64, (1,11), padding='valid', name="defly_"+counter.get_next())(i_sel_0)
     i_sel_0=Dropout(0.3)(i_sel_0)
     i_sel_0=Flatten()(i_sel_0)
     i_sel_0=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_0)
     #decision layer 0
-    des_ly_0=DecisionLayer2D(output_size=12)([ly0, i_sel_0])
+    des_ly_0=DecisionLayer2D(output_size=12)([rsp, i_sel_0])
     #bloque 0 salidas de (1,250,16)
     #rama 1 bloque 0
     b0_r1 = SlicerLayer(index_work=0)(des_ly_0)
