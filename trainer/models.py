@@ -427,8 +427,8 @@ class ChannelsToComplex(Layer):
         super(ChannelsToComplex, self).__init__(**kwargs)
 
     def call(self, inputs):
-        real=inputs[:,:,:,:2]
-        imag=inputs[:,:,:,2:]
+        real=inputs[:,:,:,16]
+        imag=inputs[:,:,:,16:]
         return tf.complex(real, imag)
 
     def get_config(self):
