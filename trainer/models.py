@@ -427,7 +427,7 @@ class ChannelsToComplex(Layer):
         super(ChannelsToComplex, self).__init__(**kwargs)
 
     def call(self, inputs):
-        real=inputs[:,:,:,16]
+        real=inputs[:,:,:,:16]
         imag=inputs[:,:,:,16:]
         return tf.complex(real, imag)
 
