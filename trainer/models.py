@@ -1042,9 +1042,7 @@ def define_generator(n_blocks, latent_dim):
     #aplicar filtros en el dominio de la frecuencia
     on_freq=FFT()(merger_b1)
     on_freq=ComplexToChannels()(on_freq)
-    on_freq=Conv2D(128, (4,15), padding="same")(on_freq)
-    on_freq=Conv2D(64, (4,25), padding="same")(on_freq)
-    on_freq=Conv2D(32, (4,50), padding="same")(on_freq)
+    on_freq=Conv2D(32, (4,5), padding="same")(on_freq)
     on_freq=ChannelsToComplex()(on_freq)
     on_freq=iFFT()(on_freq)
     #index selector block 2
