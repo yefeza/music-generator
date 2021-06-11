@@ -896,7 +896,7 @@ def define_generator(n_blocks, latent_dim):
     i_sel_0=Flatten()(i_sel_0)
     i_sel_0=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_0)
     #decision layer 0
-    des_ly_0=DecisionLayer(output_size=12)([ly0, i_sel_0])
+    des_ly_0=DecisionLayer2D(output_size=12)([ly0, i_sel_0])
     #bloque 0 salidas de (1,250,16)
     #rama 1 bloque 0
     b0_r1 = SlicerLayer(index_work=0)(des_ly_0)
@@ -958,7 +958,7 @@ def define_generator(n_blocks, latent_dim):
     i_sel_1=Flatten()(i_sel_1)
     i_sel_1=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_1)
     #decision layer
-    des_ly_1=DecisionLayer(output_size=12)([merger_b0, i_sel_1])
+    des_ly_1=DecisionLayer2D(output_size=12)([merger_b0, i_sel_1])
     #bloque 1 salida (1,750,16)
     #rama 1
     b1_r1 = SlicerLayer(index_work=0)(des_ly_1)
@@ -1034,7 +1034,7 @@ def define_generator(n_blocks, latent_dim):
     i_sel_2=Flatten()(i_sel_2)
     i_sel_2=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_2)
     #decision layer
-    des_ly_2=DecisionLayer(output_size=12)([merger_b1, i_sel_2])
+    des_ly_2=DecisionLayer2D(output_size=12)([merger_b1, i_sel_2])
     #bloque 2 salida (4,750,16)
     #rama 1
     b2_r1 = SlicerLayer(index_work=0)(des_ly_2)
@@ -1104,7 +1104,7 @@ def define_generator(n_blocks, latent_dim):
     i_sel_3=Flatten()(i_sel_3)
     i_sel_3=Dense(64, activation='softmax', name="defly_"+counter.get_next())(i_sel_3)
     #decision layer block 3
-    des_ly_3=DecisionLayer(output_size=64)([merger_b2, i_sel_3])
+    des_ly_3=DecisionLayer2D(output_size=64)([merger_b2, i_sel_3])
     outputs_list=[]
     #Convolutional outputs
     for i in range(32):
@@ -1173,7 +1173,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
     print("Loading generator")
-    g_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum,  'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer,  "FFT":FFT, "iFFT":iFFT})
+    g_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum,  'DecisionLayer2D': DecisionLayer, 'SlicerLayer': SlicerLayer,  "FFT":FFT, "iFFT":iFFT})
     #cargar generador default
     gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/df_model.h5"
     local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/df_model.h5"
