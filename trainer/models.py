@@ -723,7 +723,7 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     #unir ramas
     merged=Concatenate()([d_1,d_2])
     merged=Reshape((100,32))(merged)
-    d = Dropout(0.25)(merged)
+    d = Dropout(0.4)(merged)
     out_class = Dense(1)(d)
     # define model
     model_comp = Model(in_data, out_class)
