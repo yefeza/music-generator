@@ -133,7 +133,7 @@ if __name__ == '__main__':
         cbk=GANMonitor(job_dir=job_dir, evaluador=evaluador, latent_dim=latent_dim)
         np.random.shuffle(scaled_data)
         history = gan_models[start_from_growing][0].fit(scaled_data, batch_size=n_batch, epochs=e_norm, callbacks=[cbk])
-        plot_losses(history, EQ_DIM[gen_shape[-2]])
+        plot_losses(history, (gen_shape[-3], gen_shape[-2]))
         # process each level of growth
         for i in range((start_from_growing+1), len(gan_models)):
             # retrieve models for this level of growth
