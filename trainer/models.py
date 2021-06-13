@@ -408,6 +408,16 @@ class TimeToEnd(Layer):
         config = super(TimeToEnd, self).get_config()
         return config
 
+class FrequencyMagnitude(Layer):
+    def __init__(self, **kwargs):
+        super(FrequencyMagnitude, self).__init__(**kwargs)
+
+    def call(self, inputs):
+        return tf.math.abs(inputs)
+
+    def get_config(self):
+        config = super(FrequencyMagnitude, self).get_config()
+        return config
 
 class ComplexToChannels(Layer):
     def __init__(self, **kwargs):
@@ -427,8 +437,8 @@ class ChannelsToComplex(Layer):
         super(ChannelsToComplex, self).__init__(**kwargs)
 
     def call(self, inputs):
-        real=inputs[:,:,:,:16]
-        imag=inputs[:,:,:,16:]
+        real=inputs[:,:,:,:64]
+        imag=inputs[:,:,:,64:]
         return tf.complex(real, imag)
 
     def get_config(self):
@@ -443,7 +453,6 @@ class FFT(Layer):
     def call(self, inputs):
         transposed=tf.transpose(inputs, perm=[0, 1, 3, 2])
         fft = tf.signal.rfft(transposed)
-        fft = tf.math.abs(fft)
         return tf.transpose(fft, perm=[0, 1, 3, 2])
 
     def get_config(self):
@@ -591,18 +600,30 @@ def define_discriminator(n_blocks, input_shape=(3000, 2)):
     # base model input
     in_data = Input(shape=input_shape)
     # conv 1x1
-    converted_block = Reshape((4,750,2))(in_data)
-    converted_block = ToMonoChannel()(converted_block)
+    reshaped = Reshape((4,750,2))(in_data)
+    #trabajar en el dominio de la frecuencia
+    converted_block = ToMonoChannel()(reshaped)
     converted_block = FFT()(converted_block)
+    converted_block = FrequencyMagnitude()(converted_block)
     converted_block = FreqChannelChange()(converted_block)
     # convolusion block 1
-    d_1 = Dense(64)(converted_block)
-    d_1 = TimeToEnd()(d_1)
-    d_1 = Dense(1)(d_1)
-    d_1 = MinibatchStdDev()(d_1)
-    d_1 = Flatten()(d_1)
-    d = Dense(1)(d_1)
-    out_class = StaticOptTanh()(d)
+    d_1 = Dense(128)(converted_block)
+    d_1 = FreqChannelChange()(d_1)
+    d_1 = Conv2D(32, (2,32), padding="valid")(d_1)
+    d_1 = Conv2D(16, (2,32), padding="valid")(d_1)
+    d_1 = Conv2D(8, (2,32), padding="valid")(d_1)
+    #trabajar en el diminio del tiempo
+    d_2=Conv2D(16, (1,151), padding="valid")(reshaped)
+    d_2=Conv2D(16, (1,151), padding="valid")(d_2)
+    d_2=Conv2D(16, (2,3), strides=(1,3), padding="valid")(d_2)
+    d_2=Conv2D(16, (2,3), strides=(1,3), padding="valid")(d_2)
+    d_2=Conv2D(8, (2,16), padding="valid")(d_2)
+    #unir ramas
+    merged=Concatenate()([d_1,d_2])
+    d = MinibatchStdDev()(merged)
+    d = Flatten()(d)
+    out_class = Dense(1)(d)
+    #out_class = StaticOptTanh()(d)
     # define model
     model_comp = Model(in_data, out_class)
     # store model
@@ -1042,18 +1063,19 @@ def define_generator(n_blocks, latent_dim):
     #aplicar filtros en el dominio de la frecuencia
     on_freq=FFT()(merger_b1)
     on_freq=ComplexToChannels()(on_freq)
-    on_freq=Conv2D(32, (4,5), padding="same")(on_freq)
+    on_freq=Conv2D(64, (1,51), padding="valid")(on_freq)
+    on_freq=Conv2DTranspose(128, (1,51), padding="valid")(on_freq)
     on_freq=ChannelsToComplex()(on_freq)
     on_freq=iFFT()(on_freq)
     #index selector block 2
-    i_sel_2=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(merger_b1)
+    i_sel_2=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(on_freq)
     i_sel_2=Conv2D(64, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
     i_sel_2=Conv2D(128, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
     i_sel_2=Dropout(0.3)(i_sel_2)
     i_sel_2=Flatten()(i_sel_2)
     i_sel_2=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_2)
     #decision layer
-    des_ly_2=DecisionLayer2D(output_size=12)([merger_b1, i_sel_2])
+    des_ly_2=DecisionLayer2D(output_size=12)([on_freq, i_sel_2])
     #bloque 2 salida (4,750,16)
     #rama 1
     b2_r1 = SlicerLayer(index_work=0)(des_ly_2)
@@ -1170,7 +1192,7 @@ def generator_loss(fake_logits, real_logits):
     #fake_logits=tf.reduce_mean(fake_logits)
     #real_logits=tf.reduce_mean(real_logits)
     m=(fake_logits*real_logits)/10
-    return 10*tf.math.sin(-m)
+    return 5*tf.math.sin(-m)
 
 def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoint=20):
     storage_client = storage.Client(project='ia-devs')
