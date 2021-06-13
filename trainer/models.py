@@ -708,6 +708,7 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     #trabajar en el dominio de la frecuencia
     converted_block = ToMonoChannel()(reshaped)
     converted_block = FFT()(converted_block)
+    converted_block = FrequencyMagnitude()(converted_block)
     converted_block = FreqChannelChange()(converted_block)
     # convolusion block 1
     d_1 = Dense(128)(converted_block)
