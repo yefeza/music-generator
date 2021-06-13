@@ -622,8 +622,8 @@ def define_discriminator(n_blocks, input_shape=(3000, 2)):
     merged=Concatenate()([d_1,d_2])
     d = MinibatchStdDev()(merged)
     d = Flatten()(d)
-    out_class = Dense(1)(d)
-    #out_class = StaticOptTanh()(d)
+    d = Dense(1)(d)
+    out_class = StaticOptTanh()(d)
     # define model
     model_comp = Model(in_data, out_class)
     # store model
