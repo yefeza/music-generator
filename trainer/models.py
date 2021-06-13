@@ -721,6 +721,7 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     d_2=Conv2D(16, (3,51), padding="valid")(d_2)
     #unir ramas
     merged=Concatenate()([d_1,d_2])
+    merged=Reshape((100,1))(merged)
     d = Dropout(0.25)(merged)
     out_class = Dense(1)(d)
     # define model
