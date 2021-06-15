@@ -20,7 +20,6 @@ from .utils import *
 from google.cloud import storage
 import os
 from tensorflow.keras.layers import Conv1DTranspose
-from tensorflow.python.keras.optimizer_v2 import utils as optimizer_utils
 
 EQ_DIM={
     3000: (4,750,2),
@@ -1233,7 +1232,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
     print("Loading discriminator")
-    d_model=tf.keras.models.load_model(local_file_name, custom_objects=custom_layers)
+    d_model=keras.models.load_model(local_file_name, custom_objects=custom_layers)
     #cargar generador
     gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/g_model.h5"
     local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/g_model.h5"
@@ -1278,10 +1277,7 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             d_models[0].compile(optimizer=prev_d_model.optimizer)
             g_models[0].optimizer._create_all_weights(g_models[0].trainable_variables)
             g_models[0].optimizer.set_weights(prev_g_model.optimizer.get_weights())
-            grads_and_vars=zip(g_models[1].trainable_default_weights, g_models[1].trainable_default_weights)
-            grads_and_vars = optimizer_utils.filter_empty_gradients(grads_and_vars)
-            var_list = [v for (_, v) in grads_and_vars]
-            g_models[1].optimizer._create_all_weights(var_list)
+            g_models[1].optimizer._create_all_weights(g_models[1].trainable_variables)
             g_models[1].optimizer.set_weights(prev_df_model.optimizer.get_weights())
             enc_models[0].compile(optimizer=prev_e_model.optimizer)
         # straight-through model
