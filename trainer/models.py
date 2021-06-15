@@ -1198,7 +1198,29 @@ def generator_loss(fake_logits, real_logits):
     m=(fake_logits*real_logits)/10
     return 5*tf.math.sin(-m)
 
-def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoint=20):
+def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoint=15):
+    custom_layers={
+        "DefaultNetwork":DefaultNetwork,
+        "WeightedSum":WeightedSum,
+        "LaplacianInitializer":LaplacianInitializer,
+        "MinibatchStdDev":MinibatchStdDev,
+        "SoftRectifier":SoftRectifier,
+        "StaticOptTanh":StaticOptTanh,
+        "DecisionLayer":DecisionLayer,
+        "DecisionLayer2D":DecisionLayer2D,
+        "SlicerLayer":SlicerLayer,
+        "ToMonoChannel":ToMonoChannel,
+        "FreqToTime":FreqToTime,
+        "FreqChannelChange":FreqChannelChange,
+        "TimeToEnd":TimeToEnd,
+        "FrequencyMagnitude":FrequencyMagnitude,
+        "ComplexToChannels":ComplexToChannels,
+        "ChannelsToComplex":ChannelsToComplex,
+        "FFT":FFT,
+        "iFFT":iFFT,
+        "LaplaceLayer":LaplaceLayer,
+        "LaplaceLayerNonTrain":LaplaceLayerNonTrain
+    }
     storage_client = storage.Client(project='ia-devs')
     bucket = storage_client.bucket(bucket_name)
     #crear carpeta local si no existe
@@ -1211,7 +1233,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
     print("Loading discriminator")
-    d_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum,   "FFT":FFT, "iFFT":iFFT})
+    d_model=keras.models.load_model(local_file_name, custom_objects=custom_layers)
     #cargar generador
     gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/g_model.h5"
     local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/g_model.h5"
@@ -1219,7 +1241,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
     print("Loading generator")
-    g_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum,  'DecisionLayer2D': DecisionLayer, 'SlicerLayer': SlicerLayer,  "FFT":FFT, "iFFT":iFFT})
+    g_model=keras.models.load_model(local_file_name, custom_objects=custom_layers)
     #cargar generador default
     gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/df_model.h5"
     local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/df_model.h5"
@@ -1227,7 +1249,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
     print("Loading generator default")
-    df_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum,  'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer,  "FFT":FFT, "iFFT":iFFT})
+    df_model=keras.models.load_model(local_file_name, custom_objects=custom_layers)
     #cargar generador
     gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/e_model.h5"
     local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/e_model.h5"
@@ -1235,13 +1257,13 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
     print("Loading encoder")
-    e_model=keras.models.load_model(local_file_name, custom_objects={"SoftRectifier":SoftRectifier, "StaticOptTanh": StaticOptTanh, "MinibatchStdDev":MinibatchStdDev, "WeightedSum":WeightedSum,  'DecisionLayer': DecisionLayer, 'SlicerLayer': SlicerLayer,  "FFT":FFT, "iFFT":iFFT})
+    e_model=keras.models.load_model(local_file_name, custom_objects=custom_layers)
     return g_model, df_model, d_model, e_model
 
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, encoders, latent_dim):
-    resume_models=[False, False, False, False, False, False, False]
+    resume_models=[True, False, False, False, False, False, False]
     dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models
@@ -1256,7 +1278,7 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             d_models[0].compile(optimizer=prev_d_model.optimizer)
             g_models[0].optimizer._create_all_weights(g_models[0].trainable_variables)
             g_models[0].optimizer.set_weights(prev_g_model.optimizer.get_weights())
-            g_models[1].optimizer._create_all_weights(g_models[1].trainable_variables)
+            g_models[1].optimizer._create_all_weights(g_models[1].trainable_default_weights)
             g_models[1].optimizer.set_weights(prev_df_model.optimizer.get_weights())
             enc_models[0].compile(optimizer=prev_e_model.optimizer)
         # straight-through model
