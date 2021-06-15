@@ -71,16 +71,28 @@ def define_evaluator(n_blocks, input_shape=(3000, 2)):
     model_list = list()
     # base model input
     in_data = Input(shape=input_shape)
-    converted_block = Reshape((4,750,2))(in_data)
-    converted_block = ToMonoChannel()(converted_block)
+    reshaped = Reshape((4,750,2))(in_data)
+    #trabajar en el dominio de la frecuencia
+    converted_block = ToMonoChannel()(reshaped)
     converted_block = FFT()(converted_block)
+    converted_block = FrequencyMagnitude()(converted_block)
     converted_block = FreqChannelChange()(converted_block)
     # convolusion block 1
-    d_1 = Dense(64)(converted_block)
-    d_1 = TimeToEnd()(d_1)
-    d_1 = Dense(1)(d_1)
-    d_1 = Flatten()(d_1)
-    out_class = Dense(9, activation='softmax')(d_1)
+    d_1 = Dense(128)(converted_block)
+    d_1 = FreqChannelChange()(d_1)
+    d_1 = Conv2D(32, (2,32), padding="valid")(d_1)
+    d_1 = Conv2D(16, (2,32), padding="valid")(d_1)
+    d_1 = Conv2D(8, (2,32), padding="valid")(d_1)
+    #trabajar en el diminio del tiempo
+    d_2=Conv2D(16, (1,151), padding="valid")(reshaped)
+    d_2=Conv2D(16, (1,151), padding="valid")(d_2)
+    d_2=Conv2D(16, (2,3), strides=(1,3), padding="valid")(d_2)
+    d_2=Conv2D(16, (2,3), strides=(1,3), padding="valid")(d_2)
+    d_2=Conv2D(8, (2,16), padding="valid")(d_2)
+    #unir ramas
+    merged=Concatenate()([d_1,d_2])
+    d = Flatten()(merged)
+    out_class = Dense(9, activation='softmax')(d)
     # define model
     model = Model(in_data, out_class)
     # store model
