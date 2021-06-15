@@ -98,6 +98,27 @@ def define_evaluator(n_blocks, input_shape=(3000, 2)):
 #descargar evaluadores
 
 def load_evaluator(dimension, bucket_name, download, train_dataset, epochs):
+    custom_layers={
+        "DefaultNetwork":DefaultNetwork,
+        "WeightedSum":WeightedSum,
+        "MinibatchStdDev":MinibatchStdDev,
+        "SoftRectifier":SoftRectifier,
+        "StaticOptTanh":StaticOptTanh,
+        "DecisionLayer":DecisionLayer,
+        "DecisionLayer2D":DecisionLayer2D,
+        "SlicerLayer":SlicerLayer,
+        "ToMonoChannel":ToMonoChannel,
+        "FreqToTime":FreqToTime,
+        "FreqChannelChange":FreqChannelChange,
+        "TimeToEnd":TimeToEnd,
+        "FrequencyMagnitude":FrequencyMagnitude,
+        "ComplexToChannels":ComplexToChannels,
+        "ChannelsToComplex":ChannelsToComplex,
+        "FFT":FFT,
+        "iFFT":iFFT,
+        "LaplaceLayer":LaplaceLayer,
+        "LaplaceLayerNonTrain":LaplaceLayerNonTrain
+    }
     storage_client = storage.Client(project='ia-devs')
     bucket = storage_client.bucket(bucket_name)
     path = "evaluadores/" + str(dimension[0]) + "-" + str(dimension[1])
@@ -109,7 +130,7 @@ def load_evaluator(dimension, bucket_name, download, train_dataset, epochs):
         if not os.path.exists(path):
             os.makedirs(path)
         blob.download_to_filename(file_name)
-        model=keras.models.load_model(file_name)
+        model=keras.models.load_model(file_name, custom_objects=custom_layers)
         return model
     else:
         evaluadores=define_evaluator(1)
