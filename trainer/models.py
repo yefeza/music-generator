@@ -1202,7 +1202,6 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     custom_layers={
         "DefaultNetwork":DefaultNetwork,
         "WeightedSum":WeightedSum,
-        "LaplacianInitializer":LaplacianInitializer,
         "MinibatchStdDev":MinibatchStdDev,
         "SoftRectifier":SoftRectifier,
         "StaticOptTanh":StaticOptTanh,
