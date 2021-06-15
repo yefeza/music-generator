@@ -20,6 +20,7 @@ from .utils import *
 from google.cloud import storage
 import os
 from tensorflow.keras.layers import Conv1DTranspose
+from tensorflow.python.keras.optimizer_v2 import utils as optimizer_utils
 
 EQ_DIM={
     3000: (4,750,2),
@@ -1277,8 +1278,9 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             d_models[0].compile(optimizer=prev_d_model.optimizer)
             g_models[0].optimizer._create_all_weights(g_models[0].trainable_variables)
             g_models[0].optimizer.set_weights(prev_g_model.optimizer.get_weights())
-            print(g_models[1].trainable_default_weights)
-            g_models[1].optimizer._create_all_weights(g_models[1].trainable_default_weights)
+            grads_and_vars=zip(g_models[1].trainable_default_weights, g_models[1].trainable_default_weights)
+            var_list = [v for (_, v) in grads_and_vars]
+            g_models[1].optimizer._create_all_weights(var_list)
             g_models[1].optimizer.set_weights(prev_df_model.optimizer.get_weights())
             enc_models[0].compile(optimizer=prev_e_model.optimizer)
         # straight-through model
