@@ -1279,6 +1279,7 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             g_models[0].optimizer._create_all_weights(g_models[0].trainable_variables)
             g_models[0].optimizer.set_weights(prev_g_model.optimizer.get_weights())
             grads_and_vars=zip(g_models[1].trainable_default_weights, g_models[1].trainable_default_weights)
+            grads_and_vars = optimizer_utils.filter_empty_gradients(grads_and_vars)
             var_list = [v for (_, v) in grads_and_vars]
             g_models[1].optimizer._create_all_weights(var_list)
             g_models[1].optimizer.set_weights(prev_df_model.optimizer.get_weights())
