@@ -1277,6 +1277,7 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             d_models[0].compile(optimizer=prev_d_model.optimizer)
             g_models[0].optimizer._create_all_weights(g_models[0].trainable_variables)
             g_models[0].optimizer.set_weights(prev_g_model.optimizer.get_weights())
+            print(g_models[1].trainable_default_weights)
             g_models[1].optimizer._create_all_weights(g_models[1].trainable_default_weights)
             g_models[1].optimizer.set_weights(prev_df_model.optimizer.get_weights())
             enc_models[0].compile(optimizer=prev_e_model.optimizer)
