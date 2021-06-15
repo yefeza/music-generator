@@ -1232,7 +1232,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
     blob = bucket.blob(gcloud_file_name)
     blob.download_to_filename(local_file_name)
     print("Loading discriminator")
-    d_model=keras.models.load_model(local_file_name, custom_objects=custom_layers)
+    d_model=tf.keras.models.load_model(local_file_name, custom_objects=custom_layers)
     #cargar generador
     gcloud_file_name = "ckeckpoints/" + str(dimension[0]) + "-" + str(dimension[1]) + "/epoch" + str(epoch_checkpoint) + "/g_model.h5"
     local_file_name = "restoremodels/" + str(dimension[0]) + "-" + str(dimension[1]) + "/g_model.h5"
