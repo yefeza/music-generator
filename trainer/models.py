@@ -168,7 +168,6 @@ class GAN(keras.Model):
             random_encoded_real=self.encoder(real_data[:mini_bsize], training=True)
             random_encoded_random=self.encoder(random_encoder_input, training=True)
             random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
-            enc_loss=-tf.math.reduce_mean(tf.math.reduce_std(random_latent_vectors, 0))
             #random_latent_vectors = tf.random.shuffle(random_latent_vectors)
             # Generate fake images using the generator
             generated_images = self.generator(random_latent_vectors, training=True)
@@ -178,12 +177,6 @@ class GAN(keras.Model):
             real_logits = self.discriminator(real_data, training=False)
             # Calculate the generator loss using the fake and real image logits
             g_loss = self.g_loss_fn(gen_img_logits, real_logits)
-        # Get the gradients w.r.t the encoder with encoder loss
-        enc_grad_p = tape.gradient(enc_loss, self.encoder.trainable_variables)
-        # Update the weights of the generator using the generator optimizer
-        self.encoder.optimizer.apply_gradients(
-            zip(enc_grad_p, self.encoder.trainable_variables)
-        )
         # Get the gradients w.r.t the encoder with generator loss
         enc_gradient = tape.gradient(g_loss, self.encoder.trainable_variables)
         # Update the weights of the generator using the generator optimizer
