@@ -142,7 +142,7 @@ def load_evaluator(dimension, bucket_name, download, train_dataset, epochs):
         if not os.path.exists(path):
             os.makedirs(path)
         blob.download_to_filename(file_name)
-        model=keras.models.load_model(file_name, custom_objects=custom_layers)
+        model=tf.keras.models.load_model(file_name, custom_objects=custom_layers)
         return model
     else:
         evaluadores=define_evaluator(1)
