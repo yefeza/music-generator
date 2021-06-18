@@ -97,7 +97,6 @@ if __name__ == '__main__':
         plt.plot(history.history['delta_1'], label='Delta Evolution')
         plt.plot(history.history['d_loss'], label='D Loss')
         plt.plot(history.history['g_loss'], label='G Loss')
-        plt.plot(history.history['enc_loss'], label='Enc. Loss')
         plt.title('Losses History')
         plt.ylabel('Evolution')
         plt.xlabel('No. epoch')
