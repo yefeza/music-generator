@@ -135,27 +135,29 @@ class GAN(keras.Model):
             )
 
         # Train discriminator
-        mini_bsize=int(batch_size/2)
-        random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
-        random_encoded_real=self.encoder(real_data[:mini_bsize], training=False)
-        random_encoded_random=self.encoder(random_encoder_input, training=False)
-        random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
-        random_latent_vectors = tf.random.shuffle(random_latent_vectors)
-        with tf.GradientTape() as tape:
-            # Generate fake images from the latent vector
-            fake_images = self.generator(random_latent_vectors, training=False)
-            # Get the logits for the fake images
-            fake_logits = self.discriminator(fake_images, training=True)
-            # Get the logits for the real images
-            real_logits = self.discriminator(real_data, training=True)
-            # Calculate the discriminator loss using the fake and real image logits
-            d_loss = self.d_loss_fn(fake_logits, real_logits)
-        # Get the gradients w.r.t the discriminator loss
-        d_gradient = tape.gradient(d_loss, self.discriminator.trainable_variables)
-        # Update the weights of the discriminator using the discriminator optimizer
-        self.discriminator.optimizer.apply_gradients(
-            zip(d_gradient, self.discriminator.trainable_variables)
-        )
+        # Run on default network
+        for i in range(self.def_steps*2):
+            mini_bsize=int(batch_size/2)
+            random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+            random_encoded_real=self.encoder(real_data[:mini_bsize], training=False)
+            random_encoded_random=self.encoder(random_encoder_input, training=False)
+            random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
+            random_latent_vectors = tf.random.shuffle(random_latent_vectors)
+            with tf.GradientTape() as tape:
+                # Generate fake images from the latent vector
+                fake_images = self.generator(random_latent_vectors, training=False)
+                # Get the logits for the fake images
+                fake_logits = self.discriminator(fake_images, training=True)
+                # Get the logits for the real images
+                real_logits = self.discriminator(real_data, training=True)
+                # Calculate the discriminator loss using the fake and real image logits
+                d_loss = self.d_loss_fn(fake_logits, real_logits)
+            # Get the gradients w.r.t the discriminator loss
+            d_gradient = tape.gradient(d_loss, self.discriminator.trainable_variables)
+            # Update the weights of the discriminator using the discriminator optimizer
+            self.discriminator.optimizer.apply_gradients(
+                zip(d_gradient, self.discriminator.trainable_variables)
+            )
         # Train the generator
         # Get the latent vector
         #random_latent_vectors = tf.random.uniform(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
@@ -166,6 +168,7 @@ class GAN(keras.Model):
             random_encoded_real=self.encoder(real_data[:mini_bsize], training=True)
             random_encoded_random=self.encoder(random_encoder_input, training=True)
             random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
+            enc_loss=-tf.math.reduce_mean(tf.math.reduce_std(random_latent_vectors, 0))
             #random_latent_vectors = tf.random.shuffle(random_latent_vectors)
             # Generate fake images using the generator
             generated_images = self.generator(random_latent_vectors, training=True)
@@ -175,6 +178,12 @@ class GAN(keras.Model):
             real_logits = self.discriminator(real_data, training=False)
             # Calculate the generator loss using the fake and real image logits
             g_loss = self.g_loss_fn(gen_img_logits, real_logits)
+        # Get the gradients w.r.t the encoder with encoder loss
+        enc_grad_p = tape.gradient(enc_loss, self.encoder.trainable_variables)
+        # Update the weights of the generator using the generator optimizer
+        self.encoder.optimizer.apply_gradients(
+            zip(enc_grad_p, self.encoder.trainable_variables)
+        )
         # Get the gradients w.r.t the encoder with generator loss
         enc_gradient = tape.gradient(g_loss, self.encoder.trainable_variables)
         # Update the weights of the generator using the generator optimizer
@@ -238,7 +247,7 @@ class MinibatchStdDev(Layer):
         super(MinibatchStdDev, self).__init__(**kwargs)
 
     def call(self, inputs):
-        group_size = 4
+        group_size = 8
         x = inputs
         with tf.compat.v1.variable_scope('MinibatchStddev'):
             # Minibatch must be divisible by (or smaller than) group_size.
@@ -612,16 +621,17 @@ def define_discriminator(n_blocks, input_shape=(3000, 2)):
     d_1 = Conv2D(32, (2,32), padding="valid")(d_1)
     d_1 = Conv2D(16, (2,32), padding="valid")(d_1)
     d_1 = Conv2D(8, (2,32), padding="valid")(d_1)
+    d_1 = MinibatchStdDev()(d_1)
     #trabajar en el diminio del tiempo
     d_2=Conv2D(16, (1,151), padding="valid")(reshaped)
     d_2=Conv2D(16, (1,151), padding="valid")(d_2)
     d_2=Conv2D(16, (2,3), strides=(1,3), padding="valid")(d_2)
     d_2=Conv2D(16, (2,3), strides=(1,3), padding="valid")(d_2)
     d_2=Conv2D(8, (2,16), padding="valid")(d_2)
+    d_2=MinibatchStdDev()(d_2)
     #unir ramas
     merged=Concatenate()([d_1,d_2])
-    d = MinibatchStdDev()(merged)
-    d = Flatten()(d)
+    d = Flatten()(merged)
     d = Dense(1)(d)
     out_class = StaticOptTanh()(d)
     # define model
@@ -700,7 +710,6 @@ def add_encoder_block(old_model, n_input_layers=3):
 # definir los discriminadores
 
 def define_encoder(n_blocks, input_shape=(3000, 2)):
-    initializer_variance = tf.random_uniform_initializer(minval=-1, maxval=1, seed=None)
     model_list = list()
     # base model input
     in_data = Input(shape=input_shape)
@@ -714,17 +723,18 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     d_1 = Dense(128)(converted_block)
     d_1 = FreqChannelChange()(d_1)
     d_1 = Conv2D(32, (2,16), padding="valid")(d_1)
-    d_1 = Conv2D(16, (3,14), padding="valid")(d_1)
+    d_1 = Conv2D(8, (3,14), padding="valid")(d_1)
     #trabajar en el diminio del tiempo
     d_2=Conv2D(16, (1,151), padding="valid")(reshaped)
     d_2=Conv2D(16, (1,151), padding="valid")(d_2)
     d_2=Conv2D(16, (2,3), strides=(1,3), padding="valid")(d_2)
-    d_2=Conv2D(16, (3,51), padding="valid")(d_2)
+    d_2=Conv2D(8, (3,51), padding="valid")(d_2)
     #unir ramas
     merged=Concatenate()([d_1,d_2])
-    merged=Reshape((100,32))(merged)
-    d = Dropout(0.4)(merged)
-    out_class = Dense(1)(d)
+    merged=Flatten()(merged)
+    d = Dropout(0.2)(merged)
+    d = Dense(100)(d)
+    out_class=Reshape((100,1))(d)
     # define model
     model_comp = Model(in_data, out_class)
     # store model
@@ -1187,14 +1197,14 @@ def define_generator(n_blocks, latent_dim):
 #losses definition
 
 def discriminator_loss(fake_logits, real_logits):
-    #fake_logits=tf.reduce_mean(fake_logits)
-    #real_logits=tf.reduce_mean(real_logits)
+    fake_logits=tf.reduce_mean(fake_logits)
+    real_logits=tf.reduce_mean(real_logits)
     m=(fake_logits*real_logits)/9
-    return 2*tf.math.sin(m)
+    return 5*tf.math.sin(m)
 
 def generator_loss(fake_logits, real_logits):
-    #fake_logits=tf.reduce_mean(fake_logits)
-    #real_logits=tf.reduce_mean(real_logits)
+    fake_logits=tf.reduce_mean(fake_logits)
+    real_logits=tf.reduce_mean(real_logits)
     m=(fake_logits*real_logits)/10
     return 5*tf.math.sin(-m)
 
@@ -1262,7 +1272,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, encoders, latent_dim):
-    resume_models=[True, False, False, False, False, False, False]
+    resume_models=[False, False, False, False, False, False, False]
     dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models
