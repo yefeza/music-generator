@@ -202,7 +202,7 @@ class GAN(keras.Model):
         dif=cu_1-ci_1
         delta_1=tf.math.abs(dif)
         self.actual_step+=1
-        return {"dif": dif, "delta_1": delta_1, "cu_1": cu_1, "ci_1": ci_1, "d_loss": d_loss, "g_loss": g_loss}
+        return {"dif": dif, "delta_1": delta_1, "cu_1": cu_1, "ci_1": ci_1, "d_loss": d_loss, "g_loss": g_loss, "enc_loss": enc_loss}
 
 class DefaultNetwork(Model):
     def __init__(self, *args, **kwargs):
