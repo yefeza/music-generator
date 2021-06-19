@@ -1077,18 +1077,20 @@ def define_generator(n_blocks, latent_dim):
     on_freq=FFT()(merger_b1)
     on_freq=ComplexToChannels()(on_freq)
     on_freq=Conv2D(64, (1,51), padding="valid")(on_freq)
-    on_freq=Conv2DTranspose(128, (1,51), padding="valid")(on_freq)
+    on_freq=Conv2DTranspose(32, (1,51), padding="valid")(on_freq)
     on_freq=ChannelsToComplex()(on_freq)
     on_freq=iFFT()(on_freq)
+    #merge freq features with time features
+    merge_frq=Concatenate()([merger_b1, on_freq])
     #index selector block 2
-    i_sel_2=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(on_freq)
+    i_sel_2=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(merge_frq)
     i_sel_2=Conv2D(64, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
     i_sel_2=Conv2D(128, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
     i_sel_2=Dropout(0.3)(i_sel_2)
     i_sel_2=Flatten()(i_sel_2)
     i_sel_2=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_2)
     #decision layer
-    des_ly_2=DecisionLayer2D(output_size=12)([on_freq, i_sel_2])
+    des_ly_2=DecisionLayer2D(output_size=12)([merge_frq, i_sel_2])
     #bloque 2 salida (4,750,16)
     #rama 1
     b2_r1 = SlicerLayer(index_work=0)(des_ly_2)
