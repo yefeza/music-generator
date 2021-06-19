@@ -114,11 +114,10 @@ class GAN(keras.Model):
         for i in range(self.def_steps):
             mini_bsize=int(batch_size/2)
             random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
-            random_encoded_real=self.encoder(real_data[:mini_bsize], training=False)
-            random_encoded_random=self.encoder(random_encoder_input, training=False)
-            random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
-            random_latent_vectors = tf.random.shuffle(random_latent_vectors)
-            with tf.GradientTape() as tape:
+            with tf.GradientTape(persistent=True) as tape:
+                random_encoded_real=self.encoder(real_data[:mini_bsize], training=True)
+                random_encoded_random=self.encoder(random_encoder_input, training=True)
+                random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
                 # Generate fake images from the latent vector
                 fake_images = self.generator_default(random_latent_vectors, training=True)
                 # Get the logits for the fake images
@@ -127,13 +126,19 @@ class GAN(keras.Model):
                 real_logits = self.discriminator(real_data, training=False)
                 # Calculate the discriminator loss using the fake and real image logits
                 def_loss = self.g_loss_fn(fake_logits, real_logits)
+            # Get the gradients w.r.t the encoder with generator loss
+            enc_gradient = tape.gradient(def_loss, self.encoder.trainable_variables)
+            # Update the weights of the generator using the generator optimizer
+            self.encoder.optimizer.apply_gradients(
+                zip(enc_gradient, self.encoder.trainable_variables)
+            )
             # Get the gradients w.r.t the discriminator loss
             def_gradient = tape.gradient(def_loss, self.generator_default.trainable_default_weights)
             # Update the weights of the discriminator using the discriminator optimizer
             self.generator_default.optimizer.apply_gradients(
                 zip(def_gradient, self.generator_default.trainable_default_weights)
             )
-
+            del tape
         # Train discriminator
         # Run on default network
         for i in range(self.def_steps*2):
@@ -142,7 +147,6 @@ class GAN(keras.Model):
             random_encoded_real=self.encoder(real_data[:mini_bsize], training=False)
             random_encoded_random=self.encoder(random_encoder_input, training=False)
             random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
-            random_latent_vectors = tf.random.shuffle(random_latent_vectors)
             with tf.GradientTape() as tape:
                 # Generate fake images from the latent vector
                 fake_images = self.generator(random_latent_vectors, training=False)
@@ -158,6 +162,7 @@ class GAN(keras.Model):
             self.discriminator.optimizer.apply_gradients(
                 zip(d_gradient, self.discriminator.trainable_variables)
             )
+            del tape
         # Train the generator
         # Get the latent vector
         #random_latent_vectors = tf.random.uniform(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
@@ -189,6 +194,7 @@ class GAN(keras.Model):
         self.generator.optimizer.apply_gradients(
             zip(gen_gradient, self.generator.trainable_variables)
         )
+        del tape
         #calculate actual delta value
         ci_1=tf.reduce_mean(real_logits)
         cu_1=tf.reduce_mean(gen_img_logits)
@@ -1190,16 +1196,12 @@ def define_generator(n_blocks, latent_dim):
 #losses definition
 
 def discriminator_loss(fake_logits, real_logits):
-    fake_logits=tf.reduce_mean(fake_logits)
-    real_logits=tf.reduce_mean(real_logits)
-    m=(fake_logits*real_logits)/9
-    return 5*tf.math.sin(m)
+    loss=tf.math.square(((fake_logits*real_logits)/1.2))-tf.math.square(((fake_logits*real_logits)/1.8))+(fake_logits*real_logits)
+    return tf.reduce_mean(loss)
 
 def generator_loss(fake_logits, real_logits):
-    fake_logits=tf.reduce_mean(fake_logits)
-    real_logits=tf.reduce_mean(real_logits)
-    m=(fake_logits*real_logits)/10
-    return 5*tf.math.sin(-m)
+    loss=tf.math.square(((fake_logits*real_logits)/1.2))-tf.math.square(((fake_logits*real_logits)/1.8))-(fake_logits*real_logits)
+    return tf.reduce_mean(loss)
 
 def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoint=15):
     custom_layers={
@@ -1296,7 +1298,7 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             generator=g_models[0],
             generator_default=g_models[1],
             latent_dim=latent_dim,
-            default_network_extra=4,
+            default_network_extra=2,
         )
         wgan1.compile(
             d_optimizer=Adamax(learning_rate=0.0005),
@@ -1316,7 +1318,7 @@ def define_composite(discriminators, generators, encoders, latent_dim):
             generator_default=g_models[3],
             latent_dim=latent_dim,
             fade_in=True,
-            default_network_extra=4,
+            default_network_extra=2,
         )
         wgan2.compile(
             d_optimizer=Adamax(learning_rate=0.0005),
