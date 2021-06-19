@@ -168,10 +168,10 @@ class GAN(keras.Model):
         # Train the generator
         # Get the latent vector
         #random_latent_vectors = tf.random.uniform(shape=(batch_size, self.latent_dim[0], self.latent_dim[1], self.latent_dim[2]))
+        #get noise from encoder
+        mini_bsize=int(batch_size/2)
+        range_real=random.randrange(0, mini_bsize)
         with tf.GradientTape(persistent=True) as tape:
-            #get noise from encoder
-            mini_bsize=int(batch_size/2)
-            range_real=random.randrange(0, mini_bsize)
             random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
             random_encoded_real=self.encoder(real_data[range_real:(range_real+mini_bsize)], training=True)
             random_encoded_random=self.encoder(random_encoder_input, training=True)
