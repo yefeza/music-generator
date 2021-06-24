@@ -109,12 +109,11 @@ class GAN(keras.Model):
         # Get the batch size
         batch_size = real_data.shape[0]
         gen_shape = self.generator.output_shape
-        randomic_gen=LaplacianRandomic()
         # Run on default network
         for i in range(self.def_steps):
             mini_bsize=int(batch_size/2)
             range_real=random.randrange(0, mini_bsize)
-            random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+            random_encoder_input = tf.random.normal(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]))
             with tf.GradientTape(persistent=True) as tape:
                 random_encoded_real=self.encoder(real_data[range_real:(range_real+mini_bsize)], training=True)
                 random_encoded_random=self.encoder(random_encoder_input, training=True)
@@ -145,7 +144,7 @@ class GAN(keras.Model):
         for i in range(self.def_steps*2):
             mini_bsize=int(batch_size/2)
             range_real=random.randrange(0, mini_bsize)
-            random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+            random_encoder_input = tf.random.normal(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]))
             random_encoded_real=self.encoder(real_data[range_real:(range_real+mini_bsize)], training=False)
             random_encoded_random=self.encoder(random_encoder_input, training=False)
             random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
@@ -172,7 +171,7 @@ class GAN(keras.Model):
         mini_bsize=int(batch_size/2)
         range_real=random.randrange(0, mini_bsize)
         with tf.GradientTape(persistent=True) as tape:
-            random_encoder_input = tf.random.uniform(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+            random_encoder_input = tf.random.normal(shape=(mini_bsize, gen_shape[-2], gen_shape[-1]))
             random_encoded_real=self.encoder(real_data[range_real:(range_real+mini_bsize)], training=True)
             random_encoded_random=self.encoder(random_encoder_input, training=True)
             random_latent_vectors=tf.concat([random_encoded_real, random_encoded_random], 0)
@@ -725,16 +724,16 @@ def define_encoder(n_blocks, input_shape=(3000, 2)):
     d_1 = Dense(128)(converted_block)
     d_1 = FreqChannelChange()(d_1)
     d_1 = Conv2D(32, (2,16), padding="valid")(d_1)
-    d_1 = Conv2D(8, (3,14), padding="valid")(d_1)
+    d_1 = Conv2D(16, (3,14), padding="valid")(d_1)
     #trabajar en el diminio del tiempo
     d_2=Conv2D(16, (1,151), padding="valid")(reshaped)
     d_2=Conv2D(16, (1,151), padding="valid")(d_2)
     d_2=Conv2D(16, (2,3), strides=(1,3), padding="valid")(d_2)
-    d_2=Conv2D(8, (3,51), padding="valid")(d_2)
+    d_2=Conv2D(16, (3,51), padding="valid")(d_2)
     #unir ramas
     merged=Concatenate()([d_1,d_2])
     merged=Flatten()(merged)
-    d = Dropout(0.2)(merged)
+    d = Dropout(0.4)(merged)
     d = Dense(100)(d)
     out_class=Reshape((100,1))(d)
     # define model
@@ -942,8 +941,8 @@ def define_generator(n_blocks, latent_dim):
     #selector de incice 0
     i_sel_0=Conv2D(32, (1,6), padding='valid', name="defly_"+counter.get_next())(rsp)
     i_sel_0=Conv2D(64, (1,11), padding='valid', name="defly_"+counter.get_next())(i_sel_0)
-    i_sel_0=Dropout(0.3)(i_sel_0)
     i_sel_0=Flatten()(i_sel_0)
+    i_sel_0=Dropout(0.4)(i_sel_0)
     i_sel_0=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_0)
     #decision layer 0
     des_ly_0=DecisionLayer2D(output_size=12)([rsp, i_sel_0])
@@ -1004,8 +1003,8 @@ def define_generator(n_blocks, latent_dim):
     #index selector block 1
     i_sel_1=Conv2D(64, (1,16), padding='valid', name="defly_"+counter.get_next())(merger_b0)
     i_sel_1=Conv2D(128, (1,16), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
-    i_sel_1=Dropout(0.3)(i_sel_1)
     i_sel_1=Flatten()(i_sel_1)
+    i_sel_1=Dropout(0.4)(i_sel_1)
     i_sel_1=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_1)
     #decision layer
     des_ly_1=DecisionLayer2D(output_size=12)([merger_b0, i_sel_1])
@@ -1089,8 +1088,8 @@ def define_generator(n_blocks, latent_dim):
     i_sel_2=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(merge_frq)
     i_sel_2=Conv2D(64, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
     i_sel_2=Conv2D(128, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
-    i_sel_2=Dropout(0.3)(i_sel_2)
     i_sel_2=Flatten()(i_sel_2)
+    i_sel_2=Dropout(0.4)(i_sel_2)
     i_sel_2=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_2)
     #decision layer
     des_ly_2=DecisionLayer2D(output_size=12)([merge_frq, i_sel_2])
@@ -1159,8 +1158,8 @@ def define_generator(n_blocks, latent_dim):
     i_sel_3=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(merger_b2)
     i_sel_3=Conv2D(64, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
     i_sel_3=Conv2D(128, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
-    i_sel_3=Dropout(0.3)(i_sel_3)
     i_sel_3=Flatten()(i_sel_3)
+    i_sel_3=Dropout(0.4)(i_sel_3)
     i_sel_3=Dense(64, activation='softmax', name="defly_"+counter.get_next())(i_sel_3)
     #decision layer block 3
     des_ly_3=DecisionLayer2D(output_size=64)([merger_b2, i_sel_3])
@@ -1272,7 +1271,7 @@ def get_saved_model(dimension=(4,750,2), bucket_name="music-gen", epoch_checkpoi
 # define composite models for training generators via discriminators
 
 def define_composite(discriminators, generators, encoders, latent_dim):
-    resume_models=[True, False, False, False, False, False, False]
+    resume_models=[False, False, False, False, False, False, False]
     dimensions=[(4,750,2),(8,1500,2),(16,3000,2),(32,6000,2),(64,12000,2),(128,24000,2),(256,48000,2)]
     model_list = list()
     # create composite models

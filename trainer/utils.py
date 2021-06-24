@@ -47,18 +47,17 @@ def calculate_inception_score(p_yx, eps=1E-16):
 
 
 def generar_ejemplo(g_model, enc_model, gen_shape, random_real_data, prefix, iter_num, job_dir, bucket_name, latent_dim, evaluador, save):
-    randomic_gen=LaplacianRandomic()
     if iter_num<0:
-        random_latent_vectors = tf.random.uniform(shape=(10, latent_dim[0], latent_dim[1]), minval=-1., maxval=1.)
+        random_latent_vectors = tf.random.normal(shape=(10, latent_dim[0], latent_dim[1]))
     else:
         if iter_num<=7:
-            random_encoder_input = tf.random.uniform(shape=(10, gen_shape[-3]*gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+            random_encoder_input = tf.random.normal(shape=(10, gen_shape[-3]*gen_shape[-2], gen_shape[-1]))
             random_latent_vectors = enc_model(random_encoder_input, training=False)
         else:
             if iter_num<=15:
-                random_encoder_input = tf.random.uniform(shape=(10, gen_shape[-3]*gen_shape[-2], gen_shape[-1]), minval=-1., maxval=1.)
+                random_encoder_input = tf.random.normal(shape=(10, gen_shape[-3]*gen_shape[-2], gen_shape[-1]))
                 random_ecoded = enc_model(random_encoder_input, training=False)
-                random_noise = tf.random.uniform(shape=(10, latent_dim[0], latent_dim[1]), minval=-1., maxval=1.)
+                random_noise = tf.random.normal(shape=(10, latent_dim[0], latent_dim[1]))
                 random_latent_vectors=random_noise+random_ecoded
             else:
                 random_latent_vectors = enc_model(random_real_data, training=False)
