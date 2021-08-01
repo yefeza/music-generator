@@ -1125,9 +1125,9 @@ def define_generator(n_blocks, latent_dim):
     #dominio del tiempo
     i_sel_2_b_2=Conv2D(16, (1,151), padding="valid")(merger_b1)
     i_sel_2_b_2=Conv2D(16, (1,151), padding="valid")(i_sel_2_b_2)
-    i_sel_2_b_2=Conv2D(16, (2,3), strides=(1,3), padding="valid")(i_sel_2_b_2)
-    i_sel_2_b_2=Conv2D(16, (2,3), strides=(1,3), padding="valid")(i_sel_2_b_2)
-    i_sel_2_b_2=Conv2D(8, (2,16), padding="valid")(i_sel_2_b_2)
+    i_sel_2_b_2=Conv2D(16, (1,3), strides=(1,3), padding="valid")(i_sel_2_b_2)
+    i_sel_2_b_2=Conv2D(16, (1,3), strides=(1,3), padding="valid")(i_sel_2_b_2)
+    i_sel_2_b_2=Conv2D(8, (1,16), padding="valid")(i_sel_2_b_2)
     #unir ramas
     merged_is2=Concatenate()([i_sel_2_b_1, i_sel_2_b_2])
     i_sel_2=Flatten()(merged_is2)
