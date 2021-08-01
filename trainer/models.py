@@ -1023,7 +1023,7 @@ def define_generator(n_blocks, latent_dim):
     i_sel_1_b_1 = Dense(128)(i_sel_1_b_1)
     i_sel_1_b_1 = FreqChannelChange()(i_sel_1_b_1)
     i_sel_1_b_1 = Conv2D(32, (1,16), padding="valid")(i_sel_1_b_1)
-    i_sel_1_b_1 = Conv2D(16, (1,36), padding="valid")(i_sel_1_b_1)
+    i_sel_1_b_1 = Conv2D(16, (1,35), padding="valid")(i_sel_1_b_1)
     #dominio del tiempo
     i_sel_1_b_2=Conv2D(32, (1,36), padding='valid', name="defly_"+counter.get_next())(merger_b0)
     i_sel_1_b_2=Conv2D(16, (1,51), padding='valid', name="defly_"+counter.get_next())(i_sel_1_b_2)
