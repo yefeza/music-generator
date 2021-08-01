@@ -950,8 +950,8 @@ def define_generator(n_blocks, latent_dim):
     i_sel_0_b_1 = Conv2D(32, (1,6), padding="valid")(i_sel_0_b_1)
     i_sel_0_b_1 = Conv2D(16, (1,11), padding="valid")(i_sel_0_b_1)
     #dominio del tiempo
-    i_sel_0_b_2=Conv2D(32, (1,6), padding='valid', name="defly_"+counter.get_next())(rsp)
-    i_sel_0_b_2=Conv2D(16, (1,11), padding='valid', name="defly_"+counter.get_next())(i_sel_0_b_2)
+    i_sel_0_b_2=Conv2D(32, (1,16), padding='valid', name="defly_"+counter.get_next())(rsp)
+    i_sel_0_b_2=Conv2D(16, (1,19), padding='valid', name="defly_"+counter.get_next())(i_sel_0_b_2)
     #unir ramas
     merged_is0=Concatenate()([i_sel_0_b_1,i_sel_0_b_2])
     i_sel_0=Flatten()(merged_is0)
@@ -1024,8 +1024,9 @@ def define_generator(n_blocks, latent_dim):
     i_sel_1_b_1 = Conv2D(32, (1,16), padding="valid")(i_sel_1_b_1)
     i_sel_1_b_1 = Conv2D(16, (1,36), padding="valid")(i_sel_1_b_1)
     #dominio del tiempo
-    i_sel_1_b_2=Conv2D(32, (1,16), padding='valid', name="defly_"+counter.get_next())(merger_b0)
-    i_sel_1_b_2=Conv2D(16, (1,36), padding='valid', name="defly_"+counter.get_next())(i_sel_1_b_2)
+    i_sel_1_b_2=Conv2D(32, (1,36), padding='valid', name="defly_"+counter.get_next())(merger_b0)
+    i_sel_1_b_2=Conv2D(16, (1,51), padding='valid', name="defly_"+counter.get_next())(i_sel_1_b_2)
+    i_sel_1_b_2=Conv2D(16, (1,90), padding='valid', name="defly_"+counter.get_next())(i_sel_1_b_2)
     #unir ramas
     merged_is1=Concatenate()([i_sel_1_b_1, i_sel_1_b_2])
     i_sel_1=Flatten()(merged_is1)
@@ -1117,11 +1118,15 @@ def define_generator(n_blocks, latent_dim):
     i_sel_2_b_1 = FreqChannelChange()(i_sel_2_b_1)
     i_sel_2_b_1 = Dense(32)(i_sel_2_b_1)
     i_sel_2_b_1 = FreqChannelChange()(i_sel_2_b_1)
-    i_sel_2_b_1 = Conv2D(32, (1,36), padding="valid")(i_sel_2_b_1)
-    i_sel_2_b_1 = Conv2D(16, (1,51), padding="valid")(i_sel_2_b_1)
+    i_sel_2_b_1 = Conv2D(32, (1,32), padding="valid")(i_sel_2_b_1)
+    i_sel_2_b_1 = Conv2D(16, (1,32), padding="valid")(i_sel_2_b_1)
+    i_sel_2_b_1 = Conv2D(8, (1,32), padding="valid")(i_sel_2_b_1)
     #dominio del tiempo
-    i_sel_2_b_2=Conv2D(32, (1,36), padding='valid', name="defly_"+counter.get_next())(merger_b1)
-    i_sel_2_b_2=Conv2D(16, (1,51), padding='valid', name="defly_"+counter.get_next())(i_sel_2_b_2)
+    i_sel_2_b_2=Conv2D(16, (1,151), padding="valid")(merger_b1)
+    i_sel_2_b_2=Conv2D(16, (1,151), padding="valid")(i_sel_2_b_2)
+    i_sel_2_b_2=Conv2D(16, (2,3), strides=(1,3), padding="valid")(i_sel_2_b_2)
+    i_sel_2_b_2=Conv2D(16, (2,3), strides=(1,3), padding="valid")(i_sel_2_b_2)
+    i_sel_2_b_2=Conv2D(8, (2,16), padding="valid")(i_sel_2_b_2)
     #unir ramas
     merged_is2=Concatenate()([i_sel_2_b_1, i_sel_2_b_2])
     i_sel_2=Flatten()(merged_is2)
@@ -1198,11 +1203,15 @@ def define_generator(n_blocks, latent_dim):
     i_sel_3_b_1 = FreqChannelChange()(i_sel_3_b_1)
     i_sel_3_b_1 = Dense(32)(i_sel_3_b_1)
     i_sel_3_b_1 = FreqChannelChange()(i_sel_3_b_1)
-    i_sel_3_b_1 = Conv2D(32, (1,51), padding="valid")(i_sel_3_b_1)
-    i_sel_3_b_1 = Conv2D(16, (1,76), padding="valid")(i_sel_3_b_1)
+    i_sel_3_b_1 = Conv2D(32, (2,32), padding="valid")(i_sel_3_b_1)
+    i_sel_3_b_1 = Conv2D(16, (2,32), padding="valid")(i_sel_3_b_1)
+    i_sel_3_b_1 = Conv2D(8, (2,32), padding="valid")(i_sel_3_b_1)
     #dominio del tiempo
-    i_sel_3_b_2=Conv2D(32, (1,51), padding='valid', name="defly_"+counter.get_next())(merger_b2)
-    i_sel_3_b_2=Conv2D(16, (1,76), padding='valid', name="defly_"+counter.get_next())(i_sel_3_b_2)
+    i_sel_3_b_2=Conv2D(16, (1,151), padding="valid")(merger_b2)
+    i_sel_3_b_2=Conv2D(16, (1,151), padding="valid")(i_sel_3_b_2)
+    i_sel_3_b_2=Conv2D(16, (2,3), strides=(1,3), padding="valid")(i_sel_3_b_2)
+    i_sel_3_b_2=Conv2D(16, (2,3), strides=(1,3), padding="valid")(i_sel_3_b_2)
+    i_sel_3_b_2=Conv2D(8, (2,16), padding="valid")(i_sel_3_b_2)
     #unir ramas
     merged_is3=Concatenate()([i_sel_3_b_1, i_sel_3_b_2])
     i_sel_3=Flatten()(merged_is3)
