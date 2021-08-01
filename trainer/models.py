@@ -1410,7 +1410,7 @@ class GANMonitor(keras.callbacks.Callback):
         gen_shape = EQ_DIM[gen_shape[-2]]
         if not self.model.fade_in:
             for i in range(iters_gen):
-                if ((epoch+1)%5)==0:
+                if ((epoch+1)%10)==0:
                     save=True
                 else:
                     save=False
@@ -1420,7 +1420,7 @@ class GANMonitor(keras.callbacks.Callback):
                     random_real_data=[]
                 pred_batch=generar_ejemplo(self.model.generator, self.model.encoder, gen_shape, random_real_data, "epoch-"+str(epoch+1)+"/" , i+1, None, self.bucket_name, self.latent_dim, self.evaluador, save)
                 pred+=list(pred_batch)
-            if ((epoch+1)%5)==0:
+            if ((epoch+1)%10)==0:
                 guardar_checkpoint(self.model.generator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "g_")
                 guardar_checkpoint(self.model.generator_default, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "df_")
                 guardar_checkpoint(self.model.discriminator, self.bucket_name, (gen_shape[-3], gen_shape[-2]), epoch+1, "d_")
