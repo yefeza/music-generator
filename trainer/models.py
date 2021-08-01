@@ -633,6 +633,7 @@ def define_discriminator(n_blocks, input_shape=(3000, 2)):
     #unir ramas
     merged=Concatenate()([d_1,d_2])
     d = Flatten()(merged)
+    d = Dropout(0.3)(d)
     d = Dense(1)(d)
     out_class = StaticOptTanh()(d)
     # define model
@@ -939,9 +940,21 @@ def define_generator(n_blocks, latent_dim):
     ly0 = Input(shape=latent_dim)
     rsp = Reshape((1,50,2))(ly0)
     #selector de incice 0
-    i_sel_0=Conv2D(32, (1,6), padding='valid', name="defly_"+counter.get_next())(rsp)
-    i_sel_0=Conv2D(64, (1,11), padding='valid', name="defly_"+counter.get_next())(i_sel_0)
-    i_sel_0=Flatten()(i_sel_0)
+    #trabajar en el dominio de la frecuencia
+    i_sel_0_b_1 = ToMonoChannel()(rsp)
+    i_sel_0_b_1 = FFT()(i_sel_0_b_1)
+    i_sel_0_b_1 = FrequencyMagnitude()(i_sel_0_b_1)
+    i_sel_0_b_1 = FreqChannelChange()(i_sel_0_b_1)
+    i_sel_0_b_1 = Dense(32)(i_sel_0_b_1)
+    i_sel_0_b_1 = FreqChannelChange()(i_sel_0_b_1)
+    i_sel_0_b_1 = Conv2D(32, (1,6), padding="valid")(i_sel_0_b_1)
+    i_sel_0_b_1 = Conv2D(16, (1,11), padding="valid")(i_sel_0_b_1)
+    #dominio del tiempo
+    i_sel_0_b_2=Conv2D(32, (1,6), padding='valid', name="defly_"+counter.get_next())(rsp)
+    i_sel_0_b_2=Conv2D(16, (1,11), padding='valid', name="defly_"+counter.get_next())(i_sel_0_b_2)
+    #unir ramas
+    merged_is0=Concatenate()([i_sel_0_b_1,i_sel_0_b_2])
+    i_sel_0=Flatten()(merged_is0)
     i_sel_0=Dropout(0.4)(i_sel_0)
     i_sel_0=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_0)
     #decision layer 0
@@ -1000,10 +1013,22 @@ def define_generator(n_blocks, latent_dim):
     b0_r12 = Conv2DTranspose(16, (1, 51), padding='valid')(b0_r12)
     #sumar ramas bloque 0
     merger_b0=Add()([b0_r1, b0_r2, b0_r3, b0_r4, b0_r5, b0_r6, b0_r7, b0_r8, b0_r9, b0_r10, b0_r11, b0_r12])
-    #index selector block 1
-    i_sel_1=Conv2D(64, (1,16), padding='valid', name="defly_"+counter.get_next())(merger_b0)
-    i_sel_1=Conv2D(128, (1,16), padding='valid', name="defly_"+counter.get_next())(i_sel_1)
-    i_sel_1=Flatten()(i_sel_1)
+    #selector de incice 1
+    #trabajar en el dominio de la frecuencia
+    i_sel_1_b_1 = ToMonoChannel()(merger_b0)
+    i_sel_1_b_1 = FFT()(i_sel_1_b_1)
+    i_sel_1_b_1 = FrequencyMagnitude()(i_sel_1_b_1)
+    i_sel_1_b_1 = FreqChannelChange()(i_sel_1_b_1)
+    i_sel_1_b_1 = Dense(32)(i_sel_1_b_1)
+    i_sel_1_b_1 = FreqChannelChange()(i_sel_1_b_1)
+    i_sel_1_b_1 = Conv2D(32, (1,16), padding="valid")(i_sel_1_b_1)
+    i_sel_1_b_1 = Conv2D(16, (1,36), padding="valid")(i_sel_1_b_1)
+    #dominio del tiempo
+    i_sel_1_b_2=Conv2D(32, (1,16), padding='valid', name="defly_"+counter.get_next())(merger_b0)
+    i_sel_1_b_2=Conv2D(16, (1,36), padding='valid', name="defly_"+counter.get_next())(i_sel_1_b_2)
+    #unir ramas
+    merged_is1=Concatenate()([i_sel_1_b_1, i_sel_1_b_2])
+    i_sel_1=Flatten()(merged_is1)
     i_sel_1=Dropout(0.4)(i_sel_1)
     i_sel_1=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_1)
     #decision layer
@@ -1075,7 +1100,7 @@ def define_generator(n_blocks, latent_dim):
     b1_r12 = Conv2DTranspose(16, (1, 151), padding='valid')(b1_r12)
     #sumar ramas
     merger_b1=Add()([b1_r1, b1_r2, b1_r3, b1_r4, b1_r5, b1_r6, b1_r7, b1_r8, b1_r9, b1_r10, b1_r11, b1_r12])
-    #aplicar filtros en el dominio de la frecuencia
+    '''#aplicar filtros en el dominio de la frecuencia
     on_freq=FFT()(merger_b1)
     on_freq=ComplexToChannels()(on_freq)
     on_freq=Conv2D(64, (1,51), padding="valid")(on_freq)
@@ -1083,16 +1108,27 @@ def define_generator(n_blocks, latent_dim):
     on_freq=ChannelsToComplex()(on_freq)
     on_freq=iFFT()(on_freq)
     #merge freq features with time features
-    merge_frq=Concatenate()([merger_b1, on_freq])
-    #index selector block 2
-    i_sel_2=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(merge_frq)
-    i_sel_2=Conv2D(64, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
-    i_sel_2=Conv2D(128, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_2)
-    i_sel_2=Flatten()(i_sel_2)
+    merge_frq=Concatenate()([merger_b1, on_freq])'''
+    #selector de incice 2
+    #trabajar en el dominio de la frecuencia
+    i_sel_2_b_1 = ToMonoChannel()(merger_b1)
+    i_sel_2_b_1 = FFT()(i_sel_2_b_1)
+    i_sel_2_b_1 = FrequencyMagnitude()(i_sel_2_b_1)
+    i_sel_2_b_1 = FreqChannelChange()(i_sel_2_b_1)
+    i_sel_2_b_1 = Dense(32)(i_sel_2_b_1)
+    i_sel_2_b_1 = FreqChannelChange()(i_sel_2_b_1)
+    i_sel_2_b_1 = Conv2D(32, (1,36), padding="valid")(i_sel_2_b_1)
+    i_sel_2_b_1 = Conv2D(16, (1,51), padding="valid")(i_sel_2_b_1)
+    #dominio del tiempo
+    i_sel_2_b_2=Conv2D(32, (1,36), padding='valid', name="defly_"+counter.get_next())(merger_b1)
+    i_sel_2_b_2=Conv2D(16, (1,51), padding='valid', name="defly_"+counter.get_next())(i_sel_2_b_2)
+    #unir ramas
+    merged_is2=Concatenate()([i_sel_2_b_1, i_sel_2_b_2])
+    i_sel_2=Flatten()(merged_is2)
     i_sel_2=Dropout(0.4)(i_sel_2)
     i_sel_2=Dense(12, activation='softmax', name="defly_"+counter.get_next())(i_sel_2)
     #decision layer
-    des_ly_2=DecisionLayer2D(output_size=12)([merge_frq, i_sel_2])
+    des_ly_2=DecisionLayer2D(output_size=12)([merger_b1, i_sel_2])
     #bloque 2 salida (4,750,16)
     #rama 1
     b2_r1 = SlicerLayer(index_work=0)(des_ly_2)
@@ -1154,11 +1190,22 @@ def define_generator(n_blocks, latent_dim):
     b2_r12 = Conv2D(16, (2, 150), padding='same')(b2_r12)
     #unir ramas
     merger_b2=Add()([b2_r1, b2_r2, b2_r3, b2_r4, b2_r5, b2_r6, b2_r7, b2_r8, b2_r9, b2_r10, b2_r11, b2_r12])
-    #index selector block 3
-    i_sel_3=Conv2D(32, (1,26), padding='valid', name="defly_"+counter.get_next())(merger_b2)
-    i_sel_3=Conv2D(64, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
-    i_sel_3=Conv2D(128, (1,26), padding='valid', name="defly_"+counter.get_next())(i_sel_3)
-    i_sel_3=Flatten()(i_sel_3)
+    #selector de incice 3
+    #trabajar en el dominio de la frecuencia
+    i_sel_3_b_1 = ToMonoChannel()(merger_b2)
+    i_sel_3_b_1 = FFT()(i_sel_3_b_1)
+    i_sel_3_b_1 = FrequencyMagnitude()(i_sel_3_b_1)
+    i_sel_3_b_1 = FreqChannelChange()(i_sel_3_b_1)
+    i_sel_3_b_1 = Dense(32)(i_sel_3_b_1)
+    i_sel_3_b_1 = FreqChannelChange()(i_sel_3_b_1)
+    i_sel_3_b_1 = Conv2D(32, (1,51), padding="valid")(i_sel_3_b_1)
+    i_sel_3_b_1 = Conv2D(16, (1,76), padding="valid")(i_sel_3_b_1)
+    #dominio del tiempo
+    i_sel_3_b_2=Conv2D(32, (1,51), padding='valid', name="defly_"+counter.get_next())(merger_b2)
+    i_sel_3_b_2=Conv2D(16, (1,76), padding='valid', name="defly_"+counter.get_next())(i_sel_3_b_2)
+    #unir ramas
+    merged_is3=Concatenate()([i_sel_3_b_1, i_sel_3_b_2])
+    i_sel_3=Flatten()(merged_is3)
     i_sel_3=Dropout(0.4)(i_sel_3)
     i_sel_3=Dense(64, activation='softmax', name="defly_"+counter.get_next())(i_sel_3)
     #decision layer block 3
