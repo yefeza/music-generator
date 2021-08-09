@@ -82,7 +82,7 @@ def resample_song(dimensiones, audio_array, actual_sample_rate):
 #resamplear y cortar el dataset para todas las redes progresivas
 
 def resample_and_save_datasets(path_dataset, bucket_name, files_format, dimension_start, folder_start, song_start, fragment_start):
-    dimensiones_progresivas=[
+    """ dimensiones_progresivas=[
         (4,750),
         (8,1500),
         (16,3000),
@@ -90,6 +90,9 @@ def resample_and_save_datasets(path_dataset, bucket_name, files_format, dimensio
         (64,12000),
         (128,24000),
         (256,48000)
+    ] """
+    dimensiones_progresivas=[
+        (4,750),
     ]
     dimensiones_progresivas=dimensiones_progresivas[dimension_start:len(dimensiones_progresivas)]
     for dimension in dimensiones_progresivas:
