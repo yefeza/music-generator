@@ -40,7 +40,7 @@ def download_originals(path_dataset, bucket_name, files_format):
     storage_client = storage.Client(project='ia-devs')
     bucket = storage_client.bucket(bucket_name)
     #songs_by_folder=[79, 39, 31, 72, 37, 39, 21, 186, 58]
-    songs_by_folder=[2, 1, 1, 1, 1, 1, 1, 1, 1]
+    songs_by_folder=[1, 1, 1, 1, 1, 5, 1, 2, 3]
     for folder in range(9):
         limit_songs=songs_by_folder[folder]
         for song in range(limit_songs):
