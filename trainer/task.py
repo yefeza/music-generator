@@ -109,7 +109,7 @@ if __name__ == '__main__':
     # train the generator and discriminator
 
     def train(gan_models, latent_dim, epochs_norm, epochs_fade, batch_sizes, job_dir, bucket_name, files_format, path_dataset, download_data, epochs_evaluadores, start_from_growing):
-        get_evaluators=[False,False,False,False,False,False,False]
+        get_evaluators=[True,False,False,False,False,False,False]
         # fit the baseline model
         g_normal = gan_models[start_from_growing][0].generator
         # scale dataset to appropriate size
@@ -171,7 +171,7 @@ if __name__ == '__main__':
             plot_losses(history, (gen_shape[-3], gen_shape[-2]))
 
     batch_sizes=[8,4,2,2,2,2,2]
-    epochs_norm=[100,5,350,400,450,500,550]
+    epochs_norm=[50,5,350,400,450,500,550]
     #epochs_norm=[10,5,400,450,500,550]
     #epochs_norm=[50,60,70,
     # 80,90,100,110]
